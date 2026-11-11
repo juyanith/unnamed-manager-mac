@@ -24,6 +24,8 @@ jobs:
       XCODE_APP: /Applications/Xcode_27.2.app
     steps:
       - uses: actions/checkout@v5
+        with:
+          submodules: true
 
       - name: Select Xcode
         run: |

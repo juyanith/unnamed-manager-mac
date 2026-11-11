@@ -21,6 +21,7 @@ does and how: `docs/BRIEF.md`, `docs/SPEC.md`, `docs/STORIES.md`,
 
 - Build: `./build.sh`. Add `--open` to restart the app with the new build. The build shows warnings; fix them.
 - Unit tests: `swift test --scratch-path ~/Library/Developer/UnnamedLauncher/test-build`.
+- The config format is shared with the Windows app. Its contract lives in `spec/`, a git submodule of the `unnamed-manager` repo (`git submodule update --init` after cloning): `spec/CONFIG-SPEC.md`, `spec/config.schema.json`, `spec/GLOSSARY.md`. `SpecFixtureTests` runs every fixture in `spec/fixtures/manifest.json`. Change the format in the spec repo first, tag it, then move the submodule and make the tests pass. Never edit files inside `spec/` from here.
 - Self-test (the app's real functions against a /tmp config): `tools/selftest.sh`. Exit 0 when every check passes. Add a check for every story with logic in `SelfTest.swift`.
 - After every UI change, take snapshots with sample data and look at them: `tools/snap.sh`.
   It writes `/tmp/UnnamedLauncher-shots/<page>-light.png` and `-dark.png` for every Bindings page, plus `settings-light.png` and `-dark.png`, then quits. `APP_SNAPSHOT_PAGES=bindings,settings tools/snap.sh` limits the pages.

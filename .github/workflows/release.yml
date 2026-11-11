@@ -37,6 +37,8 @@ jobs:
       SIGN_IDENTITY: '-'
     steps:
       - uses: actions/checkout@v5
+        with:
+          submodules: true
 
       - name: Select Xcode
         run: |
