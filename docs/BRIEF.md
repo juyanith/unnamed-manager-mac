@@ -1,40 +1,42 @@
-# Unnamed Launcher
+# Unnamed Manager
 
-A native macOS leader-key launcher for one keyboard-first user. You press a leader chord, then one key per menu level, to open apps, files and URLs, run commands, or send shortcuts. If you pause, a HUD shows the options.
+A native macOS keyboard manager for one keyboard-first user. A hotkey or a leader sequence starts an app, opens a file, runs a command, sends a shortcut, or focuses, places, moves, resizes, maximizes or minimizes the window you're using. Actions are modules, so later ones (volume, display resolution) add a module and change nothing else.
 
-App name `UnnamedLauncher`, bundle id `net.unnamed.launcher`, project folder `unnamed-launcher`. Behavior and the config format are defined in [SPEC.md](SPEC.md).
+App name `UnnamedManager`, display name "Unnamed Manager", bundle id `net.unnamed.manager`, repo `unnamed-manager-mac`. It grew out of Unnamed Launcher 0.2.0 and keeps its history. The config format is shared with the Windows app and defined in [spec/CONFIG-SPEC.md](../spec/CONFIG-SPEC.md). How sequences behave: [SPEC.md](SPEC.md).
 
 ## Replaces
-Sol, which is used only to launch apps. Spotlight still handles search, and paneru still handles window management.
+- **Unnamed Launcher**, completely. Everything it does carries over unchanged.
+- **A separate window manager** for one-shot window commands: focus by direction, size presets, maximize.
 
 ## Main jobs
-1. **Run a binding by key sequence.** For example Hyper+Space → E opens the editor. If you finish the sequence quickly, nothing appears on screen. If you pause, the HUD shows breadcrumbs and the next options. The app in front never loses focus.
-2. **See and edit bindings in the Bindings window.** It shows the menus and bindings as a tree, records chords and step keys, reorders a menu's items (by drag, or Sort Alphabetically), and edits actions and contexts. Every change is written back to the config file.
-3. **Check status from the menu bar.** Turn the app on or off, reload the config, open the file, see the permission status with links to System Settings, see the last error, and quit.
+1. **Run a binding by key sequence or direct chord.** Unchanged from the launcher: Hyper+Space → E opens the editor; the Guide appears only if you pause; the app in front keeps focus.
+2. **Manage the window in front from the keyboard.** Focus the nearest window left, right, up or down, or the next or previous one. Place it on a half, third, quarter or corner of the screen. Move or resize it by a step or to an exact fraction. Maximize it (again restores) or minimize it.
+3. **See and edit bindings in the Bindings window**, including the new window actions, each with its own editor. Every change is written back to the config file.
+4. **Check status from the menu bar.** Unchanged: on or off, reload, permissions, last error, quit.
 
 ## Data
-The source of truth is one JSON file, `~/.config/unnamed-launcher/config.json`. The app watches it and reloads it when it changes. A dotfiles tool such as chezmoi may write it too. Format and file name were decided by the agent.
-- **Entry:** `keys` (the leader chord and step keys), `title`, optional `action`. An entry with an action is a binding; one without is a menu. A top-level binding is a direct binding: its chord runs the action at once.
-- **Action:** `id`, `type` (`application`, `open`, `exec`, `send`, `contextual`, `noop`), and the fields for that type.
-- **Context:** `id`, `apps` (bundle ids).
-- **Settings:** `runtime` (cancel and back keys, HUD on or off, HUD delay, timeout) and `ui` (theme, position, error flash, error bell).
+One JSON file, `~/.config/unnamed-manager/config.json`, in the shared format. On first run, if it's missing and `~/.config/unnamed-launcher/config.json` exists, the app offers to copy it.
+- **One config per platform** (decided 2026-11-11): the Mac and Windows apps share the format and validation rules, not the file. Mac actions name apps by `bundleId`; contexts list bundle ids.
+- **Entry, Action, Context, Settings:** as in the spec. New action types are `window.focus`, `window.place`, `window.move`, `window.resize`, `window.maximize` and `window.minimize`. Their fields are settled in the spec repo first, then built here.
+- **Window memory:** the frame each window had before Maximize, kept in memory only, so Maximize can toggle back.
 
 ## Shape
-A menu bar app with no Dock icon. It has four surfaces: a non-activating HUD panel that never becomes key, a menu bar menu, a Bindings window with a sidebar (Bindings, Actions, Contexts), and a small Settings window (⌘,) for the Guide, keys, feedback and Open at Login. See [DESIGN.md](DESIGN.md). macOS 27 or later. Swift and SwiftUI only, Mac only. Local data, works offline, no accounts.
+A menu bar app with no Dock icon, as today: the Guide (a non-activating Liquid Glass panel), the menu bar menu, the Bindings window (sidebar: Bindings, Actions, Contexts, Help), and Settings. macOS 27 or later. Swift and SwiftUI. Local data, works offline, no accounts.
 
 ## System hooks
-- An active session-level `CGEventTap` captures leader chords and consumes every key during a sequence. It needs **Accessibility** and **Input Monitoring**, and the app does not run without them.
-- Actions use `NSWorkspace` (application, open), `Process` with no shell (exec), and `CGEventPost` (send).
-- Login item via `SMAppService`. Secure Event Input is reported in the menu bar menu.
-- Not sandboxed. It is distributed with Developer ID and notarized, because event taps and synthetic key events don't fit the sandbox (research decision 6).
+- The launcher's session-level `CGEventTap`, with **Accessibility** and **Input Monitoring**. No new permission: window actions use the Accessibility API (`AXUIElement` position, size, minimized, raise), which the app already has.
+- **An action registry.** Each action family is one module: it decodes and validates its config, describes itself for the Guide and the editor, and runs. Adding a family touches no shell code.
+- Each display's usable area comes from `NSScreen.visibleFrame` (without the menu bar and Dock). Directional focus works across displays.
+- Login item via `SMAppService`. Not sandboxed, Developer ID and notarized, distributed by the Homebrew cask (renamed to `unnamed-manager`).
 
 ## Reference
-None to clone. The HUD idea is close to which-key style leader menus.
+None to clone. Window commands follow Rectangle's behavior; the sequences follow which-key style leader menus.
 
 ## Look
-Native, with the system accent color. The HUD is a small Liquid Glass panel, the Bindings window is a standard macOS 27 sidebar window, and Settings is a standard single-pane Settings window.
+Native, with the system accent color, as the launcher is now. Window actions get SF Symbols in the Guide (`rectangle.lefthalf.filled` and the like).
 
 ## Not in version one
-- App or file search, clipboard history and window management. Spotlight and paneru already cover them.
-- A Windows version.
-- Sync, accounts, extensions and AI.
+- **Automatic tiling.** A basic version may come later.
+- **Moving windows between displays or Spaces**, and remembering layouts.
+- **Volume, display resolution and other new families.** The registry makes room for them.
+- **The Windows app.** It lives in `unnamed-manager-windows`, built with BAWA.
