@@ -8,7 +8,7 @@ public enum ConfigLoader {
         do {
             config = try JSONDecoder().decode(Config.self, from: data)
         } catch {
-            return .failure(ConfigErrors(issues: [ConfigIssue(.error, describe(error))]))
+            return .failure(ConfigErrors(issues: [ConfigIssue(.error, describe(error), rule: rule(for: error))]))
         }
         return ConfigValidator.validate(config)
     }
@@ -62,6 +62,19 @@ public enum ConfigLoader {
     }
 
     """
+
+    /// The spec rule a decoding error breaks (S-059).
+    static func rule(for error: any Error) -> ConfigRule {
+        if error is UnknownFieldError { return .unknownField }
+        switch error as? DecodingError {
+        case .keyNotFound: return .missingField
+        case .typeMismatch, .valueNotFound: return .wrongType
+        case let .dataCorrupted(context):
+            if let marker = context.underlyingError as? RuleMarker { return marker.rule }
+            return context.codingPath.isEmpty ? .invalidJSON : .wrongType
+        default: return .invalidJSON
+        }
+    }
 
     /// A decoding error as one sentence that names where the problem is.
     static func describe(_ error: any Error) -> String {

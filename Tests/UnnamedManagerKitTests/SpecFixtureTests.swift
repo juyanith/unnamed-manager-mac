@@ -4,8 +4,7 @@ import Testing
 
 /// Runs every fixture in the shared spec (`spec/`, a git submodule) that
 /// applies to the Mac: valid ones must load with the listed warnings,
-/// invalid ones must be rejected. ConfigIssue has no rule ids yet, so a
-/// rule is checked through its subject where the manifest gives one.
+/// invalid ones must be rejected for the rule the manifest names (S-059).
 @Suite("Shared spec fixtures")
 struct SpecFixtureTests {
     struct Fixture: Decodable, Sendable, CustomTestStringConvertible {
@@ -46,15 +45,26 @@ struct SpecFixtureTests {
         switch ConfigLoader.load(data) {
         case let .success(loaded):
             #expect(fixture.valid, "Loaded, but the spec says it breaks \(fixture.errors?.first?.rule ?? "a rule").")
-            let expected = Set((fixture.warnings ?? []).compactMap(\.subject))
-            #expect(Set(loaded.warnings.compactMap(\.subject)) == expected)
+            let expected = Set((fixture.warnings ?? []).map { "\($0.rule) \($0.subject ?? "")" })
+            #expect(Set(loaded.warnings.map { "\($0.rule?.rawValue ?? "none") \($0.subject ?? "")" }) == expected)
         case let .failure(errors):
             #expect(!fixture.valid, "Rejected: \(errors.issues.map(\.message))")
             for error in fixture.errors ?? [] {
-                guard let subject = error.subject else { continue }
-                #expect(errors.issues.contains { $0.subject == subject },
-                        "No issue about “\(subject)” for \(error.rule): \(errors.issues.map(\.message))")
+                #expect(errors.issues.contains { $0.rule?.rawValue == error.rule && (error.subject == nil || $0.subject == error.subject) },
+                        "No \(error.rule) issue\(error.subject.map { " about “\($0)”" } ?? ""): \(errors.issues.map { "\($0.rule?.rawValue ?? "none"): \($0.message)" })")
             }
         }
+    }
+
+    @Test("The app's rules are exactly the spec's rule ids")
+    func ruleIDs() throws {
+        let spec = try String(contentsOf: Self.folder.deletingLastPathComponent().appending(path: "CONFIG-SPEC.md"), encoding: .utf8)
+        let validation = spec.components(separatedBy: "## Validation").dropFirst().first?
+            .components(separatedBy: "\n## ").first ?? ""
+        let ids = Set(validation.split(separator: "\n").compactMap { line -> String? in
+            guard line.hasPrefix("| `") else { return nil }
+            return line.dropFirst(3).split(separator: "`").first.map(String.init)
+        })
+        #expect(ids == Set(ConfigRule.allCases.map(\.rawValue)))
     }
 }

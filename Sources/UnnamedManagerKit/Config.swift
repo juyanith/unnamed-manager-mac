@@ -235,7 +235,8 @@ extension Config.Action: Decodable {
             let modeName: String = try c.value("mode", default: Config.AppMode.default.rawValue)
             guard let mode = Config.AppMode(rawValue: modeName) else {
                 throw DecodingError.dataCorrupted(.init(codingPath: c.codingPath + [AnyKey("mode")],
-                    debugDescription: "Unknown mode “\(modeName)” in an action of type “application”. Use focusOrStart, focus or start."))
+                    debugDescription: "Unknown mode “\(modeName)” in an action of type “application”. Use focusOrStart, focus or start.",
+                    underlyingError: RuleMarker(rule: .badAppMode)))
             }
             self = .application(bundleId: try c.required("bundleId"), mode: mode)
         case "open":
@@ -261,7 +262,8 @@ extension Config.Action: Decodable {
             self = .help
         default:
             throw DecodingError.dataCorrupted(.init(codingPath: c.codingPath,
-                debugDescription: "Unknown action type “\(type)”. Use application, open, exec, send, contextual, noop or help."))
+                debugDescription: "Unknown action type “\(type)”. Use application, open, exec, send, contextual, noop or help.",
+                underlyingError: RuleMarker(rule: .unknownActionType)))
         }
     }
 }

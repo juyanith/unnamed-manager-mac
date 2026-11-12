@@ -8,11 +8,15 @@ public struct ConfigIssue: Sendable, Equatable, CustomStringConvertible {
     public var message: String
     /// The entry path or action id the issue is about, when there is one.
     public var subject: String?
+    /// The spec rule it breaks (S-059). nil for problems outside the file's
+    /// contents, such as a file that can't be read.
+    public var rule: ConfigRule?
 
-    public init(_ severity: Severity, _ message: String, subject: String? = nil) {
+    public init(_ severity: Severity, _ message: String, subject: String? = nil, rule: ConfigRule? = nil) {
         self.severity = severity
         self.message = message
         self.subject = subject
+        self.rule = rule
     }
 
     public var description: String { message }
@@ -59,46 +63,48 @@ public enum ConfigValidator {
     /// Returns the loaded config, or every error found.
     public static func validate(_ config: Config) -> Result<LoadedConfig, ConfigErrors> {
         var errors: [ConfigIssue] = []
-        func error(_ message: String, _ subject: String? = nil) { errors.append(ConfigIssue(.error, message, subject: subject)) }
+        func error(_ rule: ConfigRule, _ message: String, _ subject: String? = nil) {
+            errors.append(ConfigIssue(.error, message, subject: subject, rule: rule))
+        }
 
         if config.version != Config.supportedVersion {
-            error("Version \(config.version) isn't supported. Use \"version\": \(Config.supportedVersion).")
+            error(.version, "Version \(config.version) isn't supported. Use \"version\": \(Config.supportedVersion).")
         }
 
         // Cancel and back keys.
         let cancelKey = KeyName(parsing: config.runtime.cancelKey)
-        if cancelKey == nil { error("The cancel key “\(config.runtime.cancelKey)” isn't a key name.") }
+        if cancelKey == nil { error(.badRuntimeKey, "The cancel key “\(config.runtime.cancelKey)” isn't a key name.") }
         var backKey: KeyName?
         if !config.runtime.backKey.isEmpty {
             backKey = KeyName(parsing: config.runtime.backKey)
-            if backKey == nil { error("The back key “\(config.runtime.backKey)” isn't a key name.") }
+            if backKey == nil { error(.badRuntimeKey, "The back key “\(config.runtime.backKey)” isn't a key name.") }
         }
         if let cancelKey, cancelKey == backKey {
-            error("The cancel key and the back key are both \(cancelKey.name). Choose two different keys.")
+            error(.sameCancelBack, "The cancel key and the back key are both \(cancelKey.name). Choose two different keys.")
         }
-        if config.runtime.hudDelayMs < 0 { error("hudDelayMs can't be negative.") }
+        if config.runtime.hudDelayMs < 0 { error(.negativeDelay, "hudDelayMs can't be negative.") }
         if !["center", "top", "bottom"].contains(config.ui.position.lowercased()) {
-            error("The position “\(config.ui.position)” isn't one the Guide knows. Use center, top or bottom.")
+            error(.badUIValue, "The position “\(config.ui.position)” isn't one the Guide knows. Use center, top or bottom.")
         }
         if !["system", "light", "dark"].contains(config.ui.theme.lowercased()) {
-            error("The theme “\(config.ui.theme)” isn't one the Guide knows. Use system, light or dark.")
+            error(.badUIValue, "The theme “\(config.ui.theme)” isn't one the Guide knows. Use system, light or dark.")
         }
-        if config.runtime.timeoutMs < 0 { error("timeoutMs can't be negative.") }
+        if config.runtime.timeoutMs < 0 { error(.negativeDelay, "timeoutMs can't be negative.") }
 
         // Entries: parse, find duplicates.
         var parsed: [(entry: Config.Entry, path: KeySequence)] = []
         var seen: [KeySequence: String] = [:]
-        if config.entries.isEmpty { error("The config has no entries. Add a leader and at least one binding, or a direct binding.") }
+        if config.entries.isEmpty { error(.noEntries, "The config has no entries. Add a leader and at least one binding, or a direct binding.") }
         for entry in config.entries {
             guard let path = KeySequence(parsing: entry.keys) else {
-                error("Entry “\(entry.keys)” has a key that isn't a known name. Check the spelling of each key and modifier.", entry.keys)
+                error(.badKeys, "Entry “\(entry.keys)” has a key that isn't a known name. Check the spelling of each key and modifier.", entry.keys)
                 continue
             }
             if entry.title.trimmingCharacters(in: .whitespaces).isEmpty {
-                error("Entry “\(path)” has an empty title.", path.description)
+                error(.emptyTitle, "Entry “\(path)” has an empty title.", path.description)
             }
             if let first = seen[path] {
-                error("Entries “\(first)” and “\(entry.keys)” are the same key path.", path.description)
+                error(.duplicatePath, "Entries “\(first)” and “\(entry.keys)” are the same key path.", path.description)
                 continue
             }
             seen[path] = entry.keys
@@ -110,39 +116,39 @@ public enum ConfigValidator {
         for (entry, path) in parsed {
             let name = entry.action == nil ? "Menu" : "Binding"
             if path.parent == nil, path.leader.isKeptByMacOS {
-                error("\(entry.action == nil ? "Leader" : "Direct binding") “\(path)” uses a chord macOS keeps for its diagnostics (sysdiagnose), so Unnamed Manager never sees it. Choose another key.", path.description)
+                error(.reservedChord, "\(entry.action == nil ? "Leader" : "Direct binding") “\(path)” uses a chord macOS keeps for its diagnostics (sysdiagnose), so Unnamed Manager never sees it. Choose another key.", path.description)
             }
             if let parent = path.parent {
                 guard let parentEntry = byPath[parent] else {
-                    error("\(name) “\(path)” has no parent. Add an entry for “\(parent)”.", path.description)
+                    error(.noParent, "\(name) “\(path)” has no parent. Add an entry for “\(parent)”.", path.description)
                     continue
                 }
                 if parentEntry.action != nil {
-                    error("\(name) “\(path)” is under “\(parent)”, which is a binding. Only menus can have keys under them.", path.description)
+                    error(.parentIsBinding, "\(name) “\(path)” is under “\(parent)”, which is a binding. Only menus can have keys under them.", path.description)
                 }
                 childCount[parent, default: 0] += 1
                 if let step = path.lastStep {
                     if !step.modifiers.isEmpty {
-                        error("\(name) “\(path)” uses modifiers on a step key. Only the leader can have modifiers.", path.description)
+                        error(.stepModifiers, "\(name) “\(path)” uses modifiers on a step key. Only the leader can have modifiers.", path.description)
                     }
                     if step.key == cancelKey || step.key == backKey {
-                        error("\(name) “\(path)” uses \(step.key.name), which is the \(step.key == cancelKey ? "cancel" : "back") key.", path.description)
+                        error(.stepIsRuntimeKey, "\(name) “\(path)” uses \(step.key.name), which is the \(step.key == cancelKey ? "cancel" : "back") key.", path.description)
                     }
                 }
             }
             if let action = entry.action, config.actions[action] == nil {
-                error("Binding “\(path)” uses action “\(action)”, which isn't defined.", path.description)
+                error(.undefinedAction, "Binding “\(path)” uses action “\(action)”, which isn't defined.", path.description)
             }
         }
         for (entry, path) in parsed where entry.action == nil && childCount[path, default: 0] == 0 {
-            error("Menu “\(path)” has no keys under it. Add a binding or remove the menu.", path.description)
+            error(.emptyMenu, "Menu “\(path)” has no keys under it. Add a binding or remove the menu.", path.description)
         }
 
         // Contexts and actions.
         var contextIDs = Set<String>()
         for context in config.contexts {
             if !contextIDs.insert(context.id).inserted {
-                error("Two contexts are named “\(context.id)”. Give each context its own id.", context.id)
+                error(.duplicateContext, "Two contexts are named “\(context.id)”. Give each context its own id.", context.id)
             }
         }
         var usedContexts = Set<String>()
@@ -151,14 +157,14 @@ public enum ConfigValidator {
             for contextID in variants.keys.sorted() {
                 usedContexts.insert(contextID)
                 if !contextIDs.contains(contextID) {
-                    error("Action “\(id)” has a variant for context “\(contextID)”, which isn't defined.", id)
+                    error(.undefinedContext, "Action “\(id)” has a variant for context “\(contextID)”, which isn't defined.", id)
                 }
                 if case .contextual = variants[contextID] {
-                    error("Action “\(id)” has a Context Aware variant inside it. Variants must be other kinds of action.", id)
+                    error(.nestedContextual, "Action “\(id)” has a Context Aware variant inside it. Variants must be other kinds of action.", id)
                 }
             }
             if case .contextual = fallback {
-                error("Action “\(id)” has a Context Aware fallback. The fallback must be another kind of action.", id)
+                error(.nestedContextual, "Action “\(id)” has a Context Aware fallback. The fallback must be another kind of action.", id)
             }
         }
 
@@ -167,13 +173,13 @@ public enum ConfigValidator {
         var warnings: [ConfigIssue] = []
         let usedActions = Set(config.entries.compactMap(\.action))
         for id in config.actions.keys.sorted() where !usedActions.contains(id) {
-            warnings.append(ConfigIssue(.warning, "Action “\(id)” isn't used by any binding.", subject: id))
+            warnings.append(ConfigIssue(.warning, "Action “\(id)” isn't used by any binding.", subject: id, rule: .unusedAction))
         }
         for context in config.contexts where !usedContexts.contains(context.id) {
-            warnings.append(ConfigIssue(.warning, "Context “\(context.id)” isn't used by any action.", subject: context.id))
+            warnings.append(ConfigIssue(.warning, "Context “\(context.id)” isn't used by any action.", subject: context.id, rule: .unusedContext))
         }
         for (_, path) in parsed where ([path.leader] + path.steps).contains(where: { $0.key.keyCode == nil }) {
-            warnings.append(ConfigIssue(.warning, "Entry “\(path)” uses a key a Mac keyboard doesn't have.", subject: path.description))
+            warnings.append(ConfigIssue(.warning, "Entry “\(path)” uses a key a Mac keyboard doesn't have.", subject: path.description, rule: .keyNotOnPlatform))
         }
 
         return .success(LoadedConfig(config: config, leaders: tree(parsed), cancelKey: cancelKey,

@@ -618,7 +618,8 @@ Acceptance:
 - [unit] Every `ConfigIssue` carries a rule id from `spec/CONFIG-SPEC.md`, Validation, decoding errors included (`invalid-json`, `unknown-field`, `missing-field`, `wrong-type`, `unknown-action-type`, `bad-app-mode`).
 - [unit] `SpecFixtureTests` checks each fixture's rule as well as its subject.
 - [unit] Messages are unchanged; the rule id never shows in the UI.
-Status: todo
+Status: done
+Verified: every issue about the file's contents carries a `ConfigRule`; SpecFixtureTests checks the rule and subject of all 45 fixtures and that the app's rules are exactly the ids in the spec's Validation tables (unit tests, checked by breaking one rule on purpose). Messages are unchanged (existing tests pass). Issues outside the file's contents (a file that can't be read or saved, a draft binding with no action) have no rule.
 
 ## M10 Action registry
 
