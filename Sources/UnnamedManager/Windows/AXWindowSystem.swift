@@ -124,8 +124,47 @@ final class AXWindowSystem: WindowSystem {
     }
 
     private func value<T>(_ element: AXUIElement, _ attribute: String) -> T? {
+        Self.read(element, attribute)
+    }
+
+    private static func read<T>(_ element: AXUIElement, _ attribute: String) -> T? {
         var result: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, attribute as CFString, &result) == .success else { return nil }
         return result as? T
+    }
+}
+
+extension AXWindowSystem {
+    // Use Application's return to the last focused window (S-047).
+    // LastWindow decides which window; this reads and raises.
+
+    /// Raises the app's last focused window. False when there's nothing to
+    /// raise or Accessibility isn't allowed; activation then decides alone.
+    @discardableResult
+    static func raiseLastFocused(pid: pid_t) -> Bool {
+        guard AXIsProcessTrusted() else { return false }
+        let app = AXUIElementCreateApplication(pid)
+        AXUIElementSetMessagingTimeout(app, Self.timeout)
+        let windows: [AXUIElement] = Self.read(app, kAXWindowsAttribute) ?? []
+        let candidates = windows.indices.map { index in
+            let window = windows[index]
+            let subrole: String? = Self.read(window, kAXSubroleAttribute)
+            return LastWindow.Candidate(id: index,
+                                        isMinimized: Self.read(window, kAXMinimizedAttribute) ?? false,
+                                        isStandard: subrole == nil || subrole == kAXStandardWindowSubrole)
+        }
+        func index(of attribute: String) -> Int? {
+            let element: AXUIElement? = Self.read(app, attribute)
+            return element.flatMap { element in windows.firstIndex { CFEqual($0, element) } }
+        }
+        guard let choice = LastWindow.pick(focused: index(of: kAXFocusedWindowAttribute),
+                                           main: index(of: kAXMainWindowAttribute),
+                                           windows: candidates) else { return false }
+        let window = windows[choice.id]
+        if choice.unminimize {
+            AXUIElementSetAttributeValue(window, kAXMinimizedAttribute as CFString, kCFBooleanFalse)
+        }
+        AXUIElementSetAttributeValue(window, kAXMainAttribute as CFString, kCFBooleanTrue)
+        return AXUIElementPerformAction(window, kAXRaiseAction as CFString) == .success
     }
 }
