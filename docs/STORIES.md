@@ -772,7 +772,15 @@ Acceptance:
 - [self] Saving each form writes the fields the spec defines, and Undo restores the file.
 - [self] The snapshot fixture config has a Windows menu with one binding of each window action.
 - [snap] The Actions page with each window form, and the Guide on the Windows menu with each action's SF Symbol, in light and dark, with the grid checks passing.
-Status: todo
+UX:
+- Flow: Actions page → Add Action (+) or pick an action → Type: Place Window (or any window type) → the form's first picker already has a good default (Left Half, Center, Grow Through Widths, Right) → change a picker or a number → it saves as you go → ⌘Z undoes each change. Way back: ⌘Z, or pick another type.
+- Surface: inline, in the action's form on the Actions page (changes values on something already on screen), like every other type. No sheets or popovers.
+- States: a preset or spot picked → its numbers show below it; change a number → the picker says Custom. Numbers are clamped as you type (a frame never runs past the screen, widths stay 1 to 100 %), so the form never makes an invalid file. Widths left empty → the field's prompt shows the default list. A failure when the action runs shows in the Guide as for any action ("No window to the left.").
+- Words: types Focus Window, Maximize, Minimize, Move Window, Place Window, Resize Window. Pickers: "Direction" (Left, Right, Up, Down, Next Window, Previous Window); "Preset" (Left Half … Bottom Right Quarter, Center, Custom); "Move" (To a Spot, By Points) with "Spot" (Center, Top Left … Bottom Right, Custom); "Resize" (Grow Through Widths, Shrink Through Widths, To a Size, By Points); "Keep in Place" (Top Left Corner, Top Edge, … Center). Fields "X", "Y", "Width", "Height" in % of the screen; "Right", "Down", "Wider", "Taller" in points; "Widths" as a list of percentages. Toggle "Press Again to Restore". Footers say what the screen means here: "without the menu bar and Dock".
+- Guide: each type has an SF Symbol, and Place Window and Focus Window show the preset or direction (rectangle.lefthalf.filled, arrow.left.square, …). An entry's own `icon` still wins.
+- Access: every picker and field has a label VoiceOver reads ("Width, percent of the screen"); percent and point units are in the label, not only in a suffix; the whole form works with Tab and the arrow keys.
+Status: done
+Verified: the Type picker lists the six window types with the others, alphabetically; each form's value is saved as the spec writes it, and Undo puts the file back exactly (self-test, 160 checks). The forms' controls are checked on their snapshots, not by the self-test: actions-window-left-half, -move-center, -wider, -half-size, -focus-right and -maximize, plus hud-window, in light and dark; grid checks pass (the lint now skips the window geometry, whose numbers aren't layout). The seed config has a Windows menu under Commands with one binding of each window action. Not yet tried by hand: VoiceOver on the number fields, and typing widths.
 
 ## Later
 - Import and export a single menu as a JSON snippet.

@@ -6,7 +6,7 @@ public enum WindowCommand: ActionStep {
     case maximize(toggle: Bool)
     case minimize
     case place(FractionFrame)
-    case resize(ResizeAction.Change, anchor: Anchor)
+    case resize(ResizeAction.Change, anchor: WindowAnchor)
     case move(MoveAction)
     case focus(FocusDirection)
 

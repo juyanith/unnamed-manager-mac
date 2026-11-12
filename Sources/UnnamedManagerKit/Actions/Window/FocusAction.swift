@@ -25,7 +25,7 @@ public struct FocusAction: ActionValue {
         self.direction = direction
     }
 
-    public static let kinds = [ActionKind(type: "window.focus", displayName: "Focus Window")]
+    public static let kinds = [ActionKind(type: "window.focus", displayName: "Focus Window", symbol: "macwindow.on.rectangle")]
 
     public var type: String { "window.focus" }
 
@@ -47,6 +47,19 @@ public struct FocusAction: ActionValue {
 
     public static func schema(_ type: String) -> ActionSchema {
         ActionSchema(["direction": ["enum": FocusDirection.allCases.map(\.rawValue)]], required: ["direction"])
+    }
+
+    /// Each direction shows its arrow.
+    public func iconSource(home: URL) -> IconSource? {
+        let symbol = switch direction {
+        case .left: "arrow.left.square"
+        case .right: "arrow.right.square"
+        case .up: "arrow.up.square"
+        case .down: "arrow.down.square"
+        case .next: "arrow.forward.circle"
+        case .previous: "arrow.backward.circle"
+        }
+        return .symbol(symbol)
     }
 
     public func plan(home: URL) throws(PlanError) -> ActionPlan {

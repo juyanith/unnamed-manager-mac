@@ -8,7 +8,7 @@ public struct MaximizeAction: ActionValue {
         self.toggle = toggle
     }
 
-    public static let kinds = [ActionKind(type: "window.maximize", displayName: "Maximize")]
+    public static let kinds = [ActionKind(type: "window.maximize", displayName: "Maximize", symbol: "arrow.up.left.and.arrow.down.right")]
 
     public var type: String { "window.maximize" }
 

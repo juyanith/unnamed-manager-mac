@@ -55,6 +55,15 @@ enum Snapshot {
                     try? await Task.sleep(for: .seconds(0.8))
                     capture(to: "\(dir)/actions-help-\(mode).png")
                 }
+                if only?.contains("actions") ?? true {
+                    // S-070: each window action's form.
+                    model.sidebar = .actions
+                    for id in ["left-half", "move-center", "wider", "half-size", "focus-right", "maximize"] {
+                        model.actionSelection = id
+                        try? await Task.sleep(for: .seconds(0.8))
+                        capture(to: "\(dir)/actions-window-\(id)-\(mode).png")
+                    }
+                }
                 if only?.contains("bindings") ?? true {
                     // S-048: a direct binding, with its editor pane.
                     model.sidebar = .bindings
@@ -120,6 +129,18 @@ enum Snapshot {
                     try? await Task.sleep(for: .seconds(0.3))
                     capture(to: "\(dir)/hud-flash-\(mode).png", window: guide.window)
                     guide.holdFlashForSnapshot(false)
+                    guide.hide()
+                    try? await Task.sleep(for: .seconds(0.3))
+                }
+            }
+            if only == nil || only?.contains("hud") == true {
+                // S-070: the Windows menu, with each window action's symbol.
+                let guide = model.launcher.guide
+                for mode in ["light", "dark"] {
+                    NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
+                    guide.show(SeedData.windowsContent)
+                    try? await Task.sleep(for: .seconds(0.8))
+                    capture(to: "\(dir)/hud-window-\(mode).png", window: guide.window)
                     guide.hide()
                     try? await Task.sleep(for: .seconds(0.3))
                 }

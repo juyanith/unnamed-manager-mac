@@ -20,6 +20,16 @@ enum SeedData {
         { "keys": "Hyper+Space S", "title": "Screenshot", "action": "screenshot", "icon": "camera" },
         { "keys": "Hyper+Space L", "title": "Address Bar", "action": "address-bar" },
         { "keys": "Hyper+Space F", "title": "Find", "action": "find" },
+        { "keys": "Hyper+Space W", "title": "Windows" },
+        { "keys": "Hyper+Space W M", "title": "Maximize", "action": "maximize" },
+        { "keys": "Hyper+Space W N", "title": "Minimize", "action": "minimize" },
+        { "keys": "Hyper+Space W H", "title": "Left Half", "action": "left-half" },
+        { "keys": "Hyper+Space W L", "title": "Right Half", "action": "right-half" },
+        { "keys": "Hyper+Space W C", "title": "Center", "action": "move-center" },
+        { "keys": "Hyper+Space W Equal", "title": "Wider", "action": "wider" },
+        { "keys": "Hyper+Space W Minus", "title": "Half Size", "action": "half-size" },
+        { "keys": "Hyper+Space W Right", "title": "Window to the Right", "action": "focus-right" },
+        { "keys": "Hyper+Space W Tab", "title": "Next Window", "action": "focus-next" },
         { "keys": "Meh+W", "title": "Workspace" },
         { "keys": "Meh+W 1", "title": "Workspace 1", "action": "workspace-1" },
         { "keys": "CAG+T", "title": "Terminal", "action": "open-terminal" },
@@ -35,6 +45,15 @@ enum SeedData {
         "screenshot": { "type": "send", "keys": "Cmd+Shift+4" },
         "workspace-1": { "type": "send", "keys": "Ctrl+1" },
         "show-help": { "type": "help" },
+        "maximize": { "type": "window.maximize" },
+        "minimize": { "type": "window.minimize" },
+        "left-half": { "type": "window.place", "preset": "leftHalf" },
+        "right-half": { "type": "window.place", "preset": "rightHalf" },
+        "move-center": { "type": "window.move", "to": { "x": 0.5, "y": 0.5 } },
+        "wider": { "type": "window.resize", "step": "grow", "widths": [0.5, 0.75, 1] },
+        "half-size": { "type": "window.resize", "to": { "width": 0.5, "height": 0.5 }, "anchor": "center" },
+        "focus-right": { "type": "window.focus", "direction": "right" },
+        "focus-next": { "type": "window.focus", "direction": "next" },
         "address-bar": { "type": "contextual", "variants": { "browser": { "type": "send", "keys": "Cmd+L" } } },
         "find": {
           "type": "contextual",
@@ -59,6 +78,15 @@ enum SeedData {
         let leader = config.leaders[0]
         // In Notes, so the browser-only Address Bar shows as unavailable.
         return GuideContent(menu: leader, path: [leader.title], config: config,
+                            frontApp: "com.apple.Notes", frontAppName: "Notes")
+    }
+
+    /// The Windows menu under Commands (S-070).
+    static var windowsContent: GuideContent {
+        let config = fixture
+        let leader = config.leaders[0]
+        let windows = leader.children.first { $0.title == "Windows" }!
+        return GuideContent(menu: windows, path: [leader.title, windows.title], config: config,
                             frontApp: "com.apple.Notes", frontAppName: "Notes")
     }
 

@@ -300,7 +300,7 @@ struct ResizeTests {
     static let usable = CGRect(x: 0, y: 25, width: 1440, height: 875)
     static let window = CGRect(x: 200, y: 200, width: 600, height: 400)
 
-    func resize(_ change: ResizeAction.Change, _ anchor: Anchor = .topLeft, _ frame: CGRect = Self.window) -> CGRect {
+    func resize(_ change: ResizeAction.Change, _ anchor: WindowAnchor = .topLeft, _ frame: CGRect = Self.window) -> CGRect {
         WindowGeometry.resized(frame, to: WindowGeometry.size(frame, in: Self.usable, change)!, keeping: anchor, in: Self.usable)
     }
 
@@ -310,8 +310,8 @@ struct ResizeTests {
         #expect(resize(.to(width: 0.5, height: 0.5)).size == CGSize(width: 720, height: 438))
     }
 
-    @Test("The anchor stays where it was; the default is the top left", arguments: Anchor.allCases)
-    func anchor(_ anchor: Anchor) {
+    @Test("The anchor stays where it was; the default is the top left", arguments: WindowAnchor.allCases)
+    func anchor(_ anchor: WindowAnchor) {
         let after = resize(.by(dw: 100, dh: 60), anchor)
         let (ax, ay) = anchor.unit
         #expect(after.minX + ax * after.width == Self.window.minX + ax * Self.window.width)

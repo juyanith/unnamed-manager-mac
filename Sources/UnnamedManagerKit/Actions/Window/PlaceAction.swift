@@ -22,6 +22,26 @@ public enum PlacePreset: String, CaseIterable, Sendable {
     case topLeft, topRight, bottomLeft, bottomRight
     case center
 
+    /// The SF Symbol for the Guide.
+    public var symbol: String {
+        switch self {
+        case .leftHalf: "rectangle.lefthalf.filled"
+        case .rightHalf: "rectangle.righthalf.filled"
+        case .topHalf: "rectangle.tophalf.filled"
+        case .bottomHalf: "rectangle.bottomhalf.filled"
+        case .leftThird: "rectangle.leadingthird.inset.filled"
+        case .centerThird: "rectangle.center.inset.filled"
+        case .rightThird: "rectangle.trailingthird.inset.filled"
+        case .leftTwoThirds: "rectangle.leadinghalf.inset.filled"
+        case .rightTwoThirds: "rectangle.trailinghalf.inset.filled"
+        case .topLeft: "rectangle.inset.topleft.filled"
+        case .topRight: "rectangle.inset.topright.filled"
+        case .bottomLeft: "rectangle.inset.bottomleft.filled"
+        case .bottomRight: "rectangle.inset.bottomright.filled"
+        case .center: "rectangle.center.inset.filled"
+        }
+    }
+
     public var frame: FractionFrame {
         let third = 1.0 / 3, twoThirds = 2.0 / 3
         return switch self {
@@ -48,7 +68,7 @@ public enum PlaceAction: ActionValue {
     case preset(PlacePreset)
     case frame(FractionFrame)
 
-    public static let kinds = [ActionKind(type: "window.place", displayName: "Place Window")]
+    public static let kinds = [ActionKind(type: "window.place", displayName: "Place Window", symbol: "rectangle.inset.filled")]
 
     public var type: String { "window.place" }
 
@@ -102,6 +122,12 @@ public enum PlaceAction: ActionValue {
         case let .preset(preset): preset.frame
         case let .frame(frame): frame
         }
+    }
+
+    /// A preset shows the part of the screen it fills.
+    public func iconSource(home: URL) -> IconSource? {
+        guard case let .preset(preset) = self else { return kind.symbol.map(IconSource.symbol) }
+        return .symbol(preset.symbol)
     }
 
     public func plan(home: URL) throws(PlanError) -> ActionPlan {

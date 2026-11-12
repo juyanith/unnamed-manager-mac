@@ -93,7 +93,7 @@ public enum WindowGeometry {
 
     /// A window of `size` with `anchor` where it was on `frame`, moved
     /// back inside the usable area if it runs past it.
-    public static func resized(_ frame: CGRect, to size: CGSize, keeping anchor: Anchor, in usable: CGRect) -> CGRect {
+    public static func resized(_ frame: CGRect, to size: CGSize, keeping anchor: WindowAnchor, in usable: CGRect) -> CGRect {
         let (ax, ay) = anchor.unit
         let x = frame.minX + ax * (frame.width - size.width)
         let y = frame.minY + ay * (frame.height - size.height)

@@ -4,7 +4,7 @@ import Foundation
 public struct MinimizeAction: ActionValue {
     public init() {}
 
-    public static let kinds = [ActionKind(type: "window.minimize", displayName: "Minimize")]
+    public static let kinds = [ActionKind(type: "window.minimize", displayName: "Minimize", symbol: "dock.arrow.down.rectangle")]
 
     public var type: String { "window.minimize" }
 

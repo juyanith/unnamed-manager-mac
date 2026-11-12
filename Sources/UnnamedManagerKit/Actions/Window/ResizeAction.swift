@@ -1,11 +1,11 @@
 import Foundation
 
 /// The point of a window that stays put while it resizes (spec v2).
-public enum Anchor: String, CaseIterable, Sendable {
+public enum WindowAnchor: String, CaseIterable, Sendable {
     case topLeft, top, topRight, left, center, right, bottomLeft, bottom, bottomRight
 
     /// Where the anchor sits on a window, from 0 (left, top) to 1 (right, bottom).
-    var unit: (CGFloat, CGFloat) {
+    public var unit: (CGFloat, CGFloat) {
         switch self {
         case .topLeft: (0, 0)
         case .top: (0.5, 0)
@@ -38,9 +38,9 @@ public struct ResizeAction: ActionValue {
 
     public var change: Change
     /// Used with `to` and `by` only.
-    public var anchor: Anchor
+    public var anchor: WindowAnchor
 
-    public init(_ change: Change, anchor: Anchor = .topLeft) {
+    public init(_ change: Change, anchor: WindowAnchor = .topLeft) {
         self.change = change
         self.anchor = anchor
     }
@@ -48,7 +48,7 @@ public struct ResizeAction: ActionValue {
     /// The widths `step` goes through when the action has none.
     public static let defaultWidths = [1.0 / 4, 1.0 / 3, 1.0 / 2, 2.0 / 3, 3.0 / 4]
 
-    public static let kinds = [ActionKind(type: "window.resize", displayName: "Resize Window")]
+    public static let kinds = [ActionKind(type: "window.resize", displayName: "Resize Window", symbol: "square.resize")]
 
     public var type: String { "window.resize" }
 
@@ -108,11 +108,20 @@ public struct ResizeAction: ActionValue {
             "to": WindowSchema.object(["width": WindowSchema.size, "height": WindowSchema.size], required: ["width", "height"]),
             "by": WindowSchema.object(["dw": WindowSchema.points, "dh": WindowSchema.points], required: []),
             "step": ["enum": ResizeStep.allCases.map(\.rawValue)],
-            "anchor": ["enum": Anchor.allCases.map(\.rawValue),
+            "anchor": ["enum": WindowAnchor.allCases.map(\.rawValue),
                        "description": "The point that stays put with to and by. Default topLeft."],
             "widths": ["type": "array", "minItems": 1, "items": WindowSchema.size,
                        "description": "The widths step goes through. Default 1/4, 1/3, 1/2, 2/3, 3/4."],
         ])
+    }
+
+    /// Grow and Shrink show which way they go.
+    public func iconSource(home: URL) -> IconSource? {
+        switch change {
+        case .step(.grow, _): .symbol("arrow.left.and.right")
+        case .step(.shrink, _): .symbol("arrow.right.and.line.vertical.and.arrow.left")
+        default: kind.symbol.map(IconSource.symbol)
+        }
     }
 
     public func plan(home: URL) throws(PlanError) -> ActionPlan {

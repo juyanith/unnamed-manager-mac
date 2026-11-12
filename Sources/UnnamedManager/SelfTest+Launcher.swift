@@ -84,7 +84,7 @@ extension SelfTest {
     static func guideChecks(_ model: AppModel) async {
         let content = SeedData.guideContent
         check("S-005 the Guide lists the leader's keys in file order",
-              content.rows.map(\.key) == ["Space", "E", "B", "A", "N", "S", "L", "F"])
+              content.rows.map(\.key) == ["Space", "E", "B", "A", "N", "S", "L", "F", "W"])
         let addressBar = content.rows.first { $0.key == "L" }
         check("S-013 a Context Aware binding with nothing for the app in front is dimmed",
               addressBar?.isAvailable == false && addressBar?.note == "not available in Notes"

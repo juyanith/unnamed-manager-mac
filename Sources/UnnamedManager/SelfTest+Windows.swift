@@ -1,4 +1,4 @@
-import CoreGraphics
+import Foundation
 import UnnamedManagerKit
 
 extension SelfTest {
@@ -138,5 +138,44 @@ extension SelfTest {
         } catch {
             check("S-068 no window that way says so", error.message == "No window to the left." && fake.focused == "a", error.message)
         }
+    }
+
+    /// S-070: the window types in the Type picker, and each form's value
+    /// saved as the spec writes it, then undone.
+    static func windowEditingChecks(_ model: AppModel) async {
+        let names = Config.Action.types(allowsContextAware: true).map { Config.Action.empty(of: $0).displayName }
+        let window = ["Focus Window", "Maximize", "Minimize", "Move Window", "Place Window", "Resize Window"]
+        check("S-070 the Type picker lists the window actions with the others, alphabetically",
+              Set(window).isSubset(of: names) && names == names.sorted { $0.localizedStandardCompare($1) == .orderedAscending }, "\(names)")
+
+        let editor = model.editor
+        editor.reloadFromStore()
+        let undo = UndoManager()
+        undo.groupsByEvent = false
+        func file() -> String { (try? String(contentsOf: model.store.url, encoding: .utf8)) ?? "" }
+        let before = file()
+        let cases: [(Config.Action, String)] = [
+            (.family(AnyActionValue(FocusAction(.previous))), #"{ "type": "window.focus", "direction": "previous" }"#),
+            (.family(AnyActionValue(MaximizeAction(toggle: false))), #"{ "type": "window.maximize", "toggle": false }"#),
+            (.family(AnyActionValue(MinimizeAction())), #"{ "type": "window.minimize" }"#),
+            (.family(AnyActionValue(MoveAction.by(dx: 40, dy: 0))), #"{ "type": "window.move", "by": { "dx": 40 } }"#),
+            (.family(AnyActionValue(PlaceAction.frame(FractionFrame(x: 0.1, y: 0.05, width: 0.8, height: 0.9)))),
+             #"{ "type": "window.place", "frame": { "x": 0.1, "y": 0.05, "width": 0.8, "height": 0.9 } }"#),
+            (.family(AnyActionValue(ResizeAction(.step(.shrink, widths: [0.75, 0.5, 0.25])))),
+             #"{ "type": "window.resize", "step": "shrink", "widths": [0.75, 0.5, 0.25] }"#),
+            (.family(AnyActionValue(ResizeAction(.by(dw: 80, dh: 60), anchor: .bottomRight))),
+             #"{ "type": "window.resize", "by": { "dw": 80, "dh": 60 }, "anchor": "bottomRight" }"#),
+        ]
+        var written: [String] = []
+        for (action, _) in cases {
+            undo.beginUndoGrouping()
+            editor.edit("Change Action", undo: undo) { $0.setAction(id: "window-test", action) }
+            undo.endUndoGrouping()
+            written.append(file().split(separator: "\n").first { $0.contains(#""window-test""#) }.map(String.init) ?? "")
+        }
+        let wrong = zip(written, cases).filter { !$0.0.contains($0.1.1) }.map(\.0)
+        check("S-070 each window form saves the fields the spec defines", wrong.isEmpty, "\(wrong)")
+        while undo.canUndo { undo.undo() }
+        check("S-070 Undo restores the file", file() == before)
     }
 }

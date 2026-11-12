@@ -8,7 +8,7 @@ public enum MoveAction: ActionValue {
     /// Points. Positive `dy` moves down.
     case by(dx: Double, dy: Double)
 
-    public static let kinds = [ActionKind(type: "window.move", displayName: "Move Window")]
+    public static let kinds = [ActionKind(type: "window.move", displayName: "Move Window", symbol: "arrow.up.and.down.and.arrow.left.and.right")]
 
     public var type: String { "window.move" }
 
