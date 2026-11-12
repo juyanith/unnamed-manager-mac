@@ -1,6 +1,6 @@
-# Unnamed Launcher: stories
+# Unnamed Manager: stories
 
-Built from [BRIEF.md](BRIEF.md), [SPEC.md](SPEC.md) and [research/launchers.md](research/launchers.md). There is no reference app, so `Screens:` names the snapshot pages that show each story.
+Built from [BRIEF.md](BRIEF.md), [SPEC.md](SPEC.md), the shared spec in [../spec/CONFIG-SPEC.md](../spec/CONFIG-SPEC.md) and [research/launchers.md](research/launchers.md). M1 to M8 and the stories after `## Dropped` are Unnamed Launcher's, all done. Unnamed Manager's version one is M9 to M11. There is no reference app, so `Screens:` names the snapshot pages that show each story.
 
 **Snapshot pages:**
 
@@ -12,16 +12,19 @@ Built from [BRIEF.md](BRIEF.md), [SPEC.md](SPEC.md) and [research/launchers.md](
 | `menubar` | The menu bar menu, all OK |
 | `menubar-warning` | The menu bar menu with a missing permission or a config error |
 | `welcome` | The first-run window |
+| `welcome-import` | The first-run window offering to copy the Unnamed Launcher config |
 | `bindings` | The Bindings page of the Bindings window |
 | `actions` | The Actions page |
 | `contexts` | The Contexts page |
 | `help`, `empty-help` | The Help page, with and without bindings |
 | `actions-help` | The Actions page with a Show Help action |
+| `actions-window` | The Actions page with each window action's form |
+| `hud-window` | The Guide on a Windows menu with every window action |
 | `settings` | The Settings window |
 
 **How each acceptance line is checked:** `[snap]` snapshot, `[unit]` unit test, `[self]` self-test, `[manual]` a person must try it.
 
-**Seed data:** snapshot mode loads a fixture config with two leaders, a nested menu, actions of every type, and two contexts. Each of these can be created in the Bindings window or Settings (S-024 to S-032).
+**Seed data:** snapshot mode loads a fixture config with two leaders, a nested menu, actions of every type, and two contexts. From S-070 it also has a Windows menu with one binding of each window action. Each of these can be created in the Bindings window or Settings (S-024 to S-032).
 
 ---
 
@@ -570,13 +573,198 @@ UX:
 Status: done
 Verified: reading, writing, empty icons, symbols and paths, the entry's icon winning, the schema (unit tests); setting, clearing and undoing in the editor, the unknown-symbol message, no icon for an unknown symbol (self-test); hud and bindings-icon in light and dark (snapshots), grid checks. Not yet tried by hand: VoiceOver on the Icon field's preview.
 
+## M9 Unnamed Manager
+
+The launcher becomes Unnamed Manager: new name, new bundle id, new config folder, and the shared spec's rule ids. Nothing else changes, so you can use it for a day exactly as you used the launcher.
+
+### S-057 Run as Unnamed Manager
+As the user, I install Unnamed Manager and see its name everywhere the launcher's was: the menu bar menu, the Bindings window, Settings, Help, the Welcome window and the log.
+Screens: welcome, help, settings, menubar
+Acceptance:
+- [unit] The Swift targets are `UnnamedManager` and `UnnamedManagerKit`; the bundle id is `net.unnamed.manager`; `build.sh` installs `UnnamedManager.app`.
+- [unit] The config file is `~/.config/unnamed-manager/config.json` (`APP_STORE` still overrides it), and the schema is written next to it.
+- [self] Every window title, menu item and log line says "Unnamed Manager"; no "Unnamed Launcher" is left in the app's own text, except in S-058.
+- [self] The event tap thread is named `net.unnamed.manager.event-tap`.
+- [snap] Welcome, Help and Settings show the new name in light and dark.
+- [manual] macOS asks for Accessibility and Input Monitoring again, because the bundle id is new, and the Welcome window walks through both.
+- [manual] The Homebrew cask is `unnamed-manager`, and the release workflow updates it.
+Status: todo
+
+### S-058 Bring over my launcher config
+As the user, I start Unnamed Manager for the first time and copy my Unnamed Launcher config with one click, so my leaders and bindings carry over, and the app tells me if Unnamed Launcher is still running and capturing the same keys.
+Screens: welcome-import, menubar-warning
+Depends: S-057
+Acceptance:
+- [self] With no config and `~/.config/unnamed-launcher/config.json` present, Welcome offers "Copy Unnamed Launcher's Config"; it copies the file, never moves or changes the original, and loads the copy.
+- [self] With no launcher config, Welcome writes the starter config as before.
+- [self] An existing Unnamed Manager config is never overwritten.
+- [self] While `net.unnamed.launcher` is running, the menu bar menu warns "Unnamed Launcher is also running and may take the same keys." with a Quit Unnamed Launcher item.
+- [snap] Welcome with the copy offer, in light and dark.
+Status: todo
+
+### S-059 Name the rule behind every config error
+As the maintainer, I see which rule from the shared spec each config error and warning comes from, so the Mac and Windows apps can be checked against the same fixtures.
+Screens: none (no UI)
+Depends: S-057
+Acceptance:
+- [unit] Every `ConfigIssue` carries a rule id from `spec/CONFIG-SPEC.md`, Validation, decoding errors included (`invalid-json`, `unknown-field`, `missing-field`, `wrong-type`, `unknown-action-type`, `bad-app-mode`).
+- [unit] `SpecFixtureTests` checks each fixture's rule as well as its subject.
+- [unit] Messages are unchanged; the rule id never shows in the UI.
+Status: todo
+
+## M10 Action registry
+
+Each action family becomes a module, so window actions, and later volume or display resolution, are added without touching the engine, the Guide or the Bindings window. No behavior changes. Run `improve-architecture` for this milestone, one step per commit.
+
+### S-060 Add an action family as one module
+As the maintainer, I add a new kind of action by writing one module and registering it, and the config reader, the validator, the schema, the Guide, the Actions page and the runner all pick it up.
+Screens: actions, hud
+Depends: S-059
+Acceptance:
+- [unit] A family declares its `type` values, decodes and checks its own fields (unknown fields and missing fields reported with the spec's rule ids), writes itself back in a stable key order, adds its part of the JSON Schema, and gives its UI name, default SF Symbol and action plan.
+- [unit] The seven existing types are families. Every existing test passes unchanged, and the generated schema is byte-for-byte the same.
+- [unit] A family registered only in the tests loads from JSON, appears in the schema and the Type picker's list, and runs through `RecordingPerformer`, with no change to shared files.
+- [self] The self-test's action plans are unchanged.
+- [snap] The Actions page and the Guide look the same as before, in light and dark.
+Status: todo
+
+## M11 Window actions
+
+Manage the window in front from the keyboard. The spec repo settles the fields first (S-061), then each action is built on the registry. After this milestone you can drop any other window tool for one-shot commands.
+
+Every window action works on the **focused window of the app in front**, the same app the Guide leaves in front. A failure (no window, a window that can't move) ends the sequence and shows as for any failed action: in the Guide, or with the error sound for a direct binding.
+
+Window gotchas to respect throughout:
+- Accessibility positions use a top-left origin on the primary display; `NSScreen` uses bottom-left. Convert in one place in the Kit, and test it with displays above, below and left of the primary one.
+- Set size, then position, then size again: a window near a screen edge can't grow until it has moved.
+- Browsers and Electron apps animate frame changes while `AXEnhancedUserInterface` is on. Turn it off for the move and put it back after.
+- Some windows have a minimum or fixed size. Place them as close as they allow, anchored to the edge they belong to, and don't call it a failure.
+- Full-screen windows are left alone, with a failure that says so.
+
+### S-061 Settle the window action fields in the shared spec
+As the maintainer, I decide each window action's fields in the spec repo, with fixtures, and tag `spec-v2`, so the Mac and Windows apps build the same format.
+Screens: none (no UI)
+Depends: S-059
+Acceptance:
+- [unit] `spec/CONFIG-SPEC.md` defines `window.focus`, `window.place`, `window.move`, `window.resize`, `window.maximize` and `window.minimize`: every field, its range, its default, and its validation rule ids.
+- [unit] The open questions on `version` and on what an unsupported type does are answered in the spec.
+- [unit] `fixtures/manifest.json` has a valid fixture with every window action and every field, and one invalid fixture per new rule.
+- [unit] The spec repo is tagged `spec-v2`, and the `spec/` submodule is moved to it. `SpecFixtureTests` fails on the new fixtures until S-062 to S-069 are done; mark them pending until then.
+Status: todo
+
+### S-062 Maximize the window in front, and restore it
+As the user, I press a key and the window fills the usable area of its screen; I press it again and it goes back to where it was.
+Screens: none (no UI)
+Depends: S-060, S-061
+Acceptance:
+- [unit] The target frame is the `visibleFrame` of the screen that holds most of the window.
+- [unit] A window already filling that frame (within 2 pt) goes back to the frame it had before Maximize; with no remembered frame, nothing changes.
+- [unit] The remembered frame is per window and kept in memory only; a window that moved since Maximize forgets it.
+- [self] Against a fake window: Maximize, then Maximize again, restores the first frame exactly.
+- [self] No focused window fails with "<App> has no window to maximize."
+- [manual] In Zed and in Safari, Maximize and restore in one step each, with no animation in Safari.
+Status: todo
+
+### S-063 Minimize the window in front
+As the user, I press a key and the window goes to the Dock.
+Screens: none (no UI)
+Depends: S-060, S-061
+Acceptance:
+- [self] Against a fake window, Minimize sets it minimized.
+- [self] No focused window fails with "<App> has no window to minimize."
+- [manual] The app in front stays the same app; focus moves to its next window, as when you press ⌘M.
+Status: todo
+
+### S-064 Place the window on a half, third, quarter or corner
+As the user, I press a key and the window moves and resizes to a part of the screen, such as the left half or the top right quarter.
+Screens: none (no UI)
+Depends: S-060, S-061
+Acceptance:
+- [unit] A placement is a frame in fractions of the usable area; presets cover halves, thirds, two thirds, quarters and center, and each one maps to the expected frame on screens of several sizes.
+- [unit] Fractions turn into whole points, and two neighbouring placements (left half, right half) share an edge with no gap or overlap.
+- [unit] The coordinate conversion is right with a second display above, below, left and right of the primary one.
+- [self] A fake window with a minimum size larger than the placement ends as close as it allows, anchored to the placement's edge.
+- [manual] Left half then right half in Zed, Safari and Ghostty, on the built-in display and an external one.
+Status: todo
+
+### S-065 Grow or shrink the window through preset widths
+As the user, I press one key to make the window wider and another to make it narrower, stepping through widths I chose, such as 25 %, 33 %, 50 %, 66 % and 75 % of the screen.
+Screens: none (no UI)
+Depends: S-064
+Acceptance:
+- [unit] The next width is the smallest preset wider than the window now (or the largest narrower one, for shrink); at the end of the list it stays put rather than wrapping.
+- [unit] The window keeps its left edge, unless that would push it off screen, when it keeps its right edge.
+- [unit] With no presets in the action, the default list is 25, 33, 50, 66 and 75 %.
+- [manual] Grow from a narrow Zed window to 75 % and back down, one key per step.
+Status: todo
+
+### S-066 Move the window by a step or to a position
+As the user, I nudge the window by a set number of points, or send it to an exact spot, such as centered or the top left corner.
+Screens: none (no UI)
+Depends: S-064
+Acceptance:
+- [unit] `by` moves by points; `to` places the window's top-left corner at fractions of the usable area; center is a `to` preset.
+- [unit] A move never leaves the window entirely off screen: at least 40 pt of its title bar stays on its screen.
+- [self] Against a fake window, its size is unchanged after a move.
+Status: todo
+
+### S-067 Resize the window by a step or to an exact size
+As the user, I make the window bigger or smaller by a set amount, or set it to an exact fraction of the screen, keeping one corner or the center in place.
+Screens: none (no UI)
+Depends: S-064
+Acceptance:
+- [unit] `by` changes width and height by points; `to` sets them as fractions of the usable area.
+- [unit] The anchor (a corner, an edge or the center) stays where it was; the default anchor is the top-left corner.
+- [unit] The result is clamped to the usable area.
+- [self] A fake window with a fixed size reports no failure and stays as it was.
+Status: todo
+
+### S-068 Focus the nearest window left, right, up or down
+As the user, I press a direction key and the window next to the one I'm in comes to the front with focus, even if it's on another display.
+Screens: none (no UI)
+Depends: S-060, S-061
+Acceptance:
+- [unit] Candidates are the standard, visible, not minimized windows on the current Spaces of every display; panels, the Guide and the app's own windows are skipped.
+- [unit] The nearest window is the one whose center is closest in that direction, within a 45° cone of it; ties go to the one with more overlap on the other axis.
+- [unit] With no window that way, it fails with "No window to the left." (right, above, below).
+- [self] With fake windows in a 2×2 grid across two displays, each direction picks the expected window.
+- [manual] Focus moves between Zed and Ghostty side by side, and across to the external display, and the focused window gets the keys.
+Status: todo
+
+### S-069 Focus the next or previous window
+As the user, I press a key to go to the next window, and another to go back, in a fixed order I can predict.
+Screens: none (no UI)
+Depends: S-068
+Acceptance:
+- [unit] The order is by display, left to right, then by window center, top to bottom and left to right; it wraps at the ends.
+- [unit] The same set of windows always gives the same order, whatever was focused last.
+- [self] With fake windows, next from the last window goes to the first.
+Status: todo
+
+### S-070 Set up window actions on the Actions page and see them in the Guide
+As the user, I choose a window action from the Type picker, set its options with pickers instead of typing JSON, and see an icon for it in the Guide.
+Screens: actions-window, hud-window
+Depends: S-062, S-063, S-064, S-065, S-066, S-067, S-068, S-069
+Acceptance:
+- [self] The Type picker lists Focus Window, Maximize, Minimize, Move Window, Place Window and Resize Window with the existing types, alphabetically.
+- [self] Each type's form has the right controls: a Direction picker for Focus Window; a preset menu plus four fraction fields for Place Window; presets or step fields for Move and Resize; a list of widths for grow and shrink.
+- [self] Saving each form writes the fields the spec defines, and Undo restores the file.
+- [self] The snapshot fixture config has a Windows menu with one binding of each window action.
+- [snap] The Actions page with each window form, and the Guide on the Windows menu with each action's SF Symbol, in light and dark, with the grid checks passing.
+Status: todo
+
 ## Later
 - Import and export a single menu as a JSON snippet.
-- A Windows version that reads the same config.
+- A basic automatic tiling mode.
+- Move a window to another display or Space; save and restore window layouts.
+- New action families on the registry (S-060): volume, display resolution.
+- A Windows menu in the starter config.
 - Double-tap modifier leaders, such as tapping ⌥ twice.
 
 ## Dropped
-Main jobs in the brief map to M1 (job 1), M4 (job 2) and S-002, S-008 and S-009 (job 3). Rows marked "Version one? Yes" in the research matrix were written before the scope changed to leader keys only:
+Unnamed Manager's main jobs map to M1 and S-048 (job 1, run bindings), M11 (job 2, manage windows), M4 and S-070 (job 3, Bindings window), and S-002, S-008, S-009 and S-058 (job 4, menu bar status). The Windows app is its own repo, `unnamed-manager-windows`.
+
+The launcher's main jobs mapped to M1 (job 1), M4 (job 2) and S-002, S-008 and S-009 (job 3). Rows marked "Version one? Yes" in the research matrix were written before the scope changed to leader keys only:
 - **App launch:** covered by S-006.
 - **Fuzzy and initials matching:** dropped. There's no search, and keys are exact.
 - **Ranking that learns from your choices:** dropped. Order is set by you (S-028).
