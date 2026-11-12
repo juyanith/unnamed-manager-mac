@@ -1,6 +1,6 @@
-# Unnamed Launcher
+# Unnamed Manager
 
-A leader-key launcher for macOS that lives in the menu bar. Press a leader chord such as Hyper+Space, then one key per menu level, to open apps, files and URLs, run commands, or send shortcuts to the app in front.
+A keyboard manager for macOS that lives in the menu bar. It grew out of [Unnamed Launcher](https://github.com/juyanith/unnamed-launcher), and window actions (focus, place, move, resize, maximize, minimize) are on the way. Press a leader chord such as Hyper+Space, then one key per menu level, to open apps, files and URLs, run commands, or send shortcuts to the app in front.
 
 If you finish the sequence quickly, nothing appears on screen. If you pause, a small HUD shows where you are and which keys come next. The app in front never loses focus.
 
@@ -18,7 +18,7 @@ If you finish the sequence quickly, nothing appears on screen. If you pause, a s
   - **Show Help** opens the Help page. The starter config puts it on Hyper+H.
 - **Icons in the Guide:** menus show the app's keycaps, apps and Open targets show their own icon, and any entry can have an SF Symbol or a file's icon of its own.
 - **A Bindings window** to edit menus, bindings, actions and contexts, record chords, and reorder items. Its Help page lists your leaders and direct bindings and how sequences work (Help in the menu bar menu, or a Show Help binding).
-- **One JSON config file** at `~/.config/unnamed-launcher/config.json`. The app watches it and reloads it when it changes, so you can keep it in your dotfiles. A config with errors is reported, and the last valid one stays in use.
+- **One JSON config file** at `~/.config/unnamed-manager/config.json`. The app watches it and reloads it when it changes, so you can keep it in your dotfiles. A config with errors is reported, and the last valid one stays in use.
 - **A menu bar menu** to turn the launcher on or off, reload the config, check permissions, and see the last error.
 
 ## Requirements
@@ -32,8 +32,8 @@ If you finish the sequence quickly, nothing appears on screen. If you pause, a s
 With Homebrew:
 
 ```sh
-brew tap juyanith/unnamed-launcher https://github.com/juyanith/unnamed-launcher
-brew install --cask unnamed-launcher
+brew tap juyanith/unnamed-manager https://github.com/juyanith/unnamed-manager-mac
+brew install --cask unnamed-manager
 ```
 
 `brew upgrade` then keeps it up to date, and restarts it after an update. Every release is signed with the same certificate, so macOS keeps the permissions granted across updates.
@@ -44,7 +44,7 @@ brew install --cask unnamed-launcher
 ./build.sh --open
 ```
 
-This builds a release version into `build/UnnamedLauncher.app`, signs it and opens it. Nothing is installed, so a Homebrew copy in /Applications stays as it is. SwiftPM's intermediate products go to `~/Library/Developer/UnnamedLauncher`, outside the repo. To keep a local build, copy it to /Applications yourself.
+This builds a release version into `build/UnnamedManager.app`, signs it and opens it. Nothing is installed, so a Homebrew copy in /Applications stays as it is. SwiftPM's intermediate products go to `~/Library/Developer/UnnamedManager`, outside the repo. To keep a local build, copy it to /Applications yourself.
 
 It signs with the "Unnamed Launcher Code Signing" certificate when it's in your keychain, so a local build has the same signature as the releases. Otherwise it uses your Apple Development certificate, or signs ad hoc. With an ad hoc signature, macOS asks for the permissions again after each rebuild.
 
@@ -81,12 +81,12 @@ Chords use `Ctrl`, `Opt` (or `Alt`), `Shift` and `Cmd`, the symbols ⌃⌥⇧⌘
 ## Development
 
 ```sh
-swift test --scratch-path ~/Library/Developer/UnnamedLauncher/test-build   # unit tests
+swift test --scratch-path ~/Library/Developer/UnnamedManager/test-build   # unit tests
 tools/selftest.sh                                                          # the app's own checks, against a /tmp config
 tools/snap.sh                                                              # light and dark snapshots of every page
 ```
 
-- `Sources/UnnamedLauncher/` is the app. `Sources/UnnamedLauncherKit/` holds the rules and config logic, with no UI, and has the unit tests.
+- `Sources/UnnamedManager/` is the app. `Sources/UnnamedManagerKit/` holds the rules and config logic, with no UI, and has the unit tests.
 - [ARCHITECTURE.md](ARCHITECTURE.md) covers the targets, threads and seams.
 - [docs/](docs/) has the brief, the spec, the stories, the glossary and the design notes.
 
@@ -100,7 +100,7 @@ git tag v0.2.0 && git push origin v0.2.0
 
 `.github/workflows/release.yml` builds the app with that version, zips it, and attaches it to a GitHub Release. A tag with a hyphen, such as `v0.2.0-beta.1`, makes a pre-release.
 
-It then updates `Casks/unnamed-launcher.rb` to the new version, so `brew upgrade` picks it up. Pre-releases leave the cask alone.
+It then updates `Casks/unnamed-manager.rb` to the new version, so `brew upgrade` picks it up. Pre-releases leave the cask alone.
 
 Releases are signed with the certificate in these repository secrets (Settings > Secrets and variables > Actions). Without them, a release is signed ad hoc and macOS asks for the permissions again after each update.
 

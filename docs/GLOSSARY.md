@@ -30,9 +30,9 @@ One name per idea. Use these words in the UI, the docs, the log and VoiceOver la
 | Path | The breadcrumb row at the top of the guide: "Commands › Applications". | breadcrumbs, trail, location |
 | Back | Go up one menu (Backspace by default). | up, previous, return |
 | Cancel | End the sequence without running anything (Escape by default). | close, abort, exit, dismiss |
-| Config file | `~/.config/unnamed-launcher/config.json`, the one source of truth for bindings and settings. | settings file, preferences, profile, keymap |
+| Config file | `~/.config/unnamed-manager/config.json`, the one source of truth for bindings and settings. | settings file, preferences, profile, keymap |
 | Reload Config | Read the config file again and use it if it's valid. | refresh, restart, re-read |
-| Enabled | Whether Unnamed Launcher is capturing leaders. When it's off, no keys are captured. | active, running, paused, armed |
+| Enabled | Whether Unnamed Manager is capturing leaders. When it's off, no keys are captured. | active, running, paused, armed |
 | Permissions | The Accessibility and Input Monitoring access in System Settings that the app needs to capture keys. Use Apple's names for each one. | rights, access, privileges |
 | Bindings window | The window for editing bindings, actions and contexts, opened by Edit Bindings… (⌘B). | editor, config editor, settings window |
 | Help page | The Help page of the Bindings window: your leaders and direct bindings, the keys that work in every sequence, and links. | manual, documentation, cheat sheet |

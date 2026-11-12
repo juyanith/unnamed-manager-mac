@@ -1,8 +1,8 @@
 #!/bin/zsh
-# Builds UnnamedLauncher into ./build/UnnamedLauncher.app, inside the repo and
+# Builds UnnamedManager into ./build/UnnamedManager.app, inside the repo and
 # ignored by git. It isn't installed, so it never replaces the copy in
 # /Applications from Homebrew. SwiftPM's intermediate products live in
-# ~/Library/Developer/UnnamedLauncher, outside the repo.
+# ~/Library/Developer/UnnamedManager, outside the repo.
 #
 # Usage: ./build.sh              release build
 #        ./build.sh --debug      debug build
@@ -17,7 +17,7 @@
 #                   the hardened runtime and a secure timestamp, which notarization needs
 set -euo pipefail
 here=${0:A:h}
-name="UnnamedLauncher"
+name="UnnamedManager"
 scratch="$HOME/Library/Developer/$name/build"
 config=release
 out="$here/build"

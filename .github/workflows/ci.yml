@@ -41,7 +41,7 @@ jobs:
         run: ./build.sh
 
       - name: Unit tests
-        run: swift test --scratch-path ~/Library/Developer/UnnamedLauncher/test-build
+        run: swift test --scratch-path ~/Library/Developer/UnnamedManager/test-build
 
       # S-019 places the Guide on the screen of the front app's window, and a
       # fresh runner has no app window in front. Open one.

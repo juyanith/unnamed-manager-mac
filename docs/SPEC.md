@@ -1,4 +1,4 @@
-# Unnamed Launcher: behavior and config spec
+# Unnamed Manager: behavior and config spec
 
 This is the source of truth for how sequences, actions and the config file behave. [BRIEF.md](BRIEF.md) says what the app is, and this file says how it works.
 
@@ -75,7 +75,7 @@ When an action fails, for example because the app isn't installed or the command
 
 ## Config file
 
-`~/.config/unnamed-launcher/config.json`. A dotfiles tool such as chezmoi may write this file and overwrite edits made in the app, which is fine. The app watches the file and reloads it when it changes. A reload with errors keeps the last valid config and reports the error. The Bindings window and Settings write the same file with keys in a stable order.
+`~/.config/unnamed-manager/config.json`. A dotfiles tool such as chezmoi may write this file and overwrite edits made in the app, which is fine. The app watches the file and reloads it when it changes. A reload with errors keeps the last valid config and reports the error. The Bindings window and Settings write the same file with keys in a stable order.
 
 ```json
 {

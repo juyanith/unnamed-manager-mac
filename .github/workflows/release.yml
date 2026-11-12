@@ -1,4 +1,4 @@
-# Builds UnnamedLauncher.app when you push a version tag (v1.2.3), attaches a
+# Builds UnnamedManager.app when you push a version tag (v1.2.3), attaches a
 # zip to a GitHub Release, and points the Homebrew cask (Casks/) at it.
 # A tag with a hyphen (v1.2.0-beta.1) makes a pre-release and leaves the cask alone.
 #
@@ -49,13 +49,13 @@ jobs:
         run: |
           version="${GITHUB_REF_NAME#v}"
           echo "APP_VERSION=$version" >> "$GITHUB_ENV"
-          echo "ZIP=UnnamedLauncher-$version.zip" >> "$GITHUB_ENV"
+          echo "ZIP=UnnamedManager-$version.zip" >> "$GITHUB_ENV"
 
       - name: Keep the committed icon
         run: touch Resources/Assets.car Resources/AppIcon.icns
 
       - name: Unit tests
-        run: swift test --scratch-path ~/Library/Developer/UnnamedLauncher/test-build
+        run: swift test --scratch-path ~/Library/Developer/UnnamedManager/test-build
 
       - name: Import the signing certificate
         if: env.CERT_P12 != ''
@@ -87,15 +87,15 @@ jobs:
         run: |
           key="$RUNNER_TEMP/notary.p8"
           echo "$NOTARY_KEY_P8" | base64 --decode > "$key"
-          ditto -c -k --keepParent dist/UnnamedLauncher.app "$RUNNER_TEMP/notarize.zip"
+          ditto -c -k --keepParent dist/UnnamedManager.app "$RUNNER_TEMP/notarize.zip"
           xcrun notarytool submit "$RUNNER_TEMP/notarize.zip" \
             --key "$key" --key-id "$NOTARY_KEY_ID" --issuer "$NOTARY_ISSUER_ID" --wait
-          xcrun stapler staple dist/UnnamedLauncher.app
+          xcrun stapler staple dist/UnnamedManager.app
           rm "$key"
 
       - name: Zip
         run: |
-          ditto -c -k --keepParent dist/UnnamedLauncher.app "dist/$ZIP"
+          ditto -c -k --keepParent dist/UnnamedManager.app "dist/$ZIP"
           echo "SHA256=$(shasum -a 256 "dist/$ZIP" | cut -d' ' -f1)" >> "$GITHUB_ENV"
 
       - name: Publish the release
@@ -104,20 +104,20 @@ jobs:
         run: |
           install="Install or update with Homebrew:
           \`\`\`
-          brew tap juyanith/unnamed-launcher https://github.com/juyanith/unnamed-launcher
-          brew install --cask unnamed-launcher
+          brew tap juyanith/unnamed-manager https://github.com/juyanith/unnamed-manager-mac
+          brew install --cask unnamed-manager
           \`\`\`"
           if [[ "${NOTARIZE:-}" == 1 ]]; then
             notes="$install"
           else
             notes="$install
 
-          This build isn't notarized, so macOS blocks it when it's downloaded with a browser. Homebrew clears that for you. Otherwise run \`xattr -dr com.apple.quarantine UnnamedLauncher.app\` before opening it."
+          This build isn't notarized, so macOS blocks it when it's downloaded with a browser. Homebrew clears that for you. Otherwise run \`xattr -dr com.apple.quarantine UnnamedManager.app\` before opening it."
           fi
           prerelease=()
           [[ "$GITHUB_REF_NAME" == *-* ]] && prerelease=(--prerelease)
           gh release create "$GITHUB_REF_NAME" "dist/$ZIP" \
-            --title "Unnamed Launcher $APP_VERSION" --generate-notes --notes "$notes" "${prerelease[@]}"
+            --title "Unnamed Manager $APP_VERSION" --generate-notes --notes "$notes" "${prerelease[@]}"
 
       - name: Point the Homebrew cask at this release
         if: ${{ !contains(github.ref_name, '-') }}
@@ -125,7 +125,7 @@ jobs:
           git fetch origin main
           git checkout -B main origin/main
           sed -i '' -e "s/^  version \".*\"/  version \"$APP_VERSION\"/" \
-                    -e "s/^  sha256 \".*\"/  sha256 \"$SHA256\"/" Casks/unnamed-launcher.rb
+                    -e "s/^  sha256 \".*\"/  sha256 \"$SHA256\"/" Casks/unnamed-manager.rb
           git diff --quiet && { echo "cask already up to date"; exit 0; }
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

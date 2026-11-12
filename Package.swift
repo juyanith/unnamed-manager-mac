@@ -2,17 +2,17 @@
 import PackageDescription
 
 let package = Package(
-    name: "UnnamedLauncher",
+    name: "UnnamedManager",
     platforms: [.macOS(.v27)],
     targets: [
         // Rules and data logic with no SwiftUI, so tests run without the app.
-        .target(name: "UnnamedLauncherKit"),
+        .target(name: "UnnamedManagerKit"),
         .executableTarget(
-            name: "UnnamedLauncher",
-            dependencies: ["UnnamedLauncherKit"],
+            name: "UnnamedManager",
+            dependencies: ["UnnamedManagerKit"],
             // App code runs on the main thread unless you say otherwise.
             swiftSettings: [.defaultIsolation(MainActor.self)]
         ),
-        .testTarget(name: "UnnamedLauncherKitTests", dependencies: ["UnnamedLauncherKit"]),
+        .testTarget(name: "UnnamedManagerKitTests", dependencies: ["UnnamedManagerKit"]),
     ]
 )

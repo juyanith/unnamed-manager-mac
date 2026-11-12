@@ -4,9 +4,9 @@
 
 | Target | Holds | Depends on |
 | --- | --- | --- |
-| `UnnamedLauncherKit` | Pure logic: key names and chords (`Keys.swift`), the config model with strict decoding (`Config.swift`), validation and the binding tree (`ConfigValidator.swift`), loading and the starter config (`ConfigLoader.swift`), the sequence engine (`SequenceEngine.swift`), action plans and Context Aware (`ActionPlan.swift`, `ContextResolver.swift`), which icon an entry gets (`Icons.swift`), Home (`Home.swift`), the Guide's timing and placement (`GuideSchedule.swift`, `GuidePlacement.swift`), and editing and writing the file (`ConfigDocument.swift`, `ConfigWriter.swift`, `JSONKeyOrder.swift`). There's no AppKit and no default actor isolation, and everything is `Sendable`. | Foundation |
-| `UnnamedLauncher` | The app: menu bar menu, Bindings window, Settings, the Guide panel, the event tap, actions, permissions. Main-actor by default. | `UnnamedLauncherKit`, AppKit, SwiftUI |
-| `UnnamedLauncherKitTests` | Unit tests for every validation rule and engine rule. | `UnnamedLauncherKit` |
+| `UnnamedManagerKit` | Pure logic: key names and chords (`Keys.swift`), the config model with strict decoding (`Config.swift`), validation and the binding tree (`ConfigValidator.swift`), loading and the starter config (`ConfigLoader.swift`), the sequence engine (`SequenceEngine.swift`), action plans and Context Aware (`ActionPlan.swift`, `ContextResolver.swift`), which icon an entry gets (`Icons.swift`), Home (`Home.swift`), the Guide's timing and placement (`GuideSchedule.swift`, `GuidePlacement.swift`), and editing and writing the file (`ConfigDocument.swift`, `ConfigWriter.swift`, `JSONKeyOrder.swift`). There's no AppKit and no default actor isolation, and everything is `Sendable`. | Foundation |
+| `UnnamedManager` | The app: menu bar menu, Bindings window, Settings, the Guide panel, the event tap, actions, permissions. Main-actor by default. | `UnnamedManagerKit`, AppKit, SwiftUI |
+| `UnnamedManagerKitTests` | Unit tests for every validation rule and engine rule. | `UnnamedManagerKit` |
 
 Dependencies point one way: the app depends on the Kit, and the Kit depends on nothing of ours.
 
@@ -26,7 +26,7 @@ ConfigStore (main) ── onLoad ─► EngineBox.replace(config)
                              └─► GuideIcons.load(config.iconSources())
 ```
 
-- **The event tap runs on its own thread** (`net.unnamed.launcher.event-tap`, user-interactive). The callback decides consume or pass at once, from the engine alone. A busy main thread never delays a keystroke.
+- **The event tap runs on its own thread** (`net.unnamed.manager.event-tap`, user-interactive). The callback decides consume or pass at once, from the engine alone. A busy main thread never delays a keystroke.
 - **Effects reach the main queue in order:** show the Guide, run an action, cancel, or an unbound-key error.
 - **`ConfigStore` is the one owner of the file:** it reads, validates, saves atomically, refuses a document with errors, and watches the folder for outside edits. The Bindings window and Settings edit a draft `ConfigDocument` through `BindingsEditor`.
 - **`ConfigStore` loads and validates on the main thread.** A valid config replaces the engine's config under the lock. A reload with errors keeps the last valid one.
@@ -37,7 +37,7 @@ ConfigStore (main) ── onLoad ─► EngineBox.replace(config)
 
 | Seam | Adapters | Test use |
 | --- | --- | --- |
-| `ConfigLocation` (`APP_STORE`) | the real `~/.config/unnamed-launcher/config.json`; a file in `/tmp` | The self-test and snapshots never touch the real config |
+| `ConfigLocation` (`APP_STORE`) | the real `~/.config/unnamed-manager/config.json`; a file in `/tmp` | The self-test and snapshots never touch the real config |
 | `Launcher.start(captureKeys:)` | the real tap; no tap | Snapshots and the self-test never capture the keyboard |
 | `KeyEvent` into `SequenceEngine` | the event tap; unit tests | Every sequence rule is tested without a keyboard |
 | `ActionPerformer` | `SystemPerformer` (NSWorkspace, Process, CGEvent); `RecordingPerformer` | The self-test checks action plans without launching or typing anything |

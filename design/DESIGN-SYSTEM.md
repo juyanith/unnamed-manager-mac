@@ -1,6 +1,6 @@
-# Unnamed Launcher design system
+# Unnamed Manager design system
 
-Which token to use, and when. The tokens are in `Sources/UnnamedLauncher/UI/`. Apple's look stays: only what the system has nothing for gets a token. Read [docs/DESIGN.md](../docs/DESIGN.md) for the surfaces these tokens are used on.
+Which token to use, and when. The tokens are in `Sources/UnnamedManager/UI/`. Apple's look stays: only what the system has nothing for gets a token. Read [docs/DESIGN.md](../docs/DESIGN.md) for the surfaces these tokens are used on.
 
 ## Theme.swift: accent
 - **The app follows the Mac's accent** (`ThemeStore.defaultID = "system"`), and there's no picker. `APP_ACCENT=<id>` is only for comparing snapshots.

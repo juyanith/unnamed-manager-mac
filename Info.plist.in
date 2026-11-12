@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
-<key>CFBundleIdentifier</key><string>net.unnamed.launcher</string>
-<key>CFBundleName</key><string>UnnamedLauncher</string>
-<key>CFBundleDisplayName</key><string>Unnamed Launcher</string>
-<key>CFBundleExecutable</key><string>UnnamedLauncher</string>
+<key>CFBundleIdentifier</key><string>net.unnamed.manager</string>
+<key>CFBundleName</key><string>UnnamedManager</string>
+<key>CFBundleDisplayName</key><string>Unnamed Manager</string>
+<key>CFBundleExecutable</key><string>UnnamedManager</string>
 <key>CFBundleIconFile</key><string>AppIcon</string>
 <key>CFBundleIconName</key><string>AppIcon</string>
 <key>CFBundlePackageType</key><string>APPL</string>

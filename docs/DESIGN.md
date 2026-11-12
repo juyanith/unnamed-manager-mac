@@ -1,4 +1,4 @@
-# Unnamed Launcher: design plan
+# Unnamed Manager: design plan
 
 The mac-design plan for [BRIEF.md](BRIEF.md). It follows Apple's rules (the mac-design skill's design-rules.md, cited below as "rule N"). Words come from [GLOSSARY.md](GLOSSARY.md).
 
@@ -15,7 +15,7 @@ A **menu bar extra, the Guide panel, a Bindings window, and a Settings window** 
 | Guide | A non-activating, borderless Liquid Glass `NSPanel`. It never becomes key or main, and it shows the path and the next keys. | Pausing during a sequence (S-005, S-016) |
 | Menu bar menu | A `MenuBarExtra` with the app icon's glyph (two keycaps and ›) drawn as a template image, and a badge for warnings | Clicking the menu bar icon |
 | Bindings window | A `Window` scene with a `NavigationSplitView` sidebar: Bindings, Actions, Contexts, Help. This is where you edit your own data, so it's the main window, not Settings (rules 37 and 54). | Edit Bindings… |
-| Settings | A `Settings` scene with one grouped Form, 520 pt wide. It's a single pane, so it has no tabs and is titled "Unnamed Launcher Settings" (settings.md). | Settings… (⌘,) |
+| Settings | A `Settings` scene with one grouped Form, 520 pt wide. It's a single pane, so it has no tabs and is titled "Unnamed Manager Settings" (settings.md). | Settings… (⌘,) |
 | Welcome | A small window shown only on first run (S-040). It isn't a tour: it lists the steps you need to finish setup. | First launch |
 
 **Why the split:** bindings, actions and contexts are your data, edited the way documents are, with an outline, reordering and Undo. Apple's Settings window holds a few preferences that apply at once. The Guide's timing, position and feedback, the cancel and back keys, and Open at Login are preferences, so they go in Settings.
@@ -58,10 +58,10 @@ The status item menu acts as the menu bar while no window is open (menus.md, rul
 | Open Config File / Show in Finder (⌥) | Menu bar menu, and the File menu | — |
 | Edit Bindings… | Menu bar menu | ⌘B |
 | Settings… | Menu bar menu and the app menu | ⌘, |
-| Help (menu bar menu) / Unnamed Launcher Help (Help menu): open the Help page | Menu bar menu, and the Help menu of the Bindings window | None: macOS keeps ⌘? for the Help menu's search. The page is ⌘4, and a Show Help binding opens it from anywhere |
+| Help (menu bar menu) / Unnamed Manager Help (Help menu): open the Help page | Menu bar menu, and the Help menu of the Bindings window | None: macOS keeps ⌘? for the Help menu's search. The page is ⌘4, and a Show Help binding opens it from anywhere |
 | Version line ("Version 0.1.3", or "Version 0.1 (main, aa45720)" for a local build) | Menu bar menu, disabled item above Quit | — |
 | Config line ("Config loaded at 14:02", or "Created config file") | Menu bar menu, disabled item under the version line | — |
-| Quit Unnamed Launcher | Menu bar menu and the app menu | ⌘Q |
+| Quit Unnamed Manager | Menu bar menu and the app menu | ⌘Q |
 | New Binding / New Menu | File menu, the toolbar over the outline, and the context menu | ⌘N / ⇧⌘N |
 | New Action / New Context | File menu on their pages | ⌘N |
 | Record Key | Edit menu, the context menu, and Space on a selected row | ⌘K, Space |
