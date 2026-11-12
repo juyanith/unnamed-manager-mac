@@ -4,9 +4,10 @@
 
 | Target | Holds | Depends on |
 | --- | --- | --- |
-| `UnnamedManagerKit` | Pure logic: key names and chords (`Keys.swift`), the config model with strict decoding (`Config.swift`), validation and the binding tree (`ConfigValidator.swift`), loading and the starter config (`ConfigLoader.swift`), the sequence engine (`SequenceEngine.swift`), action plans and Context Aware (`ActionPlan.swift`, `ContextResolver.swift`), which icon an entry gets (`Icons.swift`), Home (`Home.swift`), the Guide's timing and placement (`GuideSchedule.swift`, `GuidePlacement.swift`), and editing and writing the file (`ConfigDocument.swift`, `ConfigWriter.swift`, `JSONKeyOrder.swift`). There's no AppKit and no default actor isolation, and everything is `Sendable`. | Foundation |
+| `UnnamedManagerKit` | Pure logic: key names and chords (`Keys.swift`), the config model with strict decoding (`Config.swift`), validation and the binding tree (`ConfigValidator.swift`), the shared spec's rule ids (`ConfigRule.swift`), loading and the starter config (`ConfigLoader.swift`), the sequence engine (`SequenceEngine.swift`), action plans and Context Aware (`ActionPlan.swift`, `ContextResolver.swift`), which icon an entry gets (`Icons.swift`), Home (`Home.swift`), the Guide's timing and placement (`GuideSchedule.swift`, `GuidePlacement.swift`), and editing and writing the file (`ConfigDocument.swift`, `ConfigWriter.swift`, `JSONKeyOrder.swift`). There's no AppKit and no default actor isolation, and everything is `Sendable`. | Foundation |
 | `UnnamedManager` | The app: menu bar menu, Bindings window, Settings, the Guide panel, the event tap, actions, permissions. Main-actor by default. | `UnnamedManagerKit`, AppKit, SwiftUI |
-| `UnnamedManagerKitTests` | Unit tests for every validation rule and engine rule. | `UnnamedManagerKit` |
+| `UnnamedManagerKitTests` | Unit tests for every validation rule and engine rule, and `SpecFixtureTests`, which runs the shared spec's fixtures. | `UnnamedManagerKit`, `spec/` |
+| `spec/` | A git submodule of the `unnamed-manager` repo: the config format shared with the Windows app, its schema and fixtures. Never edited from here. | none |
 
 Dependencies point one way: the app depends on the Kit, and the Kit depends on nothing of ours.
 
@@ -41,6 +42,7 @@ ConfigStore (main) ── onLoad ─► EngineBox.replace(config)
 | `Launcher.start(captureKeys:)` | the real tap; no tap | Snapshots and the self-test never capture the keyboard |
 | `KeyEvent` into `SequenceEngine` | the event tap; unit tests | Every sequence rule is tested without a keyboard |
 | `ActionPerformer` | `SystemPerformer` (NSWorkspace, Process, CGEvent); `RecordingPerformer` | The self-test checks action plans without launching or typing anything |
+| `LauncherMigration.sourceURL` (`APP_LAUNCHER_STORE`) | the real Unnamed Launcher config; a file in `/tmp`; none while `APP_STORE` is set | The self-test copies a config without reading the real one. `LauncherMigration.swift` is the one file that names the old app (`AppNameTests`) |
 
 ## Reviews
 
@@ -51,3 +53,4 @@ ConfigStore (main) ── onLoad ─► EngineBox.replace(config)
 - [docs/architecture-review-2026-11-08-m5.md](docs/architecture-review-2026-11-08-m5.md) (end of M5)
 - [docs/architecture-review-2026-11-08-m6.md](docs/architecture-review-2026-11-08-m6.md) (end of M6, version one)
 - [docs/architecture-review-2026-11-11-m8.md](docs/architecture-review-2026-11-11-m8.md) (end of M8; one home for Guide icons, done)
+- [docs/architecture-review-2026-11-11-m9.md](docs/architecture-review-2026-11-11-m9.md) (end of M9; action families behind one registry, next as M10)
