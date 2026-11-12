@@ -16,17 +16,20 @@ struct MenuBarStatus: Equatable {
     var needsRelaunch: Bool
     /// Secure Event Input is on, so leaders can't be seen (S-038).
     var keyboardIsSecured: Bool
+    /// The app this one grew out of is running too and may take the same keys (S-058).
+    var otherAppRunning: Bool
     /// The first config error, and how many more there are.
     var firstError: String?
     var moreErrors: Int
 
-    init(launcher: Launcher, store: ConfigStore, now: Date = .now) {
+    init(launcher: Launcher, store: ConfigStore, otherAppRunning: Bool = false, now: Date = .now) {
+        self.otherAppRunning = otherAppRunning
         missingPermissions = launcher.missingPermissions
         needsRelaunch = launcher.needsRelaunch
         keyboardIsSecured = launcher.secureInputIsOn && launcher.isEnabled
         firstError = store.errors.first?.message
         moreErrors = max(0, store.errors.count - 1)
-        let attention = !missingPermissions.isEmpty || needsRelaunch || firstError != nil || keyboardIsSecured
+        let attention = !missingPermissions.isEmpty || needsRelaunch || firstError != nil || keyboardIsSecured || otherAppRunning
         icon = !launcher.isEnabled ? .off : attention ? .warning : .ready
         statusLine = launcher.isEnabled ? nil : "Not capturing leaders"
         if store.createdStarter, firstError == nil {
@@ -74,7 +77,7 @@ struct MenuBarMenu: View {
 
     var body: some View {
         @Bindable var launcher = model.launcher
-        let status = MenuBarStatus(launcher: launcher, store: model.store)
+        let status = MenuBarStatus(launcher: launcher, store: model.store, otherAppRunning: model.migration.isLauncherRunning)
 
         if let line = status.statusLine {
             Text(line)
@@ -92,6 +95,7 @@ struct MenuBarMenu: View {
                 Text("A password field or another app has turned on Secure Input, so leader keys can't be seen until it's turned off.")
             }
         }
+        LauncherRunningSection()
         if status.needsRelaunch {
             Button("Relaunch to Finish Setup") { launcher.relaunch() }
         }
@@ -140,7 +144,7 @@ struct MenuBarIcon: View {
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
-        let status = MenuBarStatus(launcher: model.launcher, store: model.store)
+        let status = MenuBarStatus(launcher: model.launcher, store: model.store, otherAppRunning: model.migration.isLauncherRunning)
         Image(nsImage: Self.image(for: status.icon))
             .accessibilityLabel(status.accessibilityLabel)
             .task { model.openBindingsWindow = { [openWindow] in openWindow(id: WindowID.bindings) } }

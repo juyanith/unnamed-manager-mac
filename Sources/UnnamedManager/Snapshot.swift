@@ -158,6 +158,25 @@ enum Snapshot {
                 }
                 welcome?.close()
             }
+            if only == nil || only?.contains("welcome-import") == true {
+                // S-058: the copy offer with the old app running, then the copied state.
+                for (name, state) in [("welcome-import", LauncherMigration.State.offer), ("welcome-copied", .copied)] {
+                    model.migration.show(state, launcherRunning: state == .offer,
+                                         source: LauncherMigration.sourceURL(environment: [:], home: URL.homeDirectory))
+                    openWelcome()
+                    try? await Task.sleep(for: .seconds(1))
+                    // A single Window reuses its NSWindow, so find it by id, not as a new window.
+                    let welcome = NSApp.windows.first { $0.identifier?.rawValue.hasPrefix(WindowID.welcome) == true && $0.isVisible }
+                    for mode in ["light", "dark"] {
+                        NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
+                        try? await Task.sleep(for: .seconds(0.8))
+                        capture(to: "\(dir)/\(name)-\(mode).png", window: welcome)
+                    }
+                    welcome?.close()
+                    try? await Task.sleep(for: .seconds(0.3))
+                }
+                model.migration.show(.hidden, launcherRunning: false)
+            }
             if only == nil || only?.contains("hud-theme") == true {
                 // S-020: a fixed theme wins over the Mac's mode.
                 let guide = model.launcher.guide

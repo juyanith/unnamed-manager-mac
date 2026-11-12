@@ -47,6 +47,7 @@ struct WelcomeView: View {
                 }
             }
             VStack(alignment: .leading, spacing: Space.md) {
+                LauncherMigrationRows()
                 step(1, "Turn on Accessibility", done: status.accessibility) {
                     Button("Open Settings…") { Permission.accessibility.openSettings() }
                 }

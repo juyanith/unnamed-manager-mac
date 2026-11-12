@@ -31,6 +31,9 @@ One name per idea. Use these words in the UI, the docs, the log and VoiceOver la
 | Back | Go up one menu (Backspace by default). | up, previous, return |
 | Cancel | End the sequence without running anything (Escape by default). | close, abort, exit, dismiss |
 | Config file | `~/.config/unnamed-manager/config.json`, the one source of truth for bindings and settings. | settings file, preferences, profile, keymap |
+| Starter config | The config file the app writes on first launch when there is none: one leader, two bindings and Show Help. | default config, template, sample |
+| Unnamed Launcher | The app Unnamed Manager grew out of. Named only when copying its config or when it's running alongside. | the launcher, the old app, v1 |
+| Copy Config | Copy Unnamed Launcher's config file in place of the starter config, on first launch. Its file is never changed. | import, migrate, move, bring over |
 | Reload Config | Read the config file again and use it if it's valid. | refresh, restart, re-read |
 | Enabled | Whether Unnamed Manager is capturing leaders. When it's off, no keys are captured. | active, running, paused, armed |
 | Permissions | The Accessibility and Input Monitoring access in System Settings that the app needs to capture keys. Use Apple's names for each one. | rights, access, privileges |

@@ -593,15 +593,22 @@ Verified: targets, bundle id, config path and no old name in the sources (unit t
 
 ### S-058 Bring over my launcher config
 As the user, I start Unnamed Manager for the first time and copy my Unnamed Launcher config with one click, so my leaders and bindings carry over, and the app tells me if Unnamed Launcher is still running and capturing the same keys.
-Screens: welcome-import, menubar-warning
+Screens: welcome-import, welcome-copied (the menu bar menu isn't captured)
 Depends: S-057
 Acceptance:
-- [self] With no config and `~/.config/unnamed-launcher/config.json` present, Welcome offers "Copy Unnamed Launcher's Config"; it copies the file, never moves or changes the original, and loads the copy.
+- [self] With no config and `~/.config/unnamed-launcher/config.json` present, Welcome offers to copy it (Copy Config); it copies the file, never moves or changes the original, and loads the copy.
 - [self] With no launcher config, Welcome writes the starter config as before.
 - [self] An existing Unnamed Manager config is never overwritten.
-- [self] While `net.unnamed.launcher` is running, the menu bar menu warns "Unnamed Launcher is also running and may take the same keys." with a Quit Unnamed Launcher item.
+- [self] While `net.unnamed.launcher` is running, the menu bar menu and Welcome say "Unnamed Launcher Is Running" with a Quit Unnamed Launcher button, and the menu bar icon shows its warning badge.
 - [snap] Welcome with the copy offer, in light and dark.
-Status: todo
+UX:
+- Flow: first launch → the app writes the starter config as before → Welcome shows "Copy Your Unnamed Launcher Config" with Copy Config → the copy replaces the starter and loads → the row shows a check mark and "Copied from ~/.config/unnamed-launcher/config.json". Way back: the launcher's file is never touched; Open Config File shows what was copied.
+- Surface: an inline row in the Welcome window, above the three steps (one value on a screen already open). The running warning is a section of the menu bar menu, like Needs Permission, and the same line in Welcome.
+- States: offer (no Unnamed Manager config before this launch, the starter is unchanged, a launcher config exists); copied; not offered (no launcher config, or the config isn't the untouched starter); copy failed, inline: "Unable to copy the config: <reason>"; launcher running.
+- Words: row title "Copy Your Unnamed Launcher Config", detail "Your leaders, bindings, actions and contexts, in place of the starter config.", button "Copy Config"; after: "Copied from ~/.config/unnamed-launcher/config.json". Menu section "Unnamed Launcher Is Running", line "It may take the same keys. Quit it to use Unnamed Manager alone.", button "Quit Unnamed Launcher".
+- Access: Copy Config is a normal button in the tab order; the row reads as one element with its state ("Copied" once done).
+Status: done
+Verified: the offer rules, copying, the old file untouched, no offer with no old config, an existing or edited config never overwritten, the warning badge (13 self-test checks); welcome-import and welcome-copied in light and dark (snapshots), grid checks; AppNameTests keeps the old name in LauncherMigration.swift only. Not yet tried by hand: a real first launch with ~/.config/unnamed-launcher/config.json present, and Quit Unnamed Launcher from the menu.
 
 ### S-059 Name the rule behind every config error
 As the maintainer, I see which rule from the shared spec each config error and warning comes from, so the Mac and Windows apps can be checked against the same fixtures.

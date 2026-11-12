@@ -76,6 +76,15 @@ final class ConfigStore {
         }
     }
 
+    /// Writes new bytes over the file, atomically, and loads them, valid or
+    /// not, as if they'd been edited outside the app (S-058).
+    func replace(with data: Data) throws {
+        try data.write(to: url, options: .atomic)
+        watchFile()  // the atomic write replaced the file
+        createdStarter = false
+        reload()
+    }
+
     /// Writes a document if it's valid, atomically, and starts using it.
     /// A document with errors is refused and the file isn't touched.
     @discardableResult

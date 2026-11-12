@@ -55,6 +55,8 @@ final class AppModel {
                                        home: URL.homeDirectory)
     let store: ConfigStore
     let launcher: Launcher
+    /// Copying the old app's config, and noticing it running (S-058).
+    let migration: LauncherMigration
     /// The draft the Bindings window and Settings edit.
     let editor: BindingsEditor
     /// The selected action and context on their pages.
@@ -71,6 +73,10 @@ final class AppModel {
         let isSnapshot = !(ProcessInfo.processInfo.environment["APP_SNAPSHOT"] ?? "").isEmpty
         // Snapshots show the sample config, so every page has content.
         launcher.start(captureKeys: !SelfTest.requested && !isSnapshot, seed: isSnapshot ? SeedData.fixtureJSON : nil)
+        migration = LauncherMigration(store: store,
+                                      source: LauncherMigration.sourceURL(environment: ProcessInfo.processInfo.environment,
+                                                                          home: URL.homeDirectory))
+        migration.start()
         editor = BindingsEditor(store: store)
         editor.onRecordingChange = { [launcher] in launcher.setRecording($0) }
         Self.current = self
