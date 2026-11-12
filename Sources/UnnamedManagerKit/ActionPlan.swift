@@ -35,12 +35,6 @@ public enum ActionPlanner {
     /// The plan for an action. `home` expands a leading `~`.
     public static func plan(_ action: Config.Action, home: URL) throws(PlanError) -> ActionPlan {
         switch action {
-        case let .application(bundleId, mode):
-            switch mode {
-            case .focusOrStart: return .openApp(bundleId: bundleId)
-            case .focus: return .focusApp(bundleId: bundleId)
-            case .start: return .startApp(bundleId: bundleId)
-            }
         case let .family(value):
             return try value.value.plan(home: home)
         case .contextual:

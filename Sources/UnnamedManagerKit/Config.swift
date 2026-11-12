@@ -93,11 +93,13 @@ public struct Config: Sendable, Equatable {
     }
 
     public indirect enum Action: Sendable, Equatable {
-        case application(bundleId: String, mode: AppMode = .default)
         case contextual(variants: [String: Action], fallback: Action?)
         /// An action of any family in the registry (S-060).
         case family(AnyActionValue)
 
+        public static func application(bundleId: String, mode: AppMode = .default) -> Action {
+            .family(AnyActionValue(UseApplicationAction(bundleId: bundleId, mode: mode)))
+        }
         public static func open(target: String) -> Action { .family(AnyActionValue(OpenAction(target: target))) }
         public static func exec(command: [String], cwd: String?, env: [String: String]) -> Action {
             .family(AnyActionValue(RunCommandAction(command: command, cwd: cwd, env: env)))
@@ -115,7 +117,6 @@ public struct Config: Sendable, Equatable {
         /// The `type` value in the file.
         public var type: String {
             switch self {
-            case .application: "application"
             case .contextual: "contextual"
             case let .family(value): value.value.type
             }
@@ -124,7 +125,6 @@ public struct Config: Sendable, Equatable {
         /// The glossary name shown in the UI.
         public var displayName: String {
             switch self {
-            case .application: "Use Application"
             case .contextual: "Context Aware"
             case let .family(value): value.value.displayName
             }
@@ -237,21 +237,12 @@ extension Config.Action: Decodable {
             return
         }
         switch type {
-        case "application":
-            try c.rejectUnknown(allowed: ["type", "bundleId", "mode"], at: path)
-            let modeName: String = try c.value("mode", default: Config.AppMode.default.rawValue)
-            guard let mode = Config.AppMode(rawValue: modeName) else {
-                throw DecodingError.dataCorrupted(.init(codingPath: c.codingPath + [AnyKey("mode")],
-                    debugDescription: "Unknown mode “\(modeName)” in an action of type “application”. Use focusOrStart, focus or start.",
-                    underlyingError: RuleMarker(rule: .badAppMode)))
-            }
-            self = .application(bundleId: try c.required("bundleId"), mode: mode)
         case "contextual":
             try c.rejectUnknown(allowed: ["type", "variants", "fallback"], at: path)
             self = .contextual(variants: try c.value("variants", default: [:]),
                                fallback: try c.decodeIfPresent(Config.Action.self, forKey: AnyKey("fallback")))
         default:
-            let types = ["application"] + registry.kinds.map(\.type) + ["contextual"]
+            let types = registry.kinds.map(\.type) + ["contextual"]
             throw DecodingError.dataCorrupted(.init(codingPath: c.codingPath,
                 debugDescription: "Unknown action type “\(type)”. Use \(types.dropLast().joined(separator: ", ")) or \(types.last!).",
                 underlyingError: RuleMarker(rule: .unknownActionType)))

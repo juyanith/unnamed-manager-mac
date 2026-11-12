@@ -152,17 +152,6 @@ struct ActionFields: View {
             }
         }
         switch action {
-        case let .application(bundleId, mode):
-            Section {
-                TextField("Bundle ID", text: text(bundleId) { .application(bundleId: $0, mode: mode) })
-                    .textEntry("Bundle ID")
-                Button("Choose App…") { chooseApp(mode: mode) }
-                Picker("Mode", selection: Binding(get: { mode }, set: { action = .application(bundleId: bundleId, mode: $0) })) {
-                    ForEach(Config.AppMode.menuOrder, id: \.self) { Text($0.displayName).tag($0) }
-                }
-            } footer: {
-                Text(mode.explanation)
-            }
         case let .contextual(variants, fallback):
             ForEach(contexts, id: \.id) { context in
                 Section("In \(context.id)") {
@@ -199,26 +188,12 @@ struct ActionFields: View {
         }
     }
 
-    private func text(_ value: String, _ make: @escaping (String) -> Config.Action) -> Binding<String> {
-        Binding(get: { value }, set: { action = make($0) })
-    }
-
-    /// An Open panel limited to apps (S-030).
-    private func chooseApp(mode: Config.AppMode) {
-        let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.application]
-        panel.directoryURL = URL(fileURLWithPath: "/Applications")
-        guard panel.runModal() == .OK, let url = panel.url,
-              let id = Bundle(url: url)?.bundleIdentifier else { return }
-        action = .application(bundleId: id, mode: mode)
-    }
-
 }
 
 extension Config.Action {
     /// The types for the Type picker, alphabetical by the name shown (S-046).
     static func types(allowsContextAware: Bool) -> [String] {
-        let types = ["application"] + ActionRegistry.standard.kinds.map(\.type)
+        let types = ActionRegistry.standard.kinds.map(\.type)
             + (allowsContextAware ? ["contextual"] : [])
         return types.sorted { empty(of: $0).displayName.localizedStandardCompare(empty(of: $1).displayName) == .orderedAscending }
     }
@@ -226,7 +201,6 @@ extension Config.Action {
     /// A blank action of a type, for the type picker.
     static func empty(of type: String) -> Config.Action {
         switch type {
-        case "application": .application(bundleId: "")
         case "contextual": .contextual(variants: [:], fallback: nil)
         default:
             ActionRegistry.standard.family(for: type).map { .family(AnyActionValue($0.blank(type))) } ?? .noop

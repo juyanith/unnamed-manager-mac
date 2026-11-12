@@ -112,13 +112,7 @@ public enum ConfigSchema {
                 "properties": fields.merging(["type": ["enum": [type]]]) { a, _ in a },
             ]
         }
-        var variants = [
-            variant("application", [
-                "bundleId": ["type": "string"],
-                "mode": ["enum": Config.AppMode.allCases.map(\.rawValue),
-                         "description": "focusOrStart (default): bring it forward, starting it if needed. focus: only if running. start: a new copy."],
-            ], required: ["bundleId"]),
-        ]
+        var variants: [[String: Any]] = []
         for kind in registry.kinds {
             let schema = registry.family(for: kind.type)!.schema(kind.type)
             variants.append(variant(kind.type, schema.properties, required: schema.required))
@@ -138,6 +132,6 @@ public enum ConfigSchema {
     }
 
     public static func actionTypes(registry: ActionRegistry) -> [String] {
-        ["application"] + registry.kinds.map(\.type) + ["contextual"]
+        registry.kinds.map(\.type) + ["contextual"]
     }
 }

@@ -91,7 +91,7 @@ public struct ActionRegistry: @unchecked Sendable {
         self.families = families
     }
 
-    public static let standard = ActionRegistry(families: [OpenAction.self, RunCommandAction.self, SendShortcutAction.self, BasicAction.self])
+    public static let standard = ActionRegistry(families: [UseApplicationAction.self, OpenAction.self, RunCommandAction.self, SendShortcutAction.self, BasicAction.self])
 
     public func adding(_ family: any ActionValue.Type) -> ActionRegistry {
         ActionRegistry(families: families + [family])

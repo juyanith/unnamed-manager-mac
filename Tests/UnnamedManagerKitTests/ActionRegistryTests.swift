@@ -37,8 +37,7 @@ struct ActionRegistryTests {
 
     @Test("The schema lists every kind, then Context Aware")
     func schema() {
-        // Until every type is a family (S-060, step 4): the families' kinds, then Context Aware, at the end.
-        #expect(ConfigSchema.actionTypes.suffix(Self.kinds.count + 1) == Self.kinds.map(\.type) + ["contextual"])
+        #expect(ConfigSchema.actionTypes == Self.kinds.map(\.type) + ["contextual"])
     }
 }
 

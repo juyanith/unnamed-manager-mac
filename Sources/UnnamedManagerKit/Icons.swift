@@ -23,8 +23,6 @@ extension LoadedConfig {
         if let icon = binding.icon { return IconSource(icon, home: home) }
         guard let id = binding.action else { return .menu }
         switch config.actions[id] {
-        case let .application(bundleId, _):
-            return .app(bundleId)
         case let .family(value):
             return value.value.iconSource(home: home)
         default:

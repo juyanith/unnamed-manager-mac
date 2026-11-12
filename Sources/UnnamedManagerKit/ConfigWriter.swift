@@ -50,9 +50,6 @@ public enum ConfigWriter {
     static func action(_ action: Config.Action, contexts: [Config.Context]) -> String {
         var fields = [("type", quote(action.type))]
         switch action {
-        case let .application(bundleId, mode):
-            fields.append(("bundleId", quote(bundleId)))
-            if mode != .default { fields.append(("mode", quote(mode.rawValue))) }
         case let .contextual(variants, fallback):
             // Variants follow the contexts' order, which decides which one wins.
             let ids = ordered(Array(variants.keys), by: contexts.map(\.id))
