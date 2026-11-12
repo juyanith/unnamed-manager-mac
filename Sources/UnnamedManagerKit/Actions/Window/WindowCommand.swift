@@ -5,12 +5,14 @@ import CoreGraphics
 public enum WindowCommand: ActionStep {
     case maximize(toggle: Bool)
     case minimize
+    case place(FractionFrame)
 
     /// The verb in "<App> has no window to maximize."
     public var verb: String {
         switch self {
         case .maximize: "maximize"
         case .minimize: "minimize"
+        case .place: "place"
         }
     }
 }

@@ -117,3 +117,84 @@ struct MinimizeTests {
         #expect(throws: (any Error).self) { try ActionRegistryTests.decode(#"{ "type": "window.minimize", "toggle": true }"#) }
     }
 }
+
+@Suite("Place Window (S-064)")
+struct PlaceTests {
+    static let screens: [CGRect] = [
+        CGRect(x: 0, y: 33, width: 1512, height: 949),
+        CGRect(x: 1512, y: -175, width: 2560, height: 1415),
+        CGRect(x: -1081, y: 0, width: 1081, height: 1895),
+        CGRect(x: 0, y: 25, width: 1513, height: 875),
+    ]
+
+    @Test("Presets map to the expected frames")
+    func presets() {
+        let usable = CGRect(x: 0, y: 33, width: 1512, height: 949)
+        #expect(WindowGeometry.rect(PlacePreset.leftHalf.frame, in: usable) == CGRect(x: 0, y: 33, width: 756, height: 949))
+        #expect(WindowGeometry.rect(PlacePreset.rightThird.frame, in: usable) == CGRect(x: 1008, y: 33, width: 504, height: 949))
+        #expect(WindowGeometry.rect(PlacePreset.bottomRight.frame, in: usable) == CGRect(x: 756, y: 508, width: 756, height: 475 - 1))
+        #expect(WindowGeometry.rect(PlacePreset.center.frame, in: usable) == CGRect(x: 252, y: 191, width: 1008, height: 633))
+        let wide = CGRect(x: 1512, y: -175, width: 2560, height: 1415)
+        #expect(WindowGeometry.rect(PlacePreset.rightHalf.frame, in: wide) == CGRect(x: 2792, y: -175, width: 1280, height: 1415))
+    }
+
+    @Test("Neighbouring presets share an edge, with no gap or overlap, on every screen", arguments: screens)
+    func neighbours(_ usable: CGRect) {
+        func rect(_ preset: PlacePreset) -> CGRect { WindowGeometry.rect(preset.frame, in: usable) }
+        #expect(rect(.leftHalf).maxX == rect(.rightHalf).minX)
+        #expect(rect(.topHalf).maxY == rect(.bottomHalf).minY)
+        #expect(rect(.leftThird).maxX == rect(.centerThird).minX)
+        #expect(rect(.centerThird).maxX == rect(.rightThird).minX)
+        #expect(rect(.leftThird).maxX == rect(.rightTwoThirds).minX)
+        #expect(rect(.leftTwoThirds).maxX == rect(.rightThird).minX)
+        #expect(rect(.topLeft).maxX == rect(.topRight).minX && rect(.topLeft).maxY == rect(.bottomLeft).minY)
+        #expect(rect(.rightHalf).maxX == usable.maxX && rect(.bottomHalf).maxY == usable.maxY)
+        for preset in PlacePreset.allCases {
+            let frame = rect(preset)
+            #expect(frame == frame.integral, "\(preset) isn't on whole points: \(frame)")
+            #expect(usable.contains(frame), "\(preset) runs past the usable area")
+        }
+    }
+
+    @Test("Cocoa rects flip for displays left and right of the main one")
+    func flipSideways() {
+        #expect(WindowGeometry.topLeft(CGRect(x: -1081, y: -913, width: 1081, height: 1895), primaryHeight: 982)
+                == CGRect(x: -1081, y: 0, width: 1081, height: 1895))
+        #expect(WindowGeometry.topLeft(CGRect(x: 1512, y: -258, width: 2560, height: 1440), primaryHeight: 982)
+                == CGRect(x: 1512, y: -200, width: 2560, height: 1440))
+    }
+
+    @Test("A window that won't take the size keeps the edge it was placed against")
+    func anchored() {
+        let usable = CGRect(x: 0, y: 25, width: 1440, height: 875)
+        let right = WindowGeometry.rect(PlacePreset.rightHalf.frame, in: usable)
+        #expect(WindowGeometry.anchored(CGSize(width: 900, height: 875), to: right, in: usable)
+                == CGRect(x: 540, y: 25, width: 900, height: 875))
+        let left = WindowGeometry.rect(PlacePreset.leftHalf.frame, in: usable)
+        #expect(WindowGeometry.anchored(CGSize(width: 900, height: 875), to: left, in: usable).minX == 0)
+        let center = WindowGeometry.rect(PlacePreset.center.frame, in: usable)
+        #expect(WindowGeometry.anchored(CGSize(width: 1000, height: 700), to: center, in: usable).midX == center.midX)
+    }
+
+    @Test("It reads, writes and plans as the spec says")
+    func family() throws {
+        let preset = try ActionRegistryTests.decode(#"{ "type": "window.place", "preset": "rightThird" }"#)
+        #expect(ConfigWriter.action(preset, contexts: []) == #"{ "type": "window.place", "preset": "rightThird" }"#)
+        #expect(try ActionPlanner.plan(preset, home: testHome) == .custom(AnyActionStep(WindowCommand.place(PlacePreset.rightThird.frame))))
+        let json = #"{ "type": "window.place", "frame": { "x": 0.1, "y": 0.05, "width": 0.8, "height": 0.9 } }"#
+        let frame = try ActionRegistryTests.decode(json)
+        #expect(ConfigWriter.action(frame, contexts: []) == json)
+        // Thirds written out to four places still add up to 1.
+        #expect(throws: Never.self) {
+            try ActionRegistryTests.decode(#"{ "type": "window.place", "frame": { "x": 0.6667, "y": 0, "width": 0.3334, "height": 1 } }"#)
+        }
+    }
+
+    @Test("A frame with a field it doesn't have is an unknown field")
+    func unknownInFrame() {
+        let json = #"{ "version": 1, "entries": [ { "keys": "Meh+W", "title": "W", "action": "p" } ], "actions": { "p": { "type": "window.place", "frame": { "x": 0, "y": 0, "width": 1, "height": 1, "z": 1 } } } }"#
+        guard case let .failure(errors) = ConfigLoader.load(Data(json.utf8)) else { Issue.record("loaded"); return }
+        #expect(errors.issues.first?.rule == .unknownField)
+        #expect(errors.issues.first?.message.contains("“z”") == true)
+    }
+}

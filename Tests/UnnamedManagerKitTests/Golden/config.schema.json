@@ -159,6 +159,70 @@
         {
           "additionalProperties" : false,
           "properties" : {
+            "frame" : {
+              "additionalProperties" : false,
+              "properties" : {
+                "height" : {
+                  "exclusiveMinimum" : 0,
+                  "maximum" : 1,
+                  "type" : "number"
+                },
+                "width" : {
+                  "exclusiveMinimum" : 0,
+                  "maximum" : 1,
+                  "type" : "number"
+                },
+                "x" : {
+                  "maximum" : 1,
+                  "minimum" : 0,
+                  "type" : "number"
+                },
+                "y" : {
+                  "maximum" : 1,
+                  "minimum" : 0,
+                  "type" : "number"
+                }
+              },
+              "required" : [
+                "x",
+                "y",
+                "width",
+                "height"
+              ],
+              "type" : "object"
+            },
+            "preset" : {
+              "enum" : [
+                "leftHalf",
+                "rightHalf",
+                "topHalf",
+                "bottomHalf",
+                "leftThird",
+                "centerThird",
+                "rightThird",
+                "leftTwoThirds",
+                "rightTwoThirds",
+                "topLeft",
+                "topRight",
+                "bottomLeft",
+                "bottomRight",
+                "center"
+              ]
+            },
+            "type" : {
+              "enum" : [
+                "window.place"
+              ]
+            }
+          },
+          "required" : [
+            "type"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
             "fallback" : {
               "$ref" : "#/$defs/plainAction"
             },
@@ -329,6 +393,70 @@
             "type" : {
               "enum" : [
                 "window.minimize"
+              ]
+            }
+          },
+          "required" : [
+            "type"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "frame" : {
+              "additionalProperties" : false,
+              "properties" : {
+                "height" : {
+                  "exclusiveMinimum" : 0,
+                  "maximum" : 1,
+                  "type" : "number"
+                },
+                "width" : {
+                  "exclusiveMinimum" : 0,
+                  "maximum" : 1,
+                  "type" : "number"
+                },
+                "x" : {
+                  "maximum" : 1,
+                  "minimum" : 0,
+                  "type" : "number"
+                },
+                "y" : {
+                  "maximum" : 1,
+                  "minimum" : 0,
+                  "type" : "number"
+                }
+              },
+              "required" : [
+                "x",
+                "y",
+                "width",
+                "height"
+              ],
+              "type" : "object"
+            },
+            "preset" : {
+              "enum" : [
+                "leftHalf",
+                "rightHalf",
+                "topHalf",
+                "bottomHalf",
+                "leftThird",
+                "centerThird",
+                "rightThird",
+                "leftTwoThirds",
+                "rightTwoThirds",
+                "topLeft",
+                "topRight",
+                "bottomLeft",
+                "bottomRight",
+                "center"
+              ]
+            },
+            "type" : {
+              "enum" : [
+                "window.place"
               ]
             }
           },

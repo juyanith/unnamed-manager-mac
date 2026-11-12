@@ -8,6 +8,8 @@ final class FakeWindowSystem: WindowSystem {
         var frame: CGRect
         /// A window that won't grow past this, as an app with a maximum size.
         var maxSize: CGSize?
+        /// A window that won't shrink past this.
+        var minSize: CGSize?
         var isMinimized = false
     }
 
@@ -33,6 +35,9 @@ final class FakeWindowSystem: WindowSystem {
         var size = frame.size
         if let maxSize = window.maxSize {
             size = CGSize(width: min(size.width, maxSize.width), height: min(size.height, maxSize.height))
+        }
+        if let minSize = window.minSize {
+            size = CGSize(width: max(size.width, minSize.width), height: max(size.height, minSize.height))
         }
         window.frame = CGRect(origin: frame.origin, size: size)
         windows[id] = window

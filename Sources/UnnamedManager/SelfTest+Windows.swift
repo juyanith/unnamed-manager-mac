@@ -45,6 +45,17 @@ extension SelfTest {
             check("S-063 no focused window says so", error.message == "TextEdit has no window to minimize.", error.message)
         }
 
+        fake.windows["wide"] = .init(frame: start, minSize: CGSize(width: 900, height: 300))
+        fake.focused = "wide"
+        try? await runner.run(.family(AnyActionValue(PlaceAction.preset(.rightHalf))), id: "right")
+        check("S-064 a window wider than the right half keeps the right edge",
+              fake.windows["wide"]?.frame == CGRect(x: 540, y: 25, width: 900, height: 875),
+              "\(String(describing: fake.windows["wide"]?.frame))")
+        try? await runner.run(.family(AnyActionValue(PlaceAction.preset(.leftHalf))), id: "left")
+        check("S-064 and the left half keeps the left edge",
+              fake.windows["wide"]?.frame == CGRect(x: 0, y: 25, width: 900, height: 875),
+              "\(String(describing: fake.windows["wide"]?.frame))")
+
         fake.canControlWindows = false
         do throws(PlanError) {
             try await runner.run(maximize, id: "maximize")

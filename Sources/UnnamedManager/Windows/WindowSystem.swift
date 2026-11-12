@@ -62,6 +62,13 @@ final class WindowControl {
             }
         case .minimize:
             system.minimize(window)
+        case let .place(fractions):
+            let target = WindowGeometry.rect(fractions, in: screen.usable)
+            system.setFrame(target, of: window)
+            // A window with a minimum or maximum size keeps the edge it was placed against.
+            if let actual = system.frame(of: window), !WindowGeometry.matches(actual, target) {
+                system.setFrame(WindowGeometry.anchored(actual.size, to: target, in: screen.usable), of: window)
+            }
         }
     }
 }

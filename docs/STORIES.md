@@ -700,7 +700,8 @@ Acceptance:
 - [unit] The coordinate conversion is right with a second display above, below, left and right of the primary one.
 - [self] A fake window with a minimum size larger than the placement ends as close as it allows, anchored to the placement's edge.
 - [manual] Left half then right half in Zed, Safari and Ghostty, on the built-in display and an external one.
-Status: todo
+Status: done
+Verified: presets on four screen sizes, shared edges and whole points, the coordinate flip for displays on every side, anchoring, reading, writing and planning `window.place`, an unknown field inside `frame` (unit tests, `PlaceTests`); its schema is the spec's, and five fixtures are off the pending list. Against `FakeWindowSystem`: a window with a minimum width keeps the right edge on the right half and the left edge on the left half (self-test, 150 checks). Not yet tried by hand: the manual line. The form comes with S-070.
 
 ### S-065 Grow or shrink the window through preset widths
 As the user, I press one key to make the window wider and another to make it narrower, stepping through widths I chose, such as 25 %, 33 %, 50 %, 66 % and 75 % of the screen.

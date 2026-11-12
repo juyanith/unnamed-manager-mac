@@ -35,6 +35,31 @@ public enum WindowGeometry {
         return best
     }
 
+    /// A frame in fractions as a rect in the usable area. Edges round to
+    /// whole points, and sizes follow, so neighbours share an edge.
+    public static func rect(_ fractions: FractionFrame, in usable: CGRect) -> CGRect {
+        let left = (fractions.x * usable.width).rounded(), right = ((fractions.x + fractions.width) * usable.width).rounded()
+        let top = (fractions.y * usable.height).rounded(), bottom = ((fractions.y + fractions.height) * usable.height).rounded()
+        return CGRect(x: usable.minX + left, y: usable.minY + top,
+                      width: min(right, usable.width) - left, height: min(bottom, usable.height) - top)
+    }
+
+    /// Where a window that took `size` instead of the target's size goes:
+    /// on each axis it keeps the edge the target shares with the usable
+    /// area, or its center when it shares neither or both.
+    public static func anchored(_ size: CGSize, to target: CGRect, in usable: CGRect) -> CGRect {
+        func origin(_ min: CGFloat, _ max: CGFloat, _ areaMin: CGFloat, _ areaMax: CGFloat, _ length: CGFloat) -> CGFloat {
+            let atMin = abs(min - areaMin) <= tolerance, atMax = abs(max - areaMax) <= tolerance
+            if atMin && !atMax { return min }
+            if atMax && !atMin { return max - length }
+            if atMin && atMax { return min }
+            return ((min + max - length) / 2).rounded()
+        }
+        return CGRect(x: origin(target.minX, target.maxX, usable.minX, usable.maxX, size.width),
+                      y: origin(target.minY, target.maxY, usable.minY, usable.maxY, size.height),
+                      width: size.width, height: size.height)
+    }
+
     /// Whether every edge of `a` is within the tolerance of the same edge of `b`.
     public static func matches(_ a: CGRect, _ b: CGRect) -> Bool {
         abs(a.minX - b.minX) <= tolerance && abs(a.minY - b.minY) <= tolerance
