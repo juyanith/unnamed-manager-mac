@@ -396,3 +396,56 @@ struct FocusDirectionTests {
         #expect(try ActionPlanner.plan(left, home: testHome) == .custom(AnyActionStep(WindowCommand.focus(.left))))
     }
 }
+
+@Suite("Focus the next or previous window (S-069)")
+struct FocusCycleTests {
+    static let screens = [
+        WindowGeometry.Screen(frame: CGRect(x: 0, y: 0, width: 1440, height: 900), usable: CGRect(x: 0, y: 25, width: 1440, height: 875)),
+        WindowGeometry.Screen(frame: CGRect(x: -1920, y: 0, width: 1920, height: 1080), usable: CGRect(x: -1920, y: 25, width: 1920, height: 1055)),
+    ]
+    // Named by where they should come: the left display first, then top to bottom, left to right.
+    static let named: [(String, CGRect)] = [
+        ("3", CGRect(x: 100, y: 500, width: 600, height: 300)),
+        ("1", CGRect(x: -1800, y: 100, width: 800, height: 400)),
+        ("4", CGRect(x: 800, y: 500, width: 600, height: 300)),
+        ("2", CGRect(x: 100, y: 100, width: 600, height: 300)),
+    ]
+
+    func order(_ windows: [(String, CGRect)]) -> [String] {
+        WindowGeometry.cycleOrder(windows.map(\.1), owners: windows.map { _ in 1 }, screens: Self.screens).map { windows[$0].0 }
+    }
+
+    @Test("The order is by display left to right, then top to bottom and left to right")
+    func ordered() {
+        #expect(order(Self.named) == ["1", "2", "3", "4"])
+    }
+
+    @Test("The same windows always give the same order, whatever order they come in")
+    func stable() {
+        #expect(order(Self.named.reversed()) == ["1", "2", "3", "4"])
+        #expect(order(Self.named.shuffled()) == ["1", "2", "3", "4"])
+        let twins = [CGRect(x: 0, y: 100, width: 500, height: 500), CGRect(x: 0, y: 100, width: 500, height: 500)]
+        #expect(WindowGeometry.cycleOrder(twins, owners: [9, 3], screens: Self.screens) == [1, 0])
+        #expect(WindowGeometry.cycleOrder(twins.reversed(), owners: [3, 9], screens: Self.screens) == [0, 1])
+    }
+
+    @Test("Next and Previous wrap at the ends")
+    func wraps() {
+        let order = [2, 0, 3, 1]
+        #expect(WindowGeometry.step(from: 1, in: order, .next) == 2)
+        #expect(WindowGeometry.step(from: 2, in: order, .previous) == 1)
+        #expect(WindowGeometry.step(from: 0, in: order, .next) == 3)
+    }
+
+    @Test("From a window not in the list, Next goes to the first and Previous to the last")
+    func outside() {
+        #expect(WindowGeometry.step(from: nil, in: [2, 0, 1], .next) == 2)
+        #expect(WindowGeometry.step(from: nil, in: [2, 0, 1], .previous) == 1)
+    }
+
+    @Test("With no other window there's nothing to go to")
+    func alone() {
+        #expect(WindowGeometry.step(from: 0, in: [0], .next) == nil)
+        #expect(WindowCommand.focus(.next).failure == "No other window to focus.")
+    }
+}

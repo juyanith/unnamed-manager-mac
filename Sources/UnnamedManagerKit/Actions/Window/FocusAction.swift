@@ -83,4 +83,37 @@ extension WindowGeometry {
             abs(a.distance - b.distance) < 0.5 ? a.overlap > b.overlap : a.distance < b.distance
         }?.index
     }
+
+    /// The order Next and Previous go through (S-069): by display, left to
+    /// right, then by window center, top to bottom and then left to right.
+    /// `owners` (process ids) break the ties that are left, so the same
+    /// windows always give the same order, whatever their order here.
+    public static func cycleOrder(_ windows: [CGRect], owners: [Int32], screens: [Screen]) -> [Int] {
+        let displays = screens.sorted { ($0.frame.minX, $0.frame.minY) < ($1.frame.minX, $1.frame.minY) }
+        func display(_ window: CGRect) -> Int {
+            screen(for: window, among: screens).flatMap { found in displays.firstIndex { $0 == found } } ?? 0
+        }
+        let keys = windows.indices.map { index in
+            let window = windows[index]
+            return (display(window), window.midY, window.midX, owners[index], window.width, window.height)
+        }
+        return windows.indices.sorted { a, b in
+            let x = keys[a], y = keys[b]
+            if (x.0, x.1, x.2, x.3) != (y.0, y.1, y.2, y.3) { return (x.0, x.1, x.2, x.3) < (y.0, y.1, y.2, y.3) }
+            return (x.4, x.5, a) < (y.4, y.5, b)
+        }
+    }
+
+    /// The window after `current` in `order`, wrapping at the ends; the
+    /// first (or last) when the current one isn't in it. nil when there's
+    /// no other window.
+    public static func step(from current: Int?, in order: [Int], _ direction: FocusDirection) -> Int? {
+        let others = order.filter { $0 != current }
+        guard !others.isEmpty else { return nil }
+        guard let current, let position = order.firstIndex(of: current) else {
+            return direction == .previous ? others.last : others.first
+        }
+        let offset = direction == .previous ? order.count - 1 : 1
+        return order[(position + offset) % order.count]
+    }
 }

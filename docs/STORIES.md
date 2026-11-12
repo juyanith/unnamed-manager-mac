@@ -759,7 +759,8 @@ Acceptance:
 - [unit] The order is by display, left to right, then by window center, top to bottom and left to right; it wraps at the ends.
 - [unit] The same set of windows always gives the same order, whatever was focused last.
 - [self] With fake windows, next from the last window goes to the first.
-Status: todo
+Status: done
+Verified: the order across a display on each side, the same order for the same windows in any input order (owners and sizes break ties), wrapping both ways, starting from a window not in the list, and no other window (unit tests, `FocusCycleTests`, 199 in all). Against `FakeWindowSystem`, Next from the last window goes to the first and Previous comes back (self-test, 157 checks).
 
 ### S-070 Set up window actions on the Actions page and see them in the Guide
 As the user, I choose a window action from the Type picker, set its options with pickers instead of typing JSON, and see an icon for it in the Guide.

@@ -94,6 +94,13 @@ final class WindowControl {
             }
         case let .move(move):
             system.setFrame(WindowGeometry.moved(frame, in: screen.usable, move), of: window)
+        case let .focus(direction) where direction == .next || direction == .previous:
+            let windows = system.focusableWindows()
+            let order = WindowGeometry.cycleOrder(windows.map(\.frame), owners: windows.map(\.pid), screens: system.screens())
+            guard let index = WindowGeometry.step(from: windows.firstIndex { $0.ref == window }, in: order, direction) else {
+                throw PlanError(command.failure ?? "")
+            }
+            try await system.focus(windows[index])
         case let .focus(direction):
             let others = system.focusableWindows().filter { $0.ref != window }
             guard let index = WindowGeometry.neighbor(of: frame, direction, among: others.map(\.frame)) else {

@@ -124,6 +124,13 @@ extension SelfTest {
             picks.append(fake.focused ?? "none")
         }
         check("S-068 each direction picks the expected window across two displays", picks == moves.map(\.2), "\(picks)")
+        fake.focused = "d"
+        try? await runner.run(.family(AnyActionValue(FocusAction(.next))), id: "next")
+        let wrapped = fake.focused
+        try? await runner.run(.family(AnyActionValue(FocusAction(.previous))), id: "previous")
+        check("S-069 Next from the last window goes to the first, and Previous goes back",
+              wrapped == "a" && fake.focused == "d", "\(String(describing: wrapped)), \(String(describing: fake.focused))")
+
         fake.focused = "a"
         do throws(PlanError) {
             try await runner.run(.family(AnyActionValue(FocusAction(.left))), id: "focus")
