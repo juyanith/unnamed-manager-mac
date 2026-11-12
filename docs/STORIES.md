@@ -589,7 +589,7 @@ Acceptance:
 - [manual] macOS asks for Accessibility and Input Monitoring again, because the bundle id is new, and the Welcome window walks through both.
 - [manual] The Homebrew cask is `unnamed-manager`, and the release workflow updates it.
 Status: done
-Verified: targets, bundle id, config path and no old name in the sources (unit tests, AppNameTests, ConfigLocationTests); 122 self-test checks; welcome, help and settings in light and dark (snapshots), grid checks. The signing certificate keeps its name, "Unnamed Launcher Code Signing", so the release secrets still work. Not yet tried by hand: granting the permissions to the new bundle id; a release through the renamed cask (it waits for the first v0.3.0 tag).
+Verified: targets, bundle id, config path and no old name in the sources (unit tests, AppNameTests, ConfigLocationTests); 122 self-test checks; welcome, help and settings in light and dark (snapshots), grid checks. The signing certificate keeps its name, "Unnamed Launcher Code Signing", so the release secrets still work. Not yet tried by hand: granting the permissions to the new bundle id; a release through the renamed cask (it waits for the first v0.1.0 tag).
 
 ### S-058 Bring over my launcher config
 As the user, I start Unnamed Manager for the first time and copy my Unnamed Launcher config with one click, so my leaders and bindings carry over, and the app tells me if Unnamed Launcher is still running and capturing the same keys.
