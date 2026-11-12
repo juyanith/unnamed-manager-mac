@@ -1,11 +1,15 @@
+import AppKit
 import SwiftUI
 
 /// Fixed sizes. Spacing lives in Space (Grid.swift).
 enum Layout {
     /// The Settings window's single Form.
     static let settingsWidth: CGFloat = 520
-    /// Settings grows to this height before it scrolls, so all four sections fit.
-    static let settingsMaxHeight: CGFloat = 840
+    /// Settings grows to this height before it scrolls, so all five sections
+    /// fit, unless the screen is shorter: then it stops 80 points short of it.
+    static var settingsMaxHeight: CGFloat {
+        min(960, (NSScreen.main?.visibleFrame.height ?? 920) - 80)
+    }
     /// The first-run welcome window.
     static let welcomeWidth: CGFloat = 520
     /// Bindings window sidebar.

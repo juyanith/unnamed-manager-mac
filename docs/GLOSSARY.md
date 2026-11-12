@@ -50,5 +50,6 @@ One name per idea. Use these words in the UI, the docs, the log and VoiceOver la
 | Preset | A named part of the screen for Place Window, such as Left Half or Top Right Quarter. | layout, zone, snap area |
 | Spot | A named place for Move Window, such as Center or Top Left. | position, location |
 | Keep in Place | The point of a window that stays put while Resize Window changes its size, such as its Top Left Corner. "Anchor" in the config file. | anchor, origin, pin |
+| Gap Between Windows | The space, in points, Place Window leaves between a window and the screen's edges and between windows side by side (`windows.gap`, default 8). Set in Settings › Windows. | padding, margin, spacing, gutter |
 | Widths | The list of widths, in % of the screen, that Grow and Shrink go through. | sizes, steps, presets |
 | Screen (for window actions) | The display the window is mostly on, without the menu bar and Dock ("usable area" in the spec). | visible frame, work area, desktop |

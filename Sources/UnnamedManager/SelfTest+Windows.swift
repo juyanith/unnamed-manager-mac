@@ -9,7 +9,7 @@ extension SelfTest {
         let fake = FakeWindowSystem()
         fake.windows = ["notes": .init(frame: start)]
         fake.focused = "notes"
-        let runner = ActionRunner(performer: SystemPerformer(context: StepContext(windows: WindowControl(system: fake))))
+        let runner = ActionRunner(performer: SystemPerformer(context: StepContext(windows: WindowControl(system: fake, gap: { 0 }))))
         let maximize = Config.Action.family(AnyActionValue(MaximizeAction()))
 
         try? await runner.run(maximize, id: "maximize")
@@ -55,6 +55,22 @@ extension SelfTest {
         check("S-064 and the left half keeps the left edge",
               fake.windows["wide"]?.frame == CGRect(x: 0, y: 25, width: 900, height: 875),
               "\(String(describing: fake.windows["wide"]?.frame))")
+
+        // Spec v3: the gap around placed windows, with a window too wide for its half.
+        let gapped = ActionRunner(performer: SystemPerformer(context: StepContext(windows: WindowControl(system: fake, gap: { 8 }))))
+        fake.windows["gapped"] = .init(frame: start)
+        fake.focused = "gapped"
+        try? await gapped.run(.family(AnyActionValue(PlaceAction.preset(.leftHalf))), id: "left")
+        let left = fake.windows["gapped"]?.frame
+        try? await gapped.run(.family(AnyActionValue(PlaceAction.preset(.rightHalf))), id: "right")
+        let right = fake.windows["gapped"]?.frame
+        check("S-071 halves stand 8 points from the screen's edges and 8 points apart",
+              left == CGRect(x: 8, y: 33, width: 708, height: 859) && right == CGRect(x: 724, y: 33, width: 708, height: 859),
+              "\(String(describing: left)), \(String(describing: right))")
+        fake.focused = "wide"
+        try? await gapped.run(.family(AnyActionValue(PlaceAction.preset(.rightHalf))), id: "right")
+        check("S-071 a window wider than its half keeps the right edge one gap in",
+              fake.windows["wide"]?.frame.maxX == 1432, "\(String(describing: fake.windows["wide"]?.frame))")
 
         fake.windows["narrow"] = .init(frame: CGRect(x: 100, y: 100, width: 300, height: 500))
         fake.focused = "narrow"
@@ -112,7 +128,7 @@ extension SelfTest {
             "c": .init(frame: CGRect(x: 100, y: 480, width: 1200, height: 380)),
             "d": .init(frame: CGRect(x: 1540, y: 480, width: 1600, height: 380)),
         ]
-        let runner = ActionRunner(performer: SystemPerformer(context: StepContext(windows: WindowControl(system: fake))))
+        let runner = ActionRunner(performer: SystemPerformer(context: StepContext(windows: WindowControl(system: fake, gap: { 0 }))))
         let moves: [(String, FocusDirection, String)] = [
             ("a", .right, "b"), ("b", .down, "d"), ("d", .left, "c"), ("c", .up, "a"),
             ("b", .left, "a"), ("a", .down, "c"), ("c", .right, "d"), ("d", .up, "b"),

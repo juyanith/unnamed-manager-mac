@@ -22,6 +22,7 @@ public enum ConfigRule: String, Sendable, CaseIterable {
     case badRuntimeKey = "bad-runtime-key"
     case sameCancelBack = "same-cancel-back"
     case negativeDelay = "negative-delay"
+    case negativeGap = "negative-gap"
     case badUIValue = "bad-ui-value"
     case reservedChord = "reserved-chord"
     case undefinedAction = "undefined-action"

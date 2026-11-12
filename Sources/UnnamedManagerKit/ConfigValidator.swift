@@ -90,6 +90,7 @@ public enum ConfigValidator {
             error(.badUIValue, "The theme “\(config.ui.theme)” isn't one the Guide knows. Use system, light or dark.")
         }
         if config.runtime.timeoutMs < 0 { error(.negativeDelay, "timeoutMs can't be negative.") }
+        if config.windows.gap < 0 { error(.negativeGap, "The gap between windows can't be negative.") }
 
         // Entries: parse, find duplicates.
         var parsed: [(entry: Config.Entry, path: KeySequence)] = []

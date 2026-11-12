@@ -901,6 +901,17 @@
     },
     "version" : {
       "const" : 1
+    },
+    "windows" : {
+      "additionalProperties" : false,
+      "properties" : {
+        "gap" : {
+          "description" : "Points Place Window leaves around windows and between them. Default 8.",
+          "minimum" : 0,
+          "type" : "number"
+        }
+      },
+      "type" : "object"
     }
   },
   "required" : [

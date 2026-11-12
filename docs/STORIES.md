@@ -782,6 +782,23 @@ UX:
 Status: done
 Verified: the Type picker lists the six window types with the others, alphabetically; each form's value is saved as the spec writes it, and Undo puts the file back exactly (self-test, 160 checks). The forms' controls are checked on their snapshots, not by the self-test: actions-window-left-half, -move-center, -wider, -half-size, -focus-right and -maximize, plus hud-window, in light and dark; grid checks pass (the lint now skips the window geometry, whose numbers aren't layout). The seed config has a Windows menu under Commands with one binding of each window action. Not yet tried by hand: VoiceOver on the number fields, and typing widths.
 
+### S-071 Leave a gap around placed windows
+As the user, I place windows on halves and thirds and they stand a little apart from each other and from the screen's edges, by a gap I can change in Settings.
+Screens: settings
+Depends: S-064
+Acceptance:
+- [unit] `windows.gap` (spec v3) defaults to 8, is written only when changed, and a negative gap is `negative-gap`; the spec-v3 fixtures pass and the schema's `windows` object is the spec's.
+- [unit] Edges on the screen's edge move in by the whole gap and edges inside it by half, so neighbouring presets end exactly one gap apart, for even and odd gaps; a centered placement moves in by half on every side; a window keeps at least 1 point.
+- [self] Against `FakeWindowSystem` with a gap of 8, the left and right halves stand 8 points from the edges and from each other, and a window wider than its half keeps its right edge one gap in.
+- [snap] Settings has a Windows section with Gap Between Windows, in light and dark, and every section fits.
+UX:
+- Flow: Settings… (⌘,) → Windows → Gap Between Windows → type a number or use the stepper (0 to 64, steps of 2) → saved at once → ⌘Z undoes.
+- Surface: inline, a row in Settings (changes one value on screen).
+- Words: section "Windows", row "Gap Between Windows", unit "pt", footer "Place Window leaves this space between a window and the screen's edges, and between windows side by side. 0 puts them edge to edge."
+- Access: VoiceOver reads "Gap between windows, points".
+Status: done
+Verified: 204 unit tests (`WindowGapTests`, `SpecSchemaTests`, the spec-v3 fixtures); the two gap checks against `FakeWindowSystem` (self-test, 162 checks); settings in light and dark, grid checks. Settings now grows to 960 points, or 80 points short of a shorter screen. Move, Resize and Maximize don't use the gap.
+
 ## Later
 - Import and export a single menu as a JSON snippet.
 - A basic automatic tiling mode.

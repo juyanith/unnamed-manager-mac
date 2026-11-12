@@ -11,6 +11,8 @@ public struct Config: Sendable, Equatable {
     public var version: Int
     public var runtime: Runtime
     public var ui: UI
+    /// Settings the window actions share (spec v3).
+    public var windows = Windows()
     public var entries: [Entry]
     /// Action ids to actions. JSON objects have no order, so this is sorted
     /// by id wherever order matters.
@@ -34,6 +36,12 @@ public struct Config: Sendable, Equatable {
         public var showHud = true
         public var hudDelayMs = 0
         public var timeoutMs = 0
+        public init() {}
+    }
+
+    public struct Windows: Sendable, Equatable {
+        /// Points Place Window leaves around windows and between them.
+        public var gap: Double = 8
         public init() {}
     }
 
@@ -169,11 +177,12 @@ extension Config: Decodable {
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: AnyKey.self)
         // "$schema" lets editors find config.schema.json (S-039).
-        try c.rejectUnknown(allowed: ["$schema", "version", "runtime", "ui", "entries", "actions", "contexts"], at: "the file")
+        try c.rejectUnknown(allowed: ["$schema", "version", "runtime", "ui", "windows", "entries", "actions", "contexts"], at: "the file")
         schema = try c.decodeIfPresent(String.self, forKey: AnyKey("$schema"))
         version = try c.required("version")
         runtime = try c.value("runtime", default: Runtime())
         ui = try c.value("ui", default: UI())
+        windows = try c.value("windows", default: Windows())
         entries = try c.required("entries")
         actions = try c.value("actions", default: [:])
         contexts = try c.value("contexts", default: [])
@@ -190,6 +199,14 @@ extension Config.Runtime: Decodable {
         showHud = try c.value("showHud", default: d.showHud)
         hudDelayMs = try c.value("hudDelayMs", default: d.hudDelayMs)
         timeoutMs = try c.value("timeoutMs", default: d.timeoutMs)
+    }
+}
+
+extension Config.Windows: Decodable {
+    public init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: AnyKey.self)
+        try c.rejectUnknown(allowed: ["gap"], at: "windows")
+        gap = try c.value("gap", default: Self().gap)
     }
 }
 

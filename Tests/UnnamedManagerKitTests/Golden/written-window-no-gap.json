@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "windows": { "gap": 0 },
+  "entries": [
+    { "keys": "Meh+W", "title": "Windows" },
+    { "keys": "Meh+W H", "title": "Left half", "action": "left-half" }
+  ],
+  "actions": {
+    "left-half": { "type": "window.place", "preset": "leftHalf" }
+  }
+}

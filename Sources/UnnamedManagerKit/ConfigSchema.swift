@@ -67,6 +67,12 @@ public enum ConfigSchema {
                         "errorBell": ["type": "boolean"],
                     ],
                 ],
+                "windows": [
+                    "type": "object", "additionalProperties": false,
+                    "properties": [
+                        "gap": ["type": "number", "minimum": 0, "description": "Points Place Window leaves around windows and between them. Default 8."],
+                    ],
+                ],
                 "entries": [
                     "type": "array",
                     "items": [

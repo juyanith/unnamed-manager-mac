@@ -449,3 +449,49 @@ struct FocusCycleTests {
         #expect(WindowCommand.focus(.next).failure == "No other window to focus.")
     }
 }
+
+@Suite("The gap around placed windows (S-071, spec v3)")
+struct WindowGapTests {
+    static let usable = CGRect(x: 0, y: 25, width: 1440, height: 875)
+
+    func placed(_ preset: PlacePreset, gap: CGFloat) -> CGRect {
+        WindowGeometry.withGap(WindowGeometry.rect(preset.frame, in: Self.usable), in: Self.usable, gap: gap)
+    }
+
+    @Test("Edges on the screen's edge move in by the gap, and neighbours end one gap apart", arguments: [0, 7, 8, 12] as [CGFloat])
+    func neighbours(_ gap: CGFloat) {
+        #expect(placed(.rightHalf, gap: gap).minX - placed(.leftHalf, gap: gap).maxX == gap)
+        #expect(placed(.centerThird, gap: gap).minX - placed(.leftThird, gap: gap).maxX == gap)
+        #expect(placed(.rightThird, gap: gap).minX - placed(.centerThird, gap: gap).maxX == gap)
+        #expect(placed(.bottomLeft, gap: gap).minY - placed(.topLeft, gap: gap).maxY == gap)
+        let left = placed(.leftHalf, gap: gap)
+        #expect(left.minX == Self.usable.minX + gap && left.minY == Self.usable.minY + gap && left.maxY == Self.usable.maxY - gap)
+        #expect(placed(.rightHalf, gap: gap).maxX == Self.usable.maxX - gap)
+    }
+
+    @Test("A centered placement moves in by half the gap on every side")
+    func center() {
+        let plain = WindowGeometry.rect(PlacePreset.center.frame, in: Self.usable)
+        #expect(placed(.center, gap: 8) == plain.insetBy(dx: 4, dy: 4))
+    }
+
+    @Test("A huge gap still leaves a window at least 1 point")
+    func huge() {
+        #expect(placed(.leftThird, gap: 5000).width == 1)
+    }
+
+    @Test("windows.gap defaults to 8, is written only when changed, and can't be negative")
+    func setting() throws {
+        let minimal = #"{ "version": 1, "entries": [ { "keys": "Meh+W", "title": "W" }, { "keys": "Meh+W H", "title": "H", "action": "h" } ], "actions": { "h": { "type": "noop" } }"#
+        let plain = try ConfigLoader.load(Data((minimal + " }").utf8)).get()
+        #expect(plain.config.windows.gap == 8)
+        #expect(!ConfigWriter.write(plain.config, actionOrder: []).contains("windows"))
+        var changed = plain.config
+        changed.windows.gap = 12
+        #expect(ConfigWriter.write(changed, actionOrder: []).contains(#""windows": { "gap": 12 }"#))
+        guard case let .failure(errors) = ConfigLoader.load(Data((minimal + #", "windows": { "gap": -1 } }"#).utf8)) else {
+            Issue.record("loaded a negative gap"); return
+        }
+        #expect(errors.issues.first?.rule == .negativeGap)
+    }
+}

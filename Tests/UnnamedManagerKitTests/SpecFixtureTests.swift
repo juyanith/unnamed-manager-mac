@@ -104,6 +104,17 @@ struct SpecSchemaTests {
         })
     }
 
+    @Test("The windows settings are described as the spec describes them")
+    func windows() throws {
+        func windows(_ json: Data) throws -> NSDictionary? {
+            let root = try #require(JSONSerialization.jsonObject(with: json) as? [String: Any])
+            return (root["properties"] as? [String: Any])?["windows"] as? NSDictionary
+        }
+        let spec = try windows(Data(contentsOf: SpecFixtureTests.folder.deletingLastPathComponent().appending(path: "config.schema.json")))
+        let app = try windows(Data(ConfigSchema.json.utf8))
+        #expect(spec != nil && spec == app)
+    }
+
     @Test("Every kind the app has is described as the spec describes it", arguments: ActionRegistry.standard.kinds)
     func matches(_ kind: ActionKind) throws {
         let spec = try Self.variants(Data(contentsOf: SpecFixtureTests.folder.deletingLastPathComponent().appending(path: "config.schema.json")))

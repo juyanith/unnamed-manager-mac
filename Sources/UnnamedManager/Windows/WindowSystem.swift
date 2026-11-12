@@ -48,8 +48,12 @@ final class WindowControl {
     let system: any WindowSystem
     private var maximized = MaximizeMemory<WindowRef>()
 
-    init(system: any WindowSystem) {
+    /// The gap Place Window leaves around windows (spec v3), read when an action runs.
+    let gap: () -> Double
+
+    init(system: any WindowSystem, gap: @escaping () -> Double = { Config.Windows().gap }) {
         self.system = system
+        self.gap = gap
     }
 
     func run(_ command: WindowCommand) async throws(PlanError) {
@@ -75,11 +79,13 @@ final class WindowControl {
         case .minimize:
             system.minimize(window)
         case let .place(fractions):
-            let target = WindowGeometry.rect(fractions, in: screen.usable)
+            let gap = CGFloat(gap()).rounded()
+            let target = WindowGeometry.withGap(WindowGeometry.rect(fractions, in: screen.usable), in: screen.usable, gap: gap)
             system.setFrame(target, of: window)
-            // A window with a minimum or maximum size keeps the edge it was placed against.
+            // A window with a minimum or maximum size keeps the edge it was placed against, a gap in from the screen's.
             if let actual = system.frame(of: window), !WindowGeometry.matches(actual, target) {
-                system.setFrame(WindowGeometry.anchored(actual.size, to: target, in: screen.usable), of: window)
+                let inside = screen.usable.insetBy(dx: gap, dy: gap)
+                system.setFrame(WindowGeometry.anchored(actual.size, to: target, in: inside), of: window)
             }
         case let .resize(.step(step, widths), _):
             if let next = WindowGeometry.step(frame, in: screen.usable, widths: widths ?? ResizeAction.defaultWidths, step) {

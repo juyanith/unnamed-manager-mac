@@ -10,6 +10,11 @@ public enum ConfigWriter {
         sections.append("  \"version\": \(config.version)")
         if let runtime = runtimeFields(config.runtime) { sections.append("  \"runtime\": \(runtime)") }
         if let ui = uiFields(config.ui) { sections.append("  \"ui\": \(ui)") }
+        if config.windows != Config.Windows() {
+            var fields = ActionFieldWriter()
+            fields.number("gap", config.windows.gap)
+            sections.append("  \"windows\": \(object(fields.fields))")
+        }
         sections.append(list("entries", config.entries.map(entry)))
         if !config.actions.isEmpty {
             let ids = ordered(Array(config.actions.keys), by: actionOrder)

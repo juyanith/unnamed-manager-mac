@@ -44,6 +44,18 @@ public enum WindowGeometry {
                       width: min(right, usable.width) - left, height: min(bottom, usable.height) - top)
     }
 
+    /// A placed frame with the gap around it (spec v3): edges on the usable
+    /// area's edge move in by the whole gap, edges inside it by half, so
+    /// neighbours end one gap apart. Left and top take the larger half.
+    public static func withGap(_ frame: CGRect, in usable: CGRect, gap: CGFloat) -> CGRect {
+        let g = max(0, gap.rounded()), larger = (g / 2).rounded(.up), smaller = (g / 2).rounded(.down)
+        let left = frame.minX + (frame.minX <= usable.minX ? g : larger)
+        let right = frame.maxX - (frame.maxX >= usable.maxX ? g : smaller)
+        let top = frame.minY + (frame.minY <= usable.minY ? g : larger)
+        let bottom = frame.maxY - (frame.maxY >= usable.maxY ? g : smaller)
+        return CGRect(x: left, y: top, width: max(1, right - left), height: max(1, bottom - top))
+    }
+
     /// Where a window that took `size` instead of the target's size goes:
     /// on each axis it keeps the edge the target shares with the usable
     /// area, or its center when it shares neither or both.

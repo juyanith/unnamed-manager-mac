@@ -66,6 +66,19 @@ struct SettingsView: View {
             }
 
             Section {
+                LabeledContent("Gap Between Windows") {
+                    GapField(value: Binding(get: { editor.draft.config.windows.gap }, set: { value in
+                        guard editor.draft.config.windows.gap != value else { return }
+                        editor.edit("Change Gap", undo: undo) { $0.config.windows.gap = value }
+                    }))
+                }
+            } header: {
+                Text("Windows")
+            } footer: {
+                Text("Place Window leaves this space between a window and the screen's edges, and between windows side by side. 0 puts them edge to edge.")
+            }
+
+            Section {
                 Toggle("Open at Login", isOn: Binding(get: { opensAtLogin }, set: setOpensAtLogin))
             } header: {
                 Text("Startup")
@@ -114,6 +127,26 @@ struct SettingsView: View {
             log.error("Open at Login: \(error.localizedDescription, privacy: .public)")
         }
         opensAtLogin = SMAppService.mainApp.status == .enabled
+    }
+}
+
+/// The gap around placed windows, in whole points from 0 to 64 (S-071).
+struct GapField: View {
+    @Binding var value: Double
+
+    private func clamped(_ new: Double) -> Double { min(max(new.rounded(), 0), 64) }
+
+    var body: some View {
+        HStack(spacing: Space.sm) {
+            TextField("Points", value: Binding(get: { value }, set: { value = clamped($0) }), format: .number)
+                .labelsHidden()
+                .multilineTextAlignment(.trailing)
+                .frame(width: Layout.keyColumnWidth / 2)
+                .accessibilityLabel("Gap between windows, points")
+            Stepper("Points", value: Binding(get: { value }, set: { value = clamped($0) }), in: 0...64, step: 2)
+                .labelsHidden()
+            Text("pt").foregroundStyle(.secondary)
+        }
     }
 }
 
