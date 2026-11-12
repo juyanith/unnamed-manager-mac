@@ -56,6 +56,15 @@ extension SelfTest {
               fake.windows["wide"]?.frame == CGRect(x: 0, y: 25, width: 900, height: 875),
               "\(String(describing: fake.windows["wide"]?.frame))")
 
+        fake.windows["narrow"] = .init(frame: CGRect(x: 100, y: 100, width: 300, height: 500))
+        fake.focused = "narrow"
+        let grow = Config.Action.family(AnyActionValue(ResizeAction(.step(.grow, widths: nil))))
+        try? await runner.run(grow, id: "grow")
+        try? await runner.run(grow, id: "grow")
+        check("S-065 Grow twice goes from 300 to a third of 1440 points, keeping the left edge and height",
+              fake.windows["narrow"]?.frame == CGRect(x: 100, y: 100, width: 480, height: 500),
+              "\(String(describing: fake.windows["narrow"]?.frame))")
+
         fake.canControlWindows = false
         do throws(PlanError) {
             try await runner.run(maximize, id: "maximize")

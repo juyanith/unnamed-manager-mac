@@ -84,7 +84,7 @@ public enum PlaceAction: ActionValue {
         case let .preset(preset):
             fields.string("preset", preset.rawValue)
         case let .frame(frame):
-            fields.numbers("frame", ["x": frame.x, "y": frame.y, "width": frame.width, "height": frame.height])
+            fields.numbers("frame", [("x", frame.x), ("y", frame.y), ("width", frame.width), ("height", frame.height)])
         }
     }
 

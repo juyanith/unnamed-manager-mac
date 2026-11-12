@@ -93,7 +93,7 @@ public struct ActionRegistry: @unchecked Sendable {
 
     public static let standard = ActionRegistry(families: [
         UseApplicationAction.self, OpenAction.self, RunCommandAction.self, SendShortcutAction.self, BasicAction.self,
-        MaximizeAction.self, MinimizeAction.self, PlaceAction.self,
+        MaximizeAction.self, MinimizeAction.self, PlaceAction.self, ResizeAction.self,
     ])
 
     public func adding(_ family: any ActionValue.Type) -> ActionRegistry {
@@ -187,10 +187,17 @@ public struct ActionFieldWriter {
     }
 
     /// An object of numbers, in the order given.
-    public mutating func numbers(_ key: String, _ values: KeyValuePairs<String, Double>) {
+    public mutating func numbers(_ key: String, _ values: [(String, Double)]) {
         var inner = ActionFieldWriter()
         for (name, value) in values { inner.number(name, value) }
         fields.append((key, ConfigWriter.object(inner.fields)))
+    }
+
+    /// An array of numbers.
+    public mutating func numberList(_ key: String, _ values: [Double]) {
+        var inner = ActionFieldWriter()
+        for value in values { inner.number("", value) }
+        fields.append((key, "[" + inner.fields.map(\.1).joined(separator: ", ") + "]"))
     }
 }
 

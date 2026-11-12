@@ -60,6 +60,22 @@ public enum WindowGeometry {
                       width: size.width, height: size.height)
     }
 
+    /// The window after one step through `widths` (S-065): the smallest
+    /// width more than the tolerance wider, or the largest narrower, or nil
+    /// past the end. It keeps its left edge unless the new width would run
+    /// past the usable area, when it keeps its right edge. The height stays.
+    public static func step(_ frame: CGRect, in usable: CGRect, widths: [Double], _ step: ResizeStep) -> CGRect? {
+        let points = Set(widths.map { ($0 * usable.width).rounded() }).sorted()
+        let width = switch step {
+        case .grow: points.first { $0 > frame.width + tolerance }
+        case .shrink: points.last { $0 < frame.width - tolerance }
+        }
+        guard let width else { return nil }
+        var x = frame.minX
+        if x + width > usable.maxX { x = max(usable.minX, frame.maxX - width) }
+        return CGRect(x: x, y: frame.minY, width: width, height: frame.height)
+    }
+
     /// Whether every edge of `a` is within the tolerance of the same edge of `b`.
     public static func matches(_ a: CGRect, _ b: CGRect) -> Bool {
         abs(a.minX - b.minX) <= tolerance && abs(a.minY - b.minY) <= tolerance

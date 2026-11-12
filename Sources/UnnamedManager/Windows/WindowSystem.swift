@@ -69,6 +69,12 @@ final class WindowControl {
             if let actual = system.frame(of: window), !WindowGeometry.matches(actual, target) {
                 system.setFrame(WindowGeometry.anchored(actual.size, to: target, in: screen.usable), of: window)
             }
+        case let .resize(.step(step, widths), _):
+            if let next = WindowGeometry.step(frame, in: screen.usable, widths: widths ?? ResizeAction.defaultWidths, step) {
+                system.setFrame(next, of: window)
+            }
+        case .resize:
+            throw PlanError("Resize Window with “to” or “by” isn't built yet.")
         }
     }
 }

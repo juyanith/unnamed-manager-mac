@@ -198,3 +198,55 @@ struct PlaceTests {
         #expect(errors.issues.first?.message.contains("“z”") == true)
     }
 }
+
+@Suite("Grow and shrink through widths (S-065)")
+struct ResizeStepTests {
+    static let usable = CGRect(x: 0, y: 25, width: 1200, height: 875)
+    static let widths = ResizeAction.defaultWidths
+
+    func step(_ frame: CGRect, _ step: ResizeStep, widths: [Double] = Self.widths) -> CGRect? {
+        WindowGeometry.step(frame, in: Self.usable, widths: widths, step)
+    }
+
+    @Test("Grow picks the smallest width wider than the window, shrink the largest narrower")
+    func next() {
+        let window = CGRect(x: 100, y: 100, width: 500, height: 400)
+        #expect(step(window, .grow)?.width == 600)
+        #expect(step(window, .shrink)?.width == 400)
+        // Within 2 points of a width counts as that width.
+        #expect(step(CGRect(x: 100, y: 100, width: 599, height: 400), .grow)?.width == 800)
+        #expect(step(window, .grow)?.height == 400)
+    }
+
+    @Test("Past the last width, the window stays put rather than wrapping")
+    func ends() {
+        #expect(step(CGRect(x: 0, y: 100, width: 900, height: 400), .grow) == nil)
+        #expect(step(CGRect(x: 0, y: 100, width: 300, height: 400), .shrink) == nil)
+    }
+
+    @Test("It keeps the left edge, or the right edge when the left would push it off screen")
+    func edges() {
+        #expect(step(CGRect(x: 100, y: 100, width: 500, height: 400), .grow)?.minX == 100)
+        let right = CGRect(x: 700, y: 100, width: 500, height: 400)
+        #expect(step(right, .grow) == CGRect(x: 600, y: 100, width: 600, height: 400))
+    }
+
+    @Test("Order and duplicates in the widths don't matter")
+    func unordered() {
+        let window = CGRect(x: 0, y: 100, width: 500, height: 400)
+        #expect(step(window, .grow, widths: [0.75, 0.25, 0.75, 0.5]) == step(window, .grow, widths: [0.25, 0.5, 0.75]))
+    }
+
+    @Test("It reads, writes and plans as the spec says, with the default widths when there are none")
+    func family() throws {
+        let grow = try ActionRegistryTests.decode(#"{ "type": "window.resize", "step": "grow" }"#)
+        #expect(grow == .family(AnyActionValue(ResizeAction(.step(.grow, widths: nil)))))
+        #expect(ConfigWriter.action(grow, contexts: []) == #"{ "type": "window.resize", "step": "grow" }"#)
+        #expect(ResizeAction.defaultWidths == [0.25, 1.0 / 3, 0.5, 2.0 / 3, 0.75])
+        let json = #"{ "type": "window.resize", "step": "shrink", "widths": [0.75, 0.5, 0.25] }"#
+        let shrink = try ActionRegistryTests.decode(json)
+        #expect(ConfigWriter.action(shrink, contexts: []) == json)
+        #expect(try ActionPlanner.plan(shrink, home: testHome)
+                == .custom(AnyActionStep(WindowCommand.resize(.step(.shrink, widths: [0.75, 0.5, 0.25]), anchor: .topLeft))))
+    }
+}

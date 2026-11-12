@@ -712,7 +712,8 @@ Acceptance:
 - [unit] The window keeps its left edge, unless that would push it off screen, when it keeps its right edge.
 - [unit] With no `widths` in the action, the default list is 1/4, 1/3, 1/2, 2/3 and 3/4.
 - [manual] Grow from a narrow Zed window to 75 % and back down, one key per step.
-Status: todo
+Status: done
+Verified: the next width, the 2-point tolerance, stopping at the ends, keeping the left or right edge, unordered widths, the default list, and reading, writing and planning `step` and `widths` (unit tests, `ResizeStepTests`). The whole `window.resize` format came with this story, so its schema is the spec's and seven resize fixtures are off the pending list. Grow twice against `FakeWindowSystem` (self-test). Not yet tried by hand: the manual line.
 
 ### S-066 Move the window by a step or to a position
 As the user, I nudge the window by a set number of points, or send it to an exact spot, such as centered or the top left corner.
