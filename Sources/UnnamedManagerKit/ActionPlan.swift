@@ -21,6 +21,8 @@ public enum ActionPlan: Sendable, Equatable {
     case nothing
     /// Open the Help page of the Bindings window.
     case showHelp
+    /// A family's own step (S-060), carried out by the app's PerformableStep.
+    case custom(AnyActionStep)
 }
 
 /// Why an action couldn't be planned. The message is shown in the Guide.

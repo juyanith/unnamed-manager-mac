@@ -32,7 +32,7 @@ public enum ConfigWriter {
         "  \(quote(name)): [\n" + lines.map { "    " + $0 }.joined(separator: ",\n") + "\n  ]"
     }
 
-    private static func object(_ fields: [(String, String)]) -> String {
+    static func object(_ fields: [(String, String)]) -> String {
         "{ " + fields.map { "\(quote($0.0)): \($0.1)" }.joined(separator: ", ") + " }"
     }
 

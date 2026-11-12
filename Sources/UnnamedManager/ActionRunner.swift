@@ -8,6 +8,12 @@ protocol ActionPerformer {
     func perform(_ plan: ActionPlan) async throws(PlanError)
 }
 
+/// A family's own step (`ActionPlan.custom`, S-060), carried out by the
+/// step itself. A family conforms its step type in its own app file.
+protocol PerformableStep: ActionStep {
+    func perform() async throws(PlanError)
+}
+
 /// Runs a binding's action (S-006, S-010 to S-014).
 struct ActionRunner {
     var performer: any ActionPerformer = SystemPerformer()
@@ -39,6 +45,11 @@ struct SystemPerformer: ActionPerformer {
             try spawn(program, arguments: arguments, cwd: cwd, env: env)
         case let .send(chords):
             try SendShortcut.post(chords)
+        case let .custom(custom):
+            guard let step = custom.step as? any PerformableStep else {
+                throw PlanError("This kind of action can't run on this Mac yet.")
+            }
+            try await step.perform()
         }
     }
 
