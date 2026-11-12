@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "runtime": { "cancelKey": "escape", "backKey": "" },
+  "ui": { "theme": "DARK", "position": "Top" },
+  "entries": [
+    { "keys": "hyper+space", "title": "Lower case leader" },
+    { "keys": "hyper+space backspace", "title": "Backspace is free when Back is off", "action": "x" },
+    { "keys": "Ctrl+Alt+Shift+K", "title": "Meh written out", "action": "x" },
+    { "keys": "Control+Option+Command+K", "title": "CAG written out", "action": "x" },
+    { "keys": "Meh+Cmd+J", "title": "Group plus modifier", "action": "x" },
+    { "keys": "Primary+Shift+F12", "title": "Primary", "action": "x" },
+    { "keys": "F13", "title": "Bare key", "action": "x" },
+    { "keys": "CAG+Grave", "title": "Punctuation menu" },
+    { "keys": "CAG+Grave LeftBracket", "title": "Punctuation step", "action": "x" },
+    { "keys": "CAG+Grave PageDown", "title": "Navigation step", "action": "x" }
+  ],
+  "actions": {
+    "x": { "type": "noop" }
+  }
+}

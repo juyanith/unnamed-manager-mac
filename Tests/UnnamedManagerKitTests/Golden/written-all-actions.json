@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "entries": [
+    { "keys": "Meh+Space", "title": "Everything" },
+    { "keys": "Meh+Space A", "title": "Apps" },
+    { "keys": "Meh+Space A F", "title": "Focus or start", "action": "app-default" },
+    { "keys": "Meh+Space A O", "title": "Focus only", "action": "app-focus" },
+    { "keys": "Meh+Space A N", "title": "New copy", "action": "app-start", "icon": "plus.square" },
+    { "keys": "Meh+Space O", "title": "Downloads", "action": "open-folder", "icon": "~/Downloads" },
+    { "keys": "Meh+Space U", "title": "Website", "action": "open-url" },
+    { "keys": "Meh+Space R", "title": "Run", "action": "run" },
+    { "keys": "Meh+Space S", "title": "Save all", "action": "send-two" },
+    { "keys": "Meh+Space C", "title": "Context", "action": "by-app" },
+    { "keys": "Meh+Space Space", "title": "Nothing", "action": "nothing" },
+    { "keys": "Meh+Space Slash", "title": "Help", "action": "help" }
+  ],
+  "actions": {
+    "app-default": { "type": "application", "bundleId": "com.apple.TextEdit" },
+    "app-focus": { "type": "application", "bundleId": "com.apple.TextEdit", "mode": "focus" },
+    "app-start": { "type": "application", "bundleId": "com.apple.TextEdit", "mode": "start" },
+    "open-folder": { "type": "open", "target": "~/Downloads" },
+    "open-url": { "type": "open", "target": "https://example.com" },
+    "run": { "type": "exec", "command": ["/usr/bin/touch", "/tmp/unnamed-manager-fixture"], "cwd": "~", "env": { "A": "1" } },
+    "send-two": { "type": "send", "keys": "Primary+S Primary+Shift+S" },
+    "by-app": { "type": "contextual", "variants": { "browsers": { "type": "noop" }, "editors": { "type": "send", "keys": "Primary+P" } } },
+    "nothing": { "type": "noop" },
+    "help": { "type": "help" }
+  },
+  "contexts": [
+    { "id": "browsers", "apps": ["com.apple.Safari"] },
+    { "id": "editors", "apps": ["dev.zed.Zed", "com.microsoft.VSCode"] }
+  ]
+}

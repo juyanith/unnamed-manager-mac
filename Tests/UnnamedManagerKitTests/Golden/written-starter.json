@@ -1,0 +1,15 @@
+{
+  "$schema": "./config.schema.json",
+  "version": 1,
+  "entries": [
+    { "keys": "Hyper+Space", "title": "Commands" },
+    { "keys": "Hyper+Space F", "title": "Finder", "action": "open-finder" },
+    { "keys": "Hyper+Space T", "title": "Terminal", "action": "open-terminal" },
+    { "keys": "Hyper+H", "title": "Help", "action": "show-help" }
+  ],
+  "actions": {
+    "open-finder": { "type": "application", "bundleId": "com.apple.finder" },
+    "open-terminal": { "type": "application", "bundleId": "com.apple.Terminal" },
+    "show-help": { "type": "help" }
+  }
+}

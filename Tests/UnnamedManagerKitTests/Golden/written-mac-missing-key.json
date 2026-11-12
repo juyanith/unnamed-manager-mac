@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "entries": [
+    { "keys": "Hyper+F24", "title": "A key Macs don't have", "action": "x" }
+  ],
+  "actions": {
+    "x": { "type": "noop" }
+  }
+}

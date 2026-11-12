@@ -1,0 +1,410 @@
+{
+  "$defs" : {
+    "action" : {
+      "oneOf" : [
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "bundleId" : {
+              "type" : "string"
+            },
+            "mode" : {
+              "description" : "focusOrStart (default): bring it forward, starting it if needed. focus: only if running. start: a new copy.",
+              "enum" : [
+                "focusOrStart",
+                "focus",
+                "start"
+              ]
+            },
+            "type" : {
+              "enum" : [
+                "application"
+              ]
+            }
+          },
+          "required" : [
+            "type",
+            "bundleId"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "target" : {
+              "type" : "string"
+            },
+            "type" : {
+              "enum" : [
+                "open"
+              ]
+            }
+          },
+          "required" : [
+            "type",
+            "target"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "command" : {
+              "items" : {
+                "type" : "string"
+              },
+              "minItems" : 1,
+              "type" : "array"
+            },
+            "cwd" : {
+              "type" : "string"
+            },
+            "env" : {
+              "additionalProperties" : {
+                "type" : "string"
+              },
+              "type" : "object"
+            },
+            "type" : {
+              "enum" : [
+                "exec"
+              ]
+            }
+          },
+          "required" : [
+            "type",
+            "command"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "keys" : {
+              "pattern" : "^\\s*(?:(?:[Cc][Oo][Nn][Tt][Rr][Oo][Ll]|[Cc][Tt][Rr][Ll]|[Oo][Pp][Tt][Ii][Oo][Nn]|[Oo][Pp][Tt]|[Aa][Ll][Tt]|[Ss][Hh][Ii][Ff][Tt]|[Cc][Oo][Mm][Mm][Aa][Nn][Dd]|[Cc][Mm][Dd]|[Pp][Rr][Ii][Mm][Aa][Rr][Yy]|[Hh][Yy][Pp][Ee][Rr]|[Mm][Ee][Hh]|[Cc][Aa][Gg]|[⇧⌃⌘⌥]+)\\+)*[⇧⌃⌘⌥]*(?:[Rr][Ii][Gg][Hh][Tt][Bb][Rr][Aa][Cc][Kk][Ee][Tt]|[Ll][Ee][Ff][Tt][Bb][Rr][Aa][Cc][Kk][Ee][Tt]|[Bb][Aa][Cc][Kk][Ss][Pp][Aa][Cc][Ee]|[Bb][Aa][Cc][Kk][Ss][Ll][Aa][Ss][Hh]|[Ss][Ee][Mm][Ii][Cc][Oo][Ll][Oo][Nn]|[Pp][Aa][Gg][Ee][Dd][Oo][Ww][Nn]|[Dd][Ee][Ll][Ee][Tt][Ee]|[Ee][Ss][Cc][Aa][Pp][Ee]|[Pp][Aa][Gg][Ee][Uu][Pp]|[Pp][Ee][Rr][Ii][Oo][Dd]|[Ss][Pp][Aa][Cc][Ee]|[Ee][Nn][Tt][Ee][Rr]|[Rr][Ii][Gg][Hh][Tt]|[Gg][Rr][Aa][Vv][Ee]|[Mm][Ii][Nn][Uu][Ss]|[Ee][Qq][Uu][Aa][Ll]|[Qq][Uu][Oo][Tt][Ee]|[Cc][Oo][Mm][Mm][Aa]|[Ss][Ll][Aa][Ss][Hh]|[Ll][Ee][Ff][Tt]|[Dd][Oo][Ww][Nn]|[Hh][Oo][Mm][Ee]|[Ff]10|[Ff]11|[Ff]12|[Ff]13|[Ff]14|[Ff]15|[Ff]16|[Ff]17|[Ff]18|[Ff]19|[Ff]20|[Ff]21|[Ff]22|[Ff]23|[Ff]24|[Tt][Aa][Bb]|[Ee][Nn][Dd]|[Ff]1|[Ff]2|[Ff]3|[Ff]4|[Ff]5|[Ff]6|[Ff]7|[Ff]8|[Ff]9|[Uu][Pp]|[Aa]|[Bb]|[Cc]|[Dd]|[Ee]|[Ff]|[Gg]|[Hh]|[Ii]|[Jj]|[Kk]|[Ll]|[Mm]|[Nn]|[Oo]|[Pp]|[Qq]|[Rr]|[Ss]|[Tt]|[Uu]|[Vv]|[Ww]|[Xx]|[Yy]|[Zz]|0|1|2|3|4|5|6|7|8|9)(?:\\s+(?:(?:[Cc][Oo][Nn][Tt][Rr][Oo][Ll]|[Cc][Tt][Rr][Ll]|[Oo][Pp][Tt][Ii][Oo][Nn]|[Oo][Pp][Tt]|[Aa][Ll][Tt]|[Ss][Hh][Ii][Ff][Tt]|[Cc][Oo][Mm][Mm][Aa][Nn][Dd]|[Cc][Mm][Dd]|[Pp][Rr][Ii][Mm][Aa][Rr][Yy]|[Hh][Yy][Pp][Ee][Rr]|[Mm][Ee][Hh]|[Cc][Aa][Gg]|[⇧⌃⌘⌥]+)\\+)*[⇧⌃⌘⌥]*(?:[Rr][Ii][Gg][Hh][Tt][Bb][Rr][Aa][Cc][Kk][Ee][Tt]|[Ll][Ee][Ff][Tt][Bb][Rr][Aa][Cc][Kk][Ee][Tt]|[Bb][Aa][Cc][Kk][Ss][Pp][Aa][Cc][Ee]|[Bb][Aa][Cc][Kk][Ss][Ll][Aa][Ss][Hh]|[Ss][Ee][Mm][Ii][Cc][Oo][Ll][Oo][Nn]|[Pp][Aa][Gg][Ee][Dd][Oo][Ww][Nn]|[Dd][Ee][Ll][Ee][Tt][Ee]|[Ee][Ss][Cc][Aa][Pp][Ee]|[Pp][Aa][Gg][Ee][Uu][Pp]|[Pp][Ee][Rr][Ii][Oo][Dd]|[Ss][Pp][Aa][Cc][Ee]|[Ee][Nn][Tt][Ee][Rr]|[Rr][Ii][Gg][Hh][Tt]|[Gg][Rr][Aa][Vv][Ee]|[Mm][Ii][Nn][Uu][Ss]|[Ee][Qq][Uu][Aa][Ll]|[Qq][Uu][Oo][Tt][Ee]|[Cc][Oo][Mm][Mm][Aa]|[Ss][Ll][Aa][Ss][Hh]|[Ll][Ee][Ff][Tt]|[Dd][Oo][Ww][Nn]|[Hh][Oo][Mm][Ee]|[Ff]10|[Ff]11|[Ff]12|[Ff]13|[Ff]14|[Ff]15|[Ff]16|[Ff]17|[Ff]18|[Ff]19|[Ff]20|[Ff]21|[Ff]22|[Ff]23|[Ff]24|[Tt][Aa][Bb]|[Ee][Nn][Dd]|[Ff]1|[Ff]2|[Ff]3|[Ff]4|[Ff]5|[Ff]6|[Ff]7|[Ff]8|[Ff]9|[Uu][Pp]|[Aa]|[Bb]|[Cc]|[Dd]|[Ee]|[Ff]|[Gg]|[Hh]|[Ii]|[Jj]|[Kk]|[Ll]|[Mm]|[Nn]|[Oo]|[Pp]|[Qq]|[Rr]|[Ss]|[Tt]|[Uu]|[Vv]|[Ww]|[Xx]|[Yy]|[Zz]|0|1|2|3|4|5|6|7|8|9))*\\s*$",
+              "type" : "string"
+            },
+            "type" : {
+              "enum" : [
+                "send"
+              ]
+            }
+          },
+          "required" : [
+            "type",
+            "keys"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "type" : {
+              "enum" : [
+                "noop"
+              ]
+            }
+          },
+          "required" : [
+            "type"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "type" : {
+              "enum" : [
+                "help"
+              ]
+            }
+          },
+          "required" : [
+            "type"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "fallback" : {
+              "$ref" : "#/$defs/plainAction"
+            },
+            "type" : {
+              "enum" : [
+                "contextual"
+              ]
+            },
+            "variants" : {
+              "additionalProperties" : {
+                "$ref" : "#/$defs/plainAction"
+              },
+              "type" : "object"
+            }
+          },
+          "required" : [
+            "type"
+          ],
+          "type" : "object"
+        }
+      ]
+    },
+    "plainAction" : {
+      "oneOf" : [
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "bundleId" : {
+              "type" : "string"
+            },
+            "mode" : {
+              "description" : "focusOrStart (default): bring it forward, starting it if needed. focus: only if running. start: a new copy.",
+              "enum" : [
+                "focusOrStart",
+                "focus",
+                "start"
+              ]
+            },
+            "type" : {
+              "enum" : [
+                "application"
+              ]
+            }
+          },
+          "required" : [
+            "type",
+            "bundleId"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "target" : {
+              "type" : "string"
+            },
+            "type" : {
+              "enum" : [
+                "open"
+              ]
+            }
+          },
+          "required" : [
+            "type",
+            "target"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "command" : {
+              "items" : {
+                "type" : "string"
+              },
+              "minItems" : 1,
+              "type" : "array"
+            },
+            "cwd" : {
+              "type" : "string"
+            },
+            "env" : {
+              "additionalProperties" : {
+                "type" : "string"
+              },
+              "type" : "object"
+            },
+            "type" : {
+              "enum" : [
+                "exec"
+              ]
+            }
+          },
+          "required" : [
+            "type",
+            "command"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "keys" : {
+              "pattern" : "^\\s*(?:(?:[Cc][Oo][Nn][Tt][Rr][Oo][Ll]|[Cc][Tt][Rr][Ll]|[Oo][Pp][Tt][Ii][Oo][Nn]|[Oo][Pp][Tt]|[Aa][Ll][Tt]|[Ss][Hh][Ii][Ff][Tt]|[Cc][Oo][Mm][Mm][Aa][Nn][Dd]|[Cc][Mm][Dd]|[Pp][Rr][Ii][Mm][Aa][Rr][Yy]|[Hh][Yy][Pp][Ee][Rr]|[Mm][Ee][Hh]|[Cc][Aa][Gg]|[⇧⌃⌘⌥]+)\\+)*[⇧⌃⌘⌥]*(?:[Rr][Ii][Gg][Hh][Tt][Bb][Rr][Aa][Cc][Kk][Ee][Tt]|[Ll][Ee][Ff][Tt][Bb][Rr][Aa][Cc][Kk][Ee][Tt]|[Bb][Aa][Cc][Kk][Ss][Pp][Aa][Cc][Ee]|[Bb][Aa][Cc][Kk][Ss][Ll][Aa][Ss][Hh]|[Ss][Ee][Mm][Ii][Cc][Oo][Ll][Oo][Nn]|[Pp][Aa][Gg][Ee][Dd][Oo][Ww][Nn]|[Dd][Ee][Ll][Ee][Tt][Ee]|[Ee][Ss][Cc][Aa][Pp][Ee]|[Pp][Aa][Gg][Ee][Uu][Pp]|[Pp][Ee][Rr][Ii][Oo][Dd]|[Ss][Pp][Aa][Cc][Ee]|[Ee][Nn][Tt][Ee][Rr]|[Rr][Ii][Gg][Hh][Tt]|[Gg][Rr][Aa][Vv][Ee]|[Mm][Ii][Nn][Uu][Ss]|[Ee][Qq][Uu][Aa][Ll]|[Qq][Uu][Oo][Tt][Ee]|[Cc][Oo][Mm][Mm][Aa]|[Ss][Ll][Aa][Ss][Hh]|[Ll][Ee][Ff][Tt]|[Dd][Oo][Ww][Nn]|[Hh][Oo][Mm][Ee]|[Ff]10|[Ff]11|[Ff]12|[Ff]13|[Ff]14|[Ff]15|[Ff]16|[Ff]17|[Ff]18|[Ff]19|[Ff]20|[Ff]21|[Ff]22|[Ff]23|[Ff]24|[Tt][Aa][Bb]|[Ee][Nn][Dd]|[Ff]1|[Ff]2|[Ff]3|[Ff]4|[Ff]5|[Ff]6|[Ff]7|[Ff]8|[Ff]9|[Uu][Pp]|[Aa]|[Bb]|[Cc]|[Dd]|[Ee]|[Ff]|[Gg]|[Hh]|[Ii]|[Jj]|[Kk]|[Ll]|[Mm]|[Nn]|[Oo]|[Pp]|[Qq]|[Rr]|[Ss]|[Tt]|[Uu]|[Vv]|[Ww]|[Xx]|[Yy]|[Zz]|0|1|2|3|4|5|6|7|8|9)(?:\\s+(?:(?:[Cc][Oo][Nn][Tt][Rr][Oo][Ll]|[Cc][Tt][Rr][Ll]|[Oo][Pp][Tt][Ii][Oo][Nn]|[Oo][Pp][Tt]|[Aa][Ll][Tt]|[Ss][Hh][Ii][Ff][Tt]|[Cc][Oo][Mm][Mm][Aa][Nn][Dd]|[Cc][Mm][Dd]|[Pp][Rr][Ii][Mm][Aa][Rr][Yy]|[Hh][Yy][Pp][Ee][Rr]|[Mm][Ee][Hh]|[Cc][Aa][Gg]|[⇧⌃⌘⌥]+)\\+)*[⇧⌃⌘⌥]*(?:[Rr][Ii][Gg][Hh][Tt][Bb][Rr][Aa][Cc][Kk][Ee][Tt]|[Ll][Ee][Ff][Tt][Bb][Rr][Aa][Cc][Kk][Ee][Tt]|[Bb][Aa][Cc][Kk][Ss][Pp][Aa][Cc][Ee]|[Bb][Aa][Cc][Kk][Ss][Ll][Aa][Ss][Hh]|[Ss][Ee][Mm][Ii][Cc][Oo][Ll][Oo][Nn]|[Pp][Aa][Gg][Ee][Dd][Oo][Ww][Nn]|[Dd][Ee][Ll][Ee][Tt][Ee]|[Ee][Ss][Cc][Aa][Pp][Ee]|[Pp][Aa][Gg][Ee][Uu][Pp]|[Pp][Ee][Rr][Ii][Oo][Dd]|[Ss][Pp][Aa][Cc][Ee]|[Ee][Nn][Tt][Ee][Rr]|[Rr][Ii][Gg][Hh][Tt]|[Gg][Rr][Aa][Vv][Ee]|[Mm][Ii][Nn][Uu][Ss]|[Ee][Qq][Uu][Aa][Ll]|[Qq][Uu][Oo][Tt][Ee]|[Cc][Oo][Mm][Mm][Aa]|[Ss][Ll][Aa][Ss][Hh]|[Ll][Ee][Ff][Tt]|[Dd][Oo][Ww][Nn]|[Hh][Oo][Mm][Ee]|[Ff]10|[Ff]11|[Ff]12|[Ff]13|[Ff]14|[Ff]15|[Ff]16|[Ff]17|[Ff]18|[Ff]19|[Ff]20|[Ff]21|[Ff]22|[Ff]23|[Ff]24|[Tt][Aa][Bb]|[Ee][Nn][Dd]|[Ff]1|[Ff]2|[Ff]3|[Ff]4|[Ff]5|[Ff]6|[Ff]7|[Ff]8|[Ff]9|[Uu][Pp]|[Aa]|[Bb]|[Cc]|[Dd]|[Ee]|[Ff]|[Gg]|[Hh]|[Ii]|[Jj]|[Kk]|[Ll]|[Mm]|[Nn]|[Oo]|[Pp]|[Qq]|[Rr]|[Ss]|[Tt]|[Uu]|[Vv]|[Ww]|[Xx]|[Yy]|[Zz]|0|1|2|3|4|5|6|7|8|9))*\\s*$",
+              "type" : "string"
+            },
+            "type" : {
+              "enum" : [
+                "send"
+              ]
+            }
+          },
+          "required" : [
+            "type",
+            "keys"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "type" : {
+              "enum" : [
+                "noop"
+              ]
+            }
+          },
+          "required" : [
+            "type"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "type" : {
+              "enum" : [
+                "help"
+              ]
+            }
+          },
+          "required" : [
+            "type"
+          ],
+          "type" : "object"
+        }
+      ]
+    }
+  },
+  "$schema" : "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties" : false,
+  "properties" : {
+    "$schema" : {
+      "type" : "string"
+    },
+    "actions" : {
+      "additionalProperties" : {
+        "$ref" : "#/$defs/action"
+      },
+      "type" : "object"
+    },
+    "contexts" : {
+      "items" : {
+        "additionalProperties" : false,
+        "properties" : {
+          "apps" : {
+            "description" : "Bundle ids.",
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "id" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [
+          "id",
+          "apps"
+        ],
+        "type" : "object"
+      },
+      "type" : "array"
+    },
+    "entries" : {
+      "items" : {
+        "additionalProperties" : false,
+        "properties" : {
+          "action" : {
+            "description" : "An id in actions. Without one, the entry is a menu.",
+            "type" : "string"
+          },
+          "icon" : {
+            "description" : "Its icon in the Guide: an SF Symbol name such as \"terminal\", or a path starting with / or ~ for that file's icon. Without one, apps and Open targets show their own icon.",
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "keys" : {
+            "description" : "The leader chord, then step keys: \"Hyper+Space A T\". Modifiers: Ctrl, Alt or Opt, Shift, Cmd, Primary, Hyper (all four), Meh (Ctrl+Alt+Shift), CAG (Ctrl+Alt+Cmd), or the symbols ⌃⌥⇧⌘ (\"⌃⌥⇧T\"). A single chord with an action is a direct binding.",
+            "pattern" : "^\\s*(?:(?:[Cc][Oo][Nn][Tt][Rr][Oo][Ll]|[Cc][Tt][Rr][Ll]|[Oo][Pp][Tt][Ii][Oo][Nn]|[Oo][Pp][Tt]|[Aa][Ll][Tt]|[Ss][Hh][Ii][Ff][Tt]|[Cc][Oo][Mm][Mm][Aa][Nn][Dd]|[Cc][Mm][Dd]|[Pp][Rr][Ii][Mm][Aa][Rr][Yy]|[Hh][Yy][Pp][Ee][Rr]|[Mm][Ee][Hh]|[Cc][Aa][Gg]|[⇧⌃⌘⌥]+)\\+)*[⇧⌃⌘⌥]*(?:[Rr][Ii][Gg][Hh][Tt][Bb][Rr][Aa][Cc][Kk][Ee][Tt]|[Ll][Ee][Ff][Tt][Bb][Rr][Aa][Cc][Kk][Ee][Tt]|[Bb][Aa][Cc][Kk][Ss][Pp][Aa][Cc][Ee]|[Bb][Aa][Cc][Kk][Ss][Ll][Aa][Ss][Hh]|[Ss][Ee][Mm][Ii][Cc][Oo][Ll][Oo][Nn]|[Pp][Aa][Gg][Ee][Dd][Oo][Ww][Nn]|[Dd][Ee][Ll][Ee][Tt][Ee]|[Ee][Ss][Cc][Aa][Pp][Ee]|[Pp][Aa][Gg][Ee][Uu][Pp]|[Pp][Ee][Rr][Ii][Oo][Dd]|[Ss][Pp][Aa][Cc][Ee]|[Ee][Nn][Tt][Ee][Rr]|[Rr][Ii][Gg][Hh][Tt]|[Gg][Rr][Aa][Vv][Ee]|[Mm][Ii][Nn][Uu][Ss]|[Ee][Qq][Uu][Aa][Ll]|[Qq][Uu][Oo][Tt][Ee]|[Cc][Oo][Mm][Mm][Aa]|[Ss][Ll][Aa][Ss][Hh]|[Ll][Ee][Ff][Tt]|[Dd][Oo][Ww][Nn]|[Hh][Oo][Mm][Ee]|[Ff]10|[Ff]11|[Ff]12|[Ff]13|[Ff]14|[Ff]15|[Ff]16|[Ff]17|[Ff]18|[Ff]19|[Ff]20|[Ff]21|[Ff]22|[Ff]23|[Ff]24|[Tt][Aa][Bb]|[Ee][Nn][Dd]|[Ff]1|[Ff]2|[Ff]3|[Ff]4|[Ff]5|[Ff]6|[Ff]7|[Ff]8|[Ff]9|[Uu][Pp]|[Aa]|[Bb]|[Cc]|[Dd]|[Ee]|[Ff]|[Gg]|[Hh]|[Ii]|[Jj]|[Kk]|[Ll]|[Mm]|[Nn]|[Oo]|[Pp]|[Qq]|[Rr]|[Ss]|[Tt]|[Uu]|[Vv]|[Ww]|[Xx]|[Yy]|[Zz]|0|1|2|3|4|5|6|7|8|9)(?:\\s+(?:(?:[Cc][Oo][Nn][Tt][Rr][Oo][Ll]|[Cc][Tt][Rr][Ll]|[Oo][Pp][Tt][Ii][Oo][Nn]|[Oo][Pp][Tt]|[Aa][Ll][Tt]|[Ss][Hh][Ii][Ff][Tt]|[Cc][Oo][Mm][Mm][Aa][Nn][Dd]|[Cc][Mm][Dd]|[Pp][Rr][Ii][Mm][Aa][Rr][Yy]|[Hh][Yy][Pp][Ee][Rr]|[Mm][Ee][Hh]|[Cc][Aa][Gg]|[⇧⌃⌘⌥]+)\\+)*[⇧⌃⌘⌥]*(?:[Rr][Ii][Gg][Hh][Tt][Bb][Rr][Aa][Cc][Kk][Ee][Tt]|[Ll][Ee][Ff][Tt][Bb][Rr][Aa][Cc][Kk][Ee][Tt]|[Bb][Aa][Cc][Kk][Ss][Pp][Aa][Cc][Ee]|[Bb][Aa][Cc][Kk][Ss][Ll][Aa][Ss][Hh]|[Ss][Ee][Mm][Ii][Cc][Oo][Ll][Oo][Nn]|[Pp][Aa][Gg][Ee][Dd][Oo][Ww][Nn]|[Dd][Ee][Ll][Ee][Tt][Ee]|[Ee][Ss][Cc][Aa][Pp][Ee]|[Pp][Aa][Gg][Ee][Uu][Pp]|[Pp][Ee][Rr][Ii][Oo][Dd]|[Ss][Pp][Aa][Cc][Ee]|[Ee][Nn][Tt][Ee][Rr]|[Rr][Ii][Gg][Hh][Tt]|[Gg][Rr][Aa][Vv][Ee]|[Mm][Ii][Nn][Uu][Ss]|[Ee][Qq][Uu][Aa][Ll]|[Qq][Uu][Oo][Tt][Ee]|[Cc][Oo][Mm][Mm][Aa]|[Ss][Ll][Aa][Ss][Hh]|[Ll][Ee][Ff][Tt]|[Dd][Oo][Ww][Nn]|[Hh][Oo][Mm][Ee]|[Ff]10|[Ff]11|[Ff]12|[Ff]13|[Ff]14|[Ff]15|[Ff]16|[Ff]17|[Ff]18|[Ff]19|[Ff]20|[Ff]21|[Ff]22|[Ff]23|[Ff]24|[Tt][Aa][Bb]|[Ee][Nn][Dd]|[Ff]1|[Ff]2|[Ff]3|[Ff]4|[Ff]5|[Ff]6|[Ff]7|[Ff]8|[Ff]9|[Uu][Pp]|[Aa]|[Bb]|[Cc]|[Dd]|[Ee]|[Ff]|[Gg]|[Hh]|[Ii]|[Jj]|[Kk]|[Ll]|[Mm]|[Nn]|[Oo]|[Pp]|[Qq]|[Rr]|[Ss]|[Tt]|[Uu]|[Vv]|[Ww]|[Xx]|[Yy]|[Zz]|0|1|2|3|4|5|6|7|8|9))*\\s*$",
+            "type" : "string"
+          },
+          "title" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [
+          "keys",
+          "title"
+        ],
+        "type" : "object"
+      },
+      "type" : "array"
+    },
+    "runtime" : {
+      "additionalProperties" : false,
+      "properties" : {
+        "backKey" : {
+          "description" : "Goes up one menu. \"\" turns Back off. Default Backspace.",
+          "type" : "string"
+        },
+        "cancelKey" : {
+          "description" : "Ends a sequence. Default Escape.",
+          "type" : "string"
+        },
+        "hudDelayMs" : {
+          "description" : "Idle time before the Guide shows.",
+          "minimum" : 0,
+          "type" : "integer"
+        },
+        "showHud" : {
+          "description" : "Show the Guide. Default true.",
+          "type" : "boolean"
+        },
+        "timeoutMs" : {
+          "description" : "Idle time with the Guide up before the sequence ends. 0 is off.",
+          "minimum" : 0,
+          "type" : "integer"
+        }
+      },
+      "type" : "object"
+    },
+    "ui" : {
+      "additionalProperties" : false,
+      "properties" : {
+        "errorBell" : {
+          "type" : "boolean"
+        },
+        "errorFlash" : {
+          "type" : "boolean"
+        },
+        "position" : {
+          "enum" : [
+            "center",
+            "top",
+            "bottom"
+          ]
+        },
+        "theme" : {
+          "enum" : [
+            "system",
+            "light",
+            "dark"
+          ]
+        }
+      },
+      "type" : "object"
+    },
+    "version" : {
+      "const" : 1
+    }
+  },
+  "required" : [
+    "version",
+    "entries"
+  ],
+  "title" : "Unnamed Manager config",
+  "type" : "object"
+}

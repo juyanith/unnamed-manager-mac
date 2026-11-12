@@ -13,6 +13,8 @@ let package = Package(
             // App code runs on the main thread unless you say otherwise.
             swiftSettings: [.defaultIsolation(MainActor.self)]
         ),
-        .testTarget(name: "UnnamedManagerKitTests", dependencies: ["UnnamedManagerKit"]),
+        .testTarget(name: "UnnamedManagerKitTests", dependencies: ["UnnamedManagerKit"],
+                    // Golden files the tests read by path (S-060), not resources.
+                    exclude: ["Golden"]),
     ]
 )

@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "entries": [
+    { "keys": "⌃⌥⇧T", "title": "Symbols before the key", "action": "x" },
+    { "keys": "⌘+⇧+F", "title": "Symbols joined with plus", "action": "x" },
+    { "keys": "Opt+⌘K", "title": "Name then symbol", "action": "x" }
+  ],
+  "actions": {
+    "x": { "type": "noop" }
+  }
+}

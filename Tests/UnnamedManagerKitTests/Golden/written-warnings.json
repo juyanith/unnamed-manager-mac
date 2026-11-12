@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "entries": [
+    { "keys": "Hyper+W", "title": "Used", "action": "used" }
+  ],
+  "actions": {
+    "used": { "type": "noop" },
+    "spare": { "type": "noop" }
+  },
+  "contexts": [
+    { "id": "lonely", "apps": ["com.apple.Safari"] }
+  ]
+}
