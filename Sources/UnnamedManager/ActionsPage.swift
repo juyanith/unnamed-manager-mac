@@ -163,37 +163,6 @@ struct ActionFields: View {
             } footer: {
                 Text(mode.explanation)
             }
-        case let .open(target):
-            Section {
-                TextField("File, Folder or URL", text: text(target) { .open(target: $0) })
-                    .textEntry("File, Folder or URL")
-                Button("Choose…") { chooseFile() }
-            } footer: {
-                Text("A path starting with / or ~, or a URL such as https://example.com.")
-            }
-        case let .exec(command, cwd, env):
-            Section {
-                TextField("Command", text: Binding(
-                    get: { command.joined(separator: "\n") },
-                    set: { action = .exec(command: $0.split(separator: "\n").map(String.init), cwd: cwd, env: env) }),
-                          axis: .vertical)
-                    .lineLimit(2...6)
-                    .textEntry("Command")
-                TextField("Folder", text: Binding(
-                    get: { cwd ?? "" },
-                    set: { action = .exec(command: command, cwd: $0.isEmpty ? nil : $0, env: env) }),
-                          prompt: Text("~"))
-                    .textEntry("Folder")
-            } footer: {
-                Text("One argument per line, the program first. It runs with no shell, so nothing is expanded except a leading ~.")
-            }
-        case let .send(keys):
-            Section {
-                TextField("Keys", text: text(keys) { .send(keys: $0) }, prompt: Text("Cmd+F"))
-                    .textEntry("Keys")
-            } footer: {
-                Text("One or more chords separated by spaces, such as Cmd+K S.")
-            }
         case let .contextual(variants, fallback):
             ForEach(contexts, id: \.id) { context in
                 Section("In \(context.id)") {
@@ -244,20 +213,12 @@ struct ActionFields: View {
         action = .application(bundleId: id, mode: mode)
     }
 
-    private func chooseFile() {
-        let panel = NSOpenPanel()
-        panel.canChooseDirectories = true
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        let path = url.path(percentEncoded: false)
-        let home = ActionPlanner.expandTilde("~", home: .homeDirectory)
-        action = .open(target: path.hasPrefix(home) ? "~" + path.dropFirst(home.count) : path)
-    }
 }
 
 extension Config.Action {
     /// The types for the Type picker, alphabetical by the name shown (S-046).
     static func types(allowsContextAware: Bool) -> [String] {
-        let types = ["application", "open", "exec", "send"] + ActionRegistry.standard.kinds.map(\.type)
+        let types = ["application"] + ActionRegistry.standard.kinds.map(\.type)
             + (allowsContextAware ? ["contextual"] : [])
         return types.sorted { empty(of: $0).displayName.localizedStandardCompare(empty(of: $1).displayName) == .orderedAscending }
     }
@@ -266,9 +227,6 @@ extension Config.Action {
     static func empty(of type: String) -> Config.Action {
         switch type {
         case "application": .application(bundleId: "")
-        case "open": .open(target: "")
-        case "exec": .exec(command: [], cwd: nil, env: [:])
-        case "send": .send(keys: "")
         case "contextual": .contextual(variants: [:], fallback: nil)
         default:
             ActionRegistry.standard.family(for: type).map { .family(AnyActionValue($0.blank(type))) } ?? .noop

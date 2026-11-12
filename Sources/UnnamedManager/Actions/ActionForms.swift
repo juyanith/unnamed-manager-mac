@@ -5,12 +5,12 @@ import UnnamedManagerKit
 /// own app file, so a new family changes no shared view.
 protocol EditableAction: ActionValue {
     associatedtype Form: View
-    @ViewBuilder static func form(_ value: Binding<Self>) -> Form
+    @MainActor @ViewBuilder static func form(_ value: Binding<Self>) -> Form
 }
 
 extension EditableAction {
     /// The form, editing the action in place.
-    static func form(editing action: Binding<Config.Action>, current: Self) -> AnyView {
+    @MainActor static func form(editing action: Binding<Config.Action>, current: Self) -> AnyView {
         AnyView(form(Binding(get: { (action.wrappedValue.familyValue as? Self) ?? current },
                              set: { action.wrappedValue = .family(AnyActionValue($0)) })))
     }
@@ -38,7 +38,7 @@ struct FamilyForm: View {
 }
 
 extension BasicAction: EditableAction {
-    static func form(_ value: Binding<BasicAction>) -> some View {
+    @MainActor static func form(_ value: Binding<BasicAction>) -> some View {
         Section {
             switch value.wrappedValue {
             case .noop:

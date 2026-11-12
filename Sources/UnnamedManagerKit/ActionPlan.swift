@@ -41,17 +41,6 @@ public enum ActionPlanner {
             case .focus: return .focusApp(bundleId: bundleId)
             case .start: return .startApp(bundleId: bundleId)
             }
-        case let .open(target):
-            return .open(try openURL(target, home: home))
-        case let .exec(command, cwd, env):
-            guard let program = command.first, !program.isEmpty else {
-                throw PlanError("Run Command needs a program as the first item of “command”.")
-            }
-            let arguments = command.dropFirst().map { expandTilde($0, home: home) }
-            let directory = cwd.map { URL(fileURLWithPath: expandTilde($0, home: home), isDirectory: true) } ?? home
-            return .spawn(program: expandTilde(program, home: home), arguments: Array(arguments), cwd: directory, env: env)
-        case let .send(keys):
-            return .send(try chords(keys))
         case let .family(value):
             return try value.value.plan(home: home)
         case .contextual:

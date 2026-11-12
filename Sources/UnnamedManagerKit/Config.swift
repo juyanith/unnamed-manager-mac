@@ -94,13 +94,15 @@ public struct Config: Sendable, Equatable {
 
     public indirect enum Action: Sendable, Equatable {
         case application(bundleId: String, mode: AppMode = .default)
-        case open(target: String)
-        case exec(command: [String], cwd: String?, env: [String: String])
-        case send(keys: String)
         case contextual(variants: [String: Action], fallback: Action?)
         /// An action of any family in the registry (S-060).
         case family(AnyActionValue)
 
+        public static func open(target: String) -> Action { .family(AnyActionValue(OpenAction(target: target))) }
+        public static func exec(command: [String], cwd: String?, env: [String: String]) -> Action {
+            .family(AnyActionValue(RunCommandAction(command: command, cwd: cwd, env: env)))
+        }
+        public static func send(keys: String) -> Action { .family(AnyActionValue(SendShortcutAction(keys: keys))) }
         public static var noop: Action { .family(AnyActionValue(BasicAction.noop)) }
         /// Show Help: open the Help page of the Bindings window (S-053).
         public static var help: Action { .family(AnyActionValue(BasicAction.help)) }
@@ -114,9 +116,6 @@ public struct Config: Sendable, Equatable {
         public var type: String {
             switch self {
             case .application: "application"
-            case .open: "open"
-            case .exec: "exec"
-            case .send: "send"
             case .contextual: "contextual"
             case let .family(value): value.value.type
             }
@@ -126,9 +125,6 @@ public struct Config: Sendable, Equatable {
         public var displayName: String {
             switch self {
             case .application: "Use Application"
-            case .open: "Open"
-            case .exec: "Run Command"
-            case .send: "Send Shortcut"
             case .contextual: "Context Aware"
             case let .family(value): value.value.displayName
             }
@@ -250,23 +246,12 @@ extension Config.Action: Decodable {
                     underlyingError: RuleMarker(rule: .badAppMode)))
             }
             self = .application(bundleId: try c.required("bundleId"), mode: mode)
-        case "open":
-            try c.rejectUnknown(allowed: ["type", "target"], at: path)
-            self = .open(target: try c.required("target"))
-        case "exec":
-            try c.rejectUnknown(allowed: ["type", "command", "cwd", "env"], at: path)
-            self = .exec(command: try c.required("command"),
-                         cwd: try c.decodeIfPresent(String.self, forKey: AnyKey("cwd")),
-                         env: try c.value("env", default: [:]))
-        case "send":
-            try c.rejectUnknown(allowed: ["type", "keys"], at: path)
-            self = .send(keys: try c.required("keys"))
         case "contextual":
             try c.rejectUnknown(allowed: ["type", "variants", "fallback"], at: path)
             self = .contextual(variants: try c.value("variants", default: [:]),
                                fallback: try c.decodeIfPresent(Config.Action.self, forKey: AnyKey("fallback")))
         default:
-            let types = ["application", "open", "exec", "send"] + registry.kinds.map(\.type) + ["contextual"]
+            let types = ["application"] + registry.kinds.map(\.type) + ["contextual"]
             throw DecodingError.dataCorrupted(.init(codingPath: c.codingPath,
                 debugDescription: "Unknown action type “\(type)”. Use \(types.dropLast().joined(separator: ", ")) or \(types.last!).",
                 underlyingError: RuleMarker(rule: .unknownActionType)))

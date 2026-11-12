@@ -53,16 +53,6 @@ public enum ConfigWriter {
         case let .application(bundleId, mode):
             fields.append(("bundleId", quote(bundleId)))
             if mode != .default { fields.append(("mode", quote(mode.rawValue))) }
-        case let .open(target):
-            fields.append(("target", quote(target)))
-        case let .exec(command, cwd, env):
-            fields.append(("command", "[" + command.map(quote).joined(separator: ", ") + "]"))
-            if let cwd { fields.append(("cwd", quote(cwd))) }
-            if !env.isEmpty {
-                fields.append(("env", object(env.keys.sorted().map { ($0, quote(env[$0]!)) })))
-            }
-        case let .send(keys):
-            fields.append(("keys", quote(keys)))
         case let .contextual(variants, fallback):
             // Variants follow the contexts' order, which decides which one wins.
             let ids = ordered(Array(variants.keys), by: contexts.map(\.id))

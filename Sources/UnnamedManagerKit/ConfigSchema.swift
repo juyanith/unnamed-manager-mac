@@ -118,13 +118,6 @@ public enum ConfigSchema {
                 "mode": ["enum": Config.AppMode.allCases.map(\.rawValue),
                          "description": "focusOrStart (default): bring it forward, starting it if needed. focus: only if running. start: a new copy."],
             ], required: ["bundleId"]),
-            variant("open", ["target": ["type": "string"]], required: ["target"]),
-            variant("exec", [
-                "command": ["type": "array", "items": ["type": "string"], "minItems": 1],
-                "cwd": ["type": "string"],
-                "env": ["type": "object", "additionalProperties": ["type": "string"]],
-            ], required: ["command"]),
-            variant("send", ["keys": ["type": "string", "pattern": keysPattern]], required: ["keys"]),
         ]
         for kind in registry.kinds {
             let schema = registry.family(for: kind.type)!.schema(kind.type)
@@ -145,6 +138,6 @@ public enum ConfigSchema {
     }
 
     public static func actionTypes(registry: ActionRegistry) -> [String] {
-        ["application", "open", "exec", "send"] + registry.kinds.map(\.type) + ["contextual"]
+        ["application"] + registry.kinds.map(\.type) + ["contextual"]
     }
 }
