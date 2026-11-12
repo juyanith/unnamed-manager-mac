@@ -36,11 +36,24 @@ public struct UseApplicationAction: ActionValue {
     }
 
     public static func schema(_ type: String) -> ActionSchema {
-        ActionSchema([
-            "bundleId": ["type": "string"],
-            "mode": ["enum": Config.AppMode.allCases.map(\.rawValue),
-                     "description": "focusOrStart (default): bring it forward, starting it if needed. focus: only if running. start: a new copy."],
-        ], required: ["bundleId"])
+        let mode: [String: Any] = [
+            "enum": Config.AppMode.allCases.map(\.rawValue),
+            "description": "focusOrStart (default): bring it forward, starting it if needed. focus: only if running. start: a new copy.",
+        ]
+        // The Windows app names an app by exe or appId (spec v4). The Mac
+        // reads only bundleId, but the schema is shared, so it lists all three.
+        return ActionSchema(["bundleId": ["type": "string"], "mode": mode], required: ["bundleId"], alternatives: [
+            ActionSchema([
+                "exe": ["type": "string", "pattern": "\\.[Ee][Xx][Ee]$",
+                        "description": "Windows: the program's file name, such as Code.exe, or its full path."],
+                "mode": mode,
+            ], required: ["exe"]),
+            ActionSchema([
+                "appId": ["type": "string", "minLength": 1,
+                          "description": "Windows: an AppUserModelID, for Store and packaged apps."],
+                "mode": mode,
+            ], required: ["appId"]),
+        ])
     }
 
     public func plan(home: URL) throws(PlanError) -> ActionPlan {

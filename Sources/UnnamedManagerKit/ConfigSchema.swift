@@ -121,7 +121,9 @@ public enum ConfigSchema {
         var variants: [[String: Any]] = []
         for kind in registry.kinds {
             let schema = registry.family(for: kind.type)!.schema(kind.type)
-            variants.append(variant(kind.type, schema.properties, required: schema.required))
+            for shape in [schema] + schema.alternatives {
+                variants.append(variant(kind.type, shape.properties, required: shape.required))
+            }
         }
         if allowingContextual {
             variants.append(variant("contextual", [

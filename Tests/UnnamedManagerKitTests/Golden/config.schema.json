@@ -31,6 +31,62 @@
         {
           "additionalProperties" : false,
           "properties" : {
+            "exe" : {
+              "description" : "Windows: the program's file name, such as Code.exe, or its full path.",
+              "pattern" : "\\.[Ee][Xx][Ee]$",
+              "type" : "string"
+            },
+            "mode" : {
+              "description" : "focusOrStart (default): bring it forward, starting it if needed. focus: only if running. start: a new copy.",
+              "enum" : [
+                "focusOrStart",
+                "focus",
+                "start"
+              ]
+            },
+            "type" : {
+              "enum" : [
+                "application"
+              ]
+            }
+          },
+          "required" : [
+            "type",
+            "exe"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "appId" : {
+              "description" : "Windows: an AppUserModelID, for Store and packaged apps.",
+              "minLength" : 1,
+              "type" : "string"
+            },
+            "mode" : {
+              "description" : "focusOrStart (default): bring it forward, starting it if needed. focus: only if running. start: a new copy.",
+              "enum" : [
+                "focusOrStart",
+                "focus",
+                "start"
+              ]
+            },
+            "type" : {
+              "enum" : [
+                "application"
+              ]
+            }
+          },
+          "required" : [
+            "type",
+            "appId"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
             "target" : {
               "type" : "string"
             },
@@ -425,6 +481,62 @@
           "required" : [
             "type",
             "bundleId"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "exe" : {
+              "description" : "Windows: the program's file name, such as Code.exe, or its full path.",
+              "pattern" : "\\.[Ee][Xx][Ee]$",
+              "type" : "string"
+            },
+            "mode" : {
+              "description" : "focusOrStart (default): bring it forward, starting it if needed. focus: only if running. start: a new copy.",
+              "enum" : [
+                "focusOrStart",
+                "focus",
+                "start"
+              ]
+            },
+            "type" : {
+              "enum" : [
+                "application"
+              ]
+            }
+          },
+          "required" : [
+            "type",
+            "exe"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "appId" : {
+              "description" : "Windows: an AppUserModelID, for Store and packaged apps.",
+              "minLength" : 1,
+              "type" : "string"
+            },
+            "mode" : {
+              "description" : "focusOrStart (default): bring it forward, starting it if needed. focus: only if running. start: a new copy.",
+              "enum" : [
+                "focusOrStart",
+                "focus",
+                "start"
+              ]
+            },
+            "type" : {
+              "enum" : [
+                "application"
+              ]
+            }
+          },
+          "required" : [
+            "type",
+            "appId"
           ],
           "type" : "object"
         },

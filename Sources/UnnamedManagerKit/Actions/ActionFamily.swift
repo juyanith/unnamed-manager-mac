@@ -70,13 +70,17 @@ public struct AnyActionValue: Sendable, Equatable {
 }
 
 /// A kind's fields in the JSON Schema: `properties` and the names in `required`.
+/// `alternatives` are other shapes of the same kind, each its own variant in
+/// the schema, such as the fields the Windows app names an app by (spec v4).
 public struct ActionSchema {
     public var properties: [String: Any]
     public var required: [String]
+    public var alternatives: [ActionSchema]
 
-    public init(_ properties: [String: Any] = [:], required: [String] = []) {
+    public init(_ properties: [String: Any] = [:], required: [String] = [], alternatives: [ActionSchema] = []) {
         self.properties = properties
         self.required = required
+        self.alternatives = alternatives
     }
 }
 

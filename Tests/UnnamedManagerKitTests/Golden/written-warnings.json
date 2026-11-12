@@ -1,7 +1,7 @@
 {
   "version": 1,
   "entries": [
-    { "keys": "Hyper+W", "title": "Used", "action": "used" }
+    { "keys": "Meh+W", "title": "Used", "action": "used" }
   ],
   "actions": {
     "used": { "type": "noop" },

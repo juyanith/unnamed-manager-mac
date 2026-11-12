@@ -74,13 +74,15 @@ struct SpecFixtureTests {
         }
     }
 
-    @Test("The app's rules are exactly the spec's rule ids")
+    @Test("The app's rules are exactly the spec's rule ids, less the Windows-only ones")
     func ruleIDs() throws {
         let spec = try String(contentsOf: Self.folder.deletingLastPathComponent().appending(path: "CONFIG-SPEC.md"), encoding: .utf8)
         let validation = spec.components(separatedBy: "## Validation").dropFirst().first?
             .components(separatedBy: "\n## ").first ?? ""
         let ids = Set(validation.split(separator: "\n").compactMap { line -> String? in
-            guard line.hasPrefix("| `") else { return nil }
+            // Spec v4's Windows rules (other-platform-field, bad-app-id,
+            // bad-icon, office-shortcut) never apply on the Mac.
+            guard line.hasPrefix("| `"), !line.contains("| Windows only") else { return nil }
             return line.dropFirst(3).split(separator: "`").first.map(String.init)
         })
         #expect(ids == Set(ConfigRule.allCases.map(\.rawValue)))
@@ -91,17 +93,19 @@ struct SpecFixtureTests {
 /// schemas can't drift (spec v2).
 @Suite("Schema against the spec")
 struct SpecSchemaTests {
-    static func variants(_ json: Data) throws -> [String: NSDictionary] {
+    /// Each type's variants, in order. A type can have more than one, such as
+    /// application's bundleId, exe and appId (spec v4).
+    static func variants(_ json: Data) throws -> [String: [NSDictionary]] {
         let root = try #require(JSONSerialization.jsonObject(with: json) as? [String: Any])
         let defs = try #require(root["$defs"] as? [String: Any])
         let action = try #require(defs["action"] as? [String: Any])
         let list = try #require(action["oneOf"] as? [[String: Any]])
-        return Dictionary(uniqueKeysWithValues: list.compactMap { variant in
+        return Dictionary(grouping: list.compactMap { variant -> (String, NSDictionary)? in
             guard let properties = variant["properties"] as? [String: Any],
                   let type = (properties["type"] as? [String: Any])?["enum"] as? [String],
                   let name = type.first else { return nil }
             return (name, variant as NSDictionary)
-        })
+        }, by: \.0).mapValues { $0.map(\.1) }
     }
 
     @Test("The windows settings are described as the spec describes them")
