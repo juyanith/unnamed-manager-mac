@@ -676,7 +676,8 @@ Acceptance:
 - [self] Against a fake window: Maximize, then Maximize again, restores the first frame exactly.
 - [self] No focused window fails with "<App> has no window to maximize."
 - [manual] In Zed and in Safari, Maximize and restore in one step each, with no animation in Safari.
-Status: todo
+Status: done
+Verified: screen choice, the coordinate flip, fill, restore, per-window memory, a moved window forgetting, an app that snaps its size, and reading, writing and planning `window.maximize` (unit tests, `WindowGeometryTests`, `MaximizeTests`); its schema is the spec's (`SpecSchemaTests`), and `window-toggle-type.json` is off the pending list. Against `FakeWindowSystem`: fill, restore exactly, a window with a maximum size, no focused window, no Accessibility (self-test, 146 checks). Not yet tried by hand: the manual line.
 
 ### S-063 Minimize the window in front
 As the user, I press a key and the window goes to the Dock.

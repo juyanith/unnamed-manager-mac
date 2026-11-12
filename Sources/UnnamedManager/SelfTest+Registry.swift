@@ -16,7 +16,7 @@ nonisolated private struct ChimeAction: ActionValue {
 
 nonisolated private struct ChimeStep: PerformableStep {
     nonisolated(unsafe) static var rung = 0
-    func perform() async throws(PlanError) { Self.rung += 1 }
+    func perform(in context: StepContext) async throws(PlanError) { Self.rung += 1 }
 }
 
 /// A step with no performer in the app, which must fail with a message.

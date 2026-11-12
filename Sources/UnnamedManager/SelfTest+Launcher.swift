@@ -233,8 +233,10 @@ extension SelfTest {
         check("S-047 no window to raise for a process that isn't there",
               !WindowRaiser.raiseLastFocused(pid: 999_999) && ContinuousClock.now - asked < .seconds(1))
         let names = Config.Action.types(allowsContextAware: true).map { Config.Action.empty(of: $0).displayName }
-        check("S-046 the Type picker is alphabetical", names == ["Context Aware", "Do Nothing", "Open", "Run Command",
-                                                               "Send Shortcut", "Show Help", "Use Application"], "\(names)")
+        check("S-046 the Type picker is alphabetical",
+              names == names.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+              && Set(["Context Aware", "Do Nothing", "Open", "Run Command", "Send Shortcut", "Show Help", "Use Application"])
+                  .isSubset(of: names), "\(names)")
         check("S-046 variants offer every type but Context Aware",
               !Config.Action.types(allowsContextAware: false).contains("contextual"))
 

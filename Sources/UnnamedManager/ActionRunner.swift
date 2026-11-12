@@ -11,7 +11,13 @@ protocol ActionPerformer {
 /// A family's own step (`ActionPlan.custom`, S-060), carried out by the
 /// step itself. A family conforms its step type in its own app file.
 protocol PerformableStep: ActionStep {
-    func perform() async throws(PlanError)
+    func perform(in context: StepContext) async throws(PlanError)
+}
+
+/// What a family's step can use, so the self-test can hand it fakes.
+struct StepContext {
+    /// The windows on screen, and what Maximize remembers (S-062).
+    var windows: WindowControl
 }
 
 /// Runs a binding's action (S-006, S-010 to S-014).
@@ -27,6 +33,8 @@ struct ActionRunner {
 
 /// Does each plan with NSWorkspace.
 struct SystemPerformer: ActionPerformer {
+    var context = StepContext(windows: WindowControl(system: AXWindowSystem()))
+
     func perform(_ plan: ActionPlan) async throws(PlanError) {
         switch plan {
         case let .openApp(bundleId):
@@ -49,7 +57,7 @@ struct SystemPerformer: ActionPerformer {
             guard let step = custom.step as? any PerformableStep else {
                 throw PlanError("This kind of action can't run on this Mac yet.")
             }
-            try await step.perform()
+            try await step.perform(in: context)
         }
     }
 

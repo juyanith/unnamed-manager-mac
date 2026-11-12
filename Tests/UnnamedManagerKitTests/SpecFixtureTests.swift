@@ -39,7 +39,6 @@ struct SpecFixtureTests {
     /// one that starts passing fails the test until it's taken off here.
     static let pending: [String: String] = [
         "valid/window-actions.json": "S-062 to S-069",
-        "invalid/window-toggle-type.json": "S-062",
         "invalid/window-unknown-field.json": "S-063",
         "invalid/window-preset-and-frame.json": "S-064",
         "invalid/window-frame-past-edge.json": "S-064",
@@ -104,5 +103,31 @@ struct SpecFixtureTests {
             return line.dropFirst(3).split(separator: "`").first.map(String.init)
         })
         #expect(ids == Set(ConfigRule.allCases.map(\.rawValue)))
+    }
+}
+
+/// Each family's part of the generated schema is the spec's, so the two
+/// schemas can't drift (spec v2).
+@Suite("Schema against the spec")
+struct SpecSchemaTests {
+    static func variants(_ json: Data) throws -> [String: NSDictionary] {
+        let root = try #require(JSONSerialization.jsonObject(with: json) as? [String: Any])
+        let defs = try #require(root["$defs"] as? [String: Any])
+        let action = try #require(defs["action"] as? [String: Any])
+        let list = try #require(action["oneOf"] as? [[String: Any]])
+        return Dictionary(uniqueKeysWithValues: list.compactMap { variant in
+            guard let properties = variant["properties"] as? [String: Any],
+                  let type = (properties["type"] as? [String: Any])?["enum"] as? [String],
+                  let name = type.first else { return nil }
+            return (name, variant as NSDictionary)
+        })
+    }
+
+    @Test("Every kind the app has is described as the spec describes it", arguments: ActionRegistry.standard.kinds)
+    func matches(_ kind: ActionKind) throws {
+        let spec = try Self.variants(Data(contentsOf: SpecFixtureTests.folder.deletingLastPathComponent().appending(path: "config.schema.json")))
+        let app = try Self.variants(Data(ConfigSchema.json.utf8))
+        let expected = try #require(spec[kind.type], "The spec's schema has no \(kind.type).")
+        #expect(app[kind.type] == expected)
     }
 }

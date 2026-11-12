@@ -127,6 +127,24 @@
         {
           "additionalProperties" : false,
           "properties" : {
+            "toggle" : {
+              "description" : "true (default): a window that already fills the usable area goes back to where it was.",
+              "type" : "boolean"
+            },
+            "type" : {
+              "enum" : [
+                "window.maximize"
+              ]
+            }
+          },
+          "required" : [
+            "type"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
             "fallback" : {
               "$ref" : "#/$defs/plainAction"
             },
@@ -265,6 +283,24 @@
             "type" : {
               "enum" : [
                 "help"
+              ]
+            }
+          },
+          "required" : [
+            "type"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "toggle" : {
+              "description" : "true (default): a window that already fills the usable area goes back to where it was.",
+              "type" : "boolean"
+            },
+            "type" : {
+              "enum" : [
+                "window.maximize"
               ]
             }
           },
