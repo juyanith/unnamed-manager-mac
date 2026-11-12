@@ -2,11 +2,13 @@ import Foundation
 
 /// Reads the config file and turns every failure into sentences (S-001).
 public enum ConfigLoader {
-    /// Decodes and validates JSON data.
-    public static func load(_ data: Data) -> Result<LoadedConfig, ConfigErrors> {
+    /// Decodes and validates JSON data. Tests pass a registry with families of their own.
+    public static func load(_ data: Data, registry: ActionRegistry = .standard) -> Result<LoadedConfig, ConfigErrors> {
         let config: Config
         do {
-            config = try JSONDecoder().decode(Config.self, from: data)
+            let decoder = JSONDecoder()
+            decoder.userInfo[ActionRegistry.userInfoKey] = registry
+            config = try decoder.decode(Config.self, from: data)
         } catch {
             return .failure(ConfigErrors(issues: [ConfigIssue(.error, describe(error), rule: rule(for: error))]))
         }

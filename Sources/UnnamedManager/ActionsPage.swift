@@ -110,7 +110,7 @@ private struct ActionForm: View {
             } footer: {
                 Text("Bindings refer to the action by this id. Renaming it updates them.")
             }
-            ActionFields(action: Binding(get: { action }, set: { update($0) }),
+            ActionEditor(action: Binding(get: { action }, set: { update($0) }),
                          contexts: model.editor.draft.config.contexts)
         }
         .formStyle(.grouped)
@@ -138,7 +138,7 @@ private struct ActionForm: View {
 
 /// The fields for an action's type. Used again for each Context Aware
 /// variant and its fallback, which can be any type except Context Aware.
-struct ActionFields: View {
+struct ActionEditor: View {
     @Binding var action: Config.Action
     let contexts: [Config.Context]
     var allowsContextAware = true
@@ -164,7 +164,7 @@ struct ActionFields: View {
                         }))
                 }
                 if let variant = variants[context.id] {
-                    ActionFields(action: Binding(get: { variant }, set: { new in
+                    ActionEditor(action: Binding(get: { variant }, set: { new in
                         var changed = variants
                         changed[context.id] = new
                         action = .contextual(variants: changed, fallback: fallback)
@@ -180,7 +180,7 @@ struct ActionFields: View {
                                       : "The first context, in Contexts order, that has the app in front wins.")
             }
             if let fallback {
-                ActionFields(action: Binding(get: { fallback }, set: { action = .contextual(variants: variants, fallback: $0) }),
+                ActionEditor(action: Binding(get: { fallback }, set: { action = .contextual(variants: variants, fallback: $0) }),
                              contexts: contexts, allowsContextAware: false)
             }
         case let .family(value):
