@@ -34,6 +34,36 @@ struct SpecFixtureTests {
         return manifest.fixtures.filter { $0.platforms?.contains("mac") ?? true }
     }()
 
+    /// Spec v2 fixtures for window actions the app doesn't have yet, with
+    /// the story that builds each. A pending fixture must still fail, so
+    /// one that starts passing fails the test until it's taken off here.
+    static let pending: [String: String] = [
+        "valid/window-actions.json": "S-062 to S-069",
+        "invalid/window-toggle-type.json": "S-062",
+        "invalid/window-unknown-field.json": "S-063",
+        "invalid/window-preset-and-frame.json": "S-064",
+        "invalid/window-frame-past-edge.json": "S-064",
+        "invalid/window-bad-preset.json": "S-064",
+        "invalid/window-place-neither.json": "S-064",
+        "invalid/window-frame-missing-height.json": "S-064",
+        "invalid/window-empty-widths.json": "S-065",
+        "invalid/window-bad-step.json": "S-065",
+        "invalid/window-to-and-by.json": "S-066",
+        "invalid/window-fraction-range.json": "S-066",
+        "invalid/window-anchor-with-step.json": "S-067",
+        "invalid/window-widths-without-step.json": "S-067",
+        "invalid/window-zero-size.json": "S-067",
+        "invalid/window-bad-anchor.json": "S-067",
+        "invalid/window-resize-none.json": "S-067",
+        "invalid/window-bad-direction.json": "S-068",
+        "invalid/window-focus-no-direction.json": "S-068",
+    ]
+
+    @Test("Every pending fixture is in the manifest")
+    func pendingExist() {
+        #expect(Set(Self.pending.keys).subtracting(Self.fixtures.map(\.file)).isEmpty)
+    }
+
     @Test("The spec submodule is checked out")
     func present() {
         #expect(!Self.fixtures.isEmpty, "No fixtures in \(Self.folder.path). Run git submodule update --init.")
@@ -41,6 +71,14 @@ struct SpecFixtureTests {
 
     @Test("Each fixture loads or is rejected as the spec says", arguments: fixtures)
     func fixture(_ fixture: Fixture) throws {
+        if let story = Self.pending[fixture.file] {
+            try withKnownIssue("Pending until \(story)") { try check(fixture) }
+        } else {
+            try check(fixture)
+        }
+    }
+
+    private func check(_ fixture: Fixture) throws {
         let data = try Data(contentsOf: Self.folder.appending(path: fixture.file))
         switch ConfigLoader.load(data) {
         case let .success(loaded):

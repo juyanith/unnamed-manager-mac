@@ -30,6 +30,10 @@ public enum ConfigRule: String, Sendable, CaseIterable {
     case undefinedContext = "undefined-context"
     case nestedContextual = "nested-contextual"
     case duplicateContext = "duplicate-context"
+    case conflictingFields = "conflicting-fields"
+    case badFraction = "bad-fraction"
+    case badWindowValue = "bad-window-value"
+    case unsupportedAction = "unsupported-action"
     // Warnings
     case unusedAction = "unused-action"
     case unusedContext = "unused-context"

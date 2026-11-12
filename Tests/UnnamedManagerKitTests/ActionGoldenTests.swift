@@ -36,7 +36,7 @@ struct ActionGoldenTests {
     }
 
     static let fixtureNames: [String] = (try? FileManager.default.contentsOfDirectory(atPath: fixtures.path(percentEncoded: false)))?
-        .filter { $0.hasSuffix(".json") }.sorted() ?? []
+        .filter { $0.hasSuffix(".json") && SpecFixtureTests.pending["valid/\($0)"] == nil }.sorted() ?? []
 
     @Test("The writer lays out every valid spec fixture the same way", arguments: fixtureNames)
     func fixture(_ name: String) throws {

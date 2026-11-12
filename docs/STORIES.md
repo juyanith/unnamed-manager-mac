@@ -642,6 +642,8 @@ Verified: the schema, the starter and every valid spec fixture written back are 
 
 Manage the window in front from the keyboard. The spec repo settles the fields first (S-061), then each action is built on the registry. After this milestone you can drop any other window tool for one-shot commands.
 
+The fields, ranges and geometry are in `spec/CONFIG-SPEC.md`, Window actions (spec v2). Each story takes its fixtures off `SpecFixtureTests.pending`, and S-069 the last one, `valid/window-actions.json`.
+
 Every window action works on the **focused window of the app in front**, the same app the Guide leaves in front. A failure (no window, a window that can't move) ends the sequence and shows as for any failed action: in the Guide, or with the error sound for a direct binding.
 
 Window gotchas to respect throughout:
@@ -660,7 +662,8 @@ Acceptance:
 - [unit] The open questions on `version` and on what an unsupported type does are answered in the spec.
 - [unit] `fixtures/manifest.json` has a valid fixture with every window action and every field, and one invalid fixture per new rule.
 - [unit] The spec repo is tagged `spec-v2`, and the `spec/` submodule is moved to it. `SpecFixtureTests` fails on the new fixtures until S-062 to S-069 are done; mark them pending until then.
-Status: todo
+Status: done
+Verified: `spec-v1` tagged at the v1 commit and `spec-v2` at the window actions; the spec defines the six window types, their fields, ranges and defaults, the shared geometry, four new rule ids (`conflicting-fields`, `bad-fraction`, `bad-window-value`, `unsupported-action`), and answers the `version` and unsupported-type questions. 19 new fixtures; `SpecFixtureTests.pending` lists each with the story that builds it, and a pending fixture that starts passing fails the test (checked by adding a passing one). 156 unit tests pass with 19 known issues. `unsupported-action` has no fixture until a type exists on one platform only.
 
 ### S-062 Maximize the window in front, and restore it
 As the user, I press a key and the window fills the usable area of its screen; I press it again and it goes back to where it was.
@@ -704,7 +707,7 @@ Depends: S-064
 Acceptance:
 - [unit] The next width is the smallest preset wider than the window now (or the largest narrower one, for shrink); at the end of the list it stays put rather than wrapping.
 - [unit] The window keeps its left edge, unless that would push it off screen, when it keeps its right edge.
-- [unit] With no presets in the action, the default list is 25, 33, 50, 66 and 75 %.
+- [unit] With no `widths` in the action, the default list is 1/4, 1/3, 1/2, 2/3 and 3/4.
 - [manual] Grow from a narrow Zed window to 75 % and back down, one key per step.
 Status: todo
 
@@ -713,7 +716,7 @@ As the user, I nudge the window by a set number of points, or send it to an exac
 Screens: none (no UI)
 Depends: S-064
 Acceptance:
-- [unit] `by` moves by points; `to` places the window's top-left corner at fractions of the usable area; center is a `to` preset.
+- [unit] `by` moves by points; `to` places the window at fractions of the free space (the usable area less the window's size), so `{ 0, 0 }` is the top left corner, `{ 0.5, 0.5 }` centered and `{ 1, 1 }` the bottom right.
 - [unit] A move never leaves the window entirely off screen: at least 40 pt of its title bar stays on its screen.
 - [self] Against a fake window, its size is unchanged after a move.
 Status: todo
