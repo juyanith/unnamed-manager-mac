@@ -58,6 +58,11 @@ final class AXWindowSystem: WindowSystem {
         AXUIElementSetAttributeValue(window.element, kAXSizeAttribute as CFString, sizeValue)
     }
 
+    func minimize(_ window: WindowRef) {
+        guard let window = window.id.base as? Element else { return }
+        AXUIElementSetAttributeValue(window.element, kAXMinimizedAttribute as CFString, kCFBooleanTrue)
+    }
+
     func screens() -> [WindowGeometry.Screen] {
         let screens = NSScreen.screens
         guard let primaryHeight = screens.first?.frame.height else { return [] }

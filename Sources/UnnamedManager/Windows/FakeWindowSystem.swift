@@ -8,6 +8,7 @@ final class FakeWindowSystem: WindowSystem {
         var frame: CGRect
         /// A window that won't grow past this, as an app with a maximum size.
         var maxSize: CGSize?
+        var isMinimized = false
     }
 
     var app: FrontApp? = FrontApp(pid: 1, name: "TextEdit")
@@ -35,6 +36,11 @@ final class FakeWindowSystem: WindowSystem {
         }
         window.frame = CGRect(origin: frame.origin, size: size)
         windows[id] = window
+    }
+
+    func minimize(_ window: WindowRef) {
+        guard let id = window.id.base as? String else { return }
+        windows[id]?.isMinimized = true
     }
 
     func screens() -> [WindowGeometry.Screen] { displays }

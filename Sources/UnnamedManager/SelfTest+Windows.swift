@@ -34,6 +34,17 @@ extension SelfTest {
             check("S-062 no focused window says so", error.message == "TextEdit has no window to maximize.", error.message)
         }
 
+        fake.focused = "notes"
+        try? await runner.run(.family(AnyActionValue(MinimizeAction())), id: "minimize")
+        check("S-063 Minimize sets the window minimized", fake.windows["notes"]?.isMinimized == true)
+        fake.focused = nil
+        do throws(PlanError) {
+            try await runner.run(.family(AnyActionValue(MinimizeAction())), id: "minimize")
+            check("S-063 no focused window says so", false, "no failure")
+        } catch {
+            check("S-063 no focused window says so", error.message == "TextEdit has no window to minimize.", error.message)
+        }
+
         fake.canControlWindows = false
         do throws(PlanError) {
             try await runner.run(maximize, id: "maximize")

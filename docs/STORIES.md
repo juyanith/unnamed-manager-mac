@@ -687,7 +687,8 @@ Acceptance:
 - [self] Against a fake window, Minimize sets it minimized.
 - [self] No focused window fails with "<App> has no window to minimize."
 - [manual] The app in front stays the same app; focus moves to its next window, as when you press ⌘M.
-Status: todo
+Status: done
+Verified: reading, writing, planning and rejecting a field on `window.minimize` (unit tests); its schema is the spec's, and `window-unknown-field.json` is off the pending list. Against `FakeWindowSystem`: minimized, and no focused window (self-test, 148 checks). Not yet tried by hand: the manual line.
 
 ### S-064 Place the window on a half, third, quarter or corner
 As the user, I press a key and the window moves and resizes to a part of the screen, such as the left half or the top right quarter.

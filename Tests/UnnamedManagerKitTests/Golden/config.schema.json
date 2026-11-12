@@ -145,6 +145,20 @@
         {
           "additionalProperties" : false,
           "properties" : {
+            "type" : {
+              "enum" : [
+                "window.minimize"
+              ]
+            }
+          },
+          "required" : [
+            "type"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
             "fallback" : {
               "$ref" : "#/$defs/plainAction"
             },
@@ -301,6 +315,20 @@
             "type" : {
               "enum" : [
                 "window.maximize"
+              ]
+            }
+          },
+          "required" : [
+            "type"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "type" : {
+              "enum" : [
+                "window.minimize"
               ]
             }
           },

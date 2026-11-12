@@ -4,11 +4,13 @@ import CoreGraphics
 /// (spec v2). The window families plan one, and the app carries it out.
 public enum WindowCommand: ActionStep {
     case maximize(toggle: Bool)
+    case minimize
 
     /// The verb in "<App> has no window to maximize."
     public var verb: String {
         switch self {
         case .maximize: "maximize"
+        case .minimize: "minimize"
         }
     }
 }

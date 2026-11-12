@@ -24,6 +24,8 @@ protocol WindowSystem: AnyObject {
     func frame(of window: WindowRef) -> CGRect?
     /// Best effort: a window that won't take the frame ends as close as it allows.
     func setFrame(_ frame: CGRect, of window: WindowRef)
+    /// Sends the window to the Dock. The app focuses its next window, as for ⌘M.
+    func minimize(_ window: WindowRef)
     /// Every display, main display first.
     func screens() -> [WindowGeometry.Screen]
 }
@@ -58,6 +60,8 @@ final class WindowControl {
             case .stay:
                 break
             }
+        case .minimize:
+            system.minimize(window)
         }
     }
 }

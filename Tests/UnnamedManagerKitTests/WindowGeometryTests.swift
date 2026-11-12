@@ -105,3 +105,15 @@ struct MaximizeTests {
         #expect(toggled.displayName == "Maximize")
     }
 }
+
+@Suite("Minimize (S-063)")
+struct MinimizeTests {
+    @Test("It reads, writes and plans as the spec says")
+    func family() throws {
+        let action = try ActionRegistryTests.decode(#"{ "type": "window.minimize" }"#)
+        #expect(action == .family(AnyActionValue(MinimizeAction())))
+        #expect(ConfigWriter.action(action, contexts: []) == #"{ "type": "window.minimize" }"#)
+        #expect(try ActionPlanner.plan(action, home: testHome) == .custom(AnyActionStep(WindowCommand.minimize)))
+        #expect(throws: (any Error).self) { try ActionRegistryTests.decode(#"{ "type": "window.minimize", "toggle": true }"#) }
+    }
+}

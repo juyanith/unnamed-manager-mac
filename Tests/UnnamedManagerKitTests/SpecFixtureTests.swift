@@ -39,7 +39,6 @@ struct SpecFixtureTests {
     /// one that starts passing fails the test until it's taken off here.
     static let pending: [String: String] = [
         "valid/window-actions.json": "S-062 to S-069",
-        "invalid/window-unknown-field.json": "S-063",
         "invalid/window-preset-and-frame.json": "S-064",
         "invalid/window-frame-past-edge.json": "S-064",
         "invalid/window-bad-preset.json": "S-064",
