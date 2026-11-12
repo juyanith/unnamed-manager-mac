@@ -192,18 +192,18 @@ struct ActionEditor: View {
 
 extension Config.Action {
     /// The types for the Type picker, alphabetical by the name shown (S-046).
-    static func types(allowsContextAware: Bool) -> [String] {
-        let types = ActionRegistry.standard.kinds.map(\.type)
-            + (allowsContextAware ? ["contextual"] : [])
-        return types.sorted { empty(of: $0).displayName.localizedStandardCompare(empty(of: $1).displayName) == .orderedAscending }
+    static func types(allowsContextAware: Bool, registry: ActionRegistry = .standard) -> [String] {
+        let types = registry.kinds.map(\.type) + (allowsContextAware ? ["contextual"] : [])
+        func name(_ type: String) -> String { empty(of: type, registry: registry).displayName }
+        return types.sorted { name($0).localizedStandardCompare(name($1)) == .orderedAscending }
     }
 
     /// A blank action of a type, for the type picker.
-    static func empty(of type: String) -> Config.Action {
+    static func empty(of type: String, registry: ActionRegistry = .standard) -> Config.Action {
         switch type {
         case "contextual": .contextual(variants: [:], fallback: nil)
         default:
-            ActionRegistry.standard.family(for: type).map { .family(AnyActionValue($0.blank(type))) } ?? .noop
+            registry.family(for: type).map { .family(AnyActionValue($0.blank(type))) } ?? .noop
         }
     }
 }

@@ -4,8 +4,8 @@
 
 | Target | Holds | Depends on |
 | --- | --- | --- |
-| `UnnamedManagerKit` | Pure logic: key names and chords (`Keys.swift`), the config model with strict decoding (`Config.swift`), validation and the binding tree (`ConfigValidator.swift`), the shared spec's rule ids (`ConfigRule.swift`), loading and the starter config (`ConfigLoader.swift`), the sequence engine (`SequenceEngine.swift`), action plans and Context Aware (`ActionPlan.swift`, `ContextResolver.swift`), which icon an entry gets (`Icons.swift`), Home (`Home.swift`), the Guide's timing and placement (`GuideSchedule.swift`, `GuidePlacement.swift`), and editing and writing the file (`ConfigDocument.swift`, `ConfigWriter.swift`, `JSONKeyOrder.swift`). There's no AppKit and no default actor isolation, and everything is `Sendable`. | Foundation |
-| `UnnamedManager` | The app: menu bar menu, Bindings window, Settings, the Guide panel, the event tap, actions, permissions. Main-actor by default. | `UnnamedManagerKit`, AppKit, SwiftUI |
+| `UnnamedManagerKit` | Pure logic: key names and chords (`Keys.swift`), the config model with strict decoding (`Config.swift`), validation and the binding tree (`ConfigValidator.swift`), the shared spec's rule ids (`ConfigRule.swift`), loading and the starter config (`ConfigLoader.swift`), the sequence engine (`SequenceEngine.swift`), the action families and their registry (`Actions/`), action plans and Context Aware (`ActionPlan.swift`, `ContextResolver.swift`), which icon an entry gets (`Icons.swift`), Home (`Home.swift`), the Guide's timing and placement (`GuideSchedule.swift`, `GuidePlacement.swift`), and editing and writing the file (`ConfigDocument.swift`, `ConfigWriter.swift`, `JSONKeyOrder.swift`). There's no AppKit and no default actor isolation, and everything is `Sendable`. | Foundation |
+| `UnnamedManager` | The app: menu bar menu, Bindings window, Settings, the Guide panel, the event tap, running actions and each family's form (`Actions/`), permissions. Main-actor by default. | `UnnamedManagerKit`, AppKit, SwiftUI |
 | `UnnamedManagerKitTests` | Unit tests for every validation rule and engine rule, and `SpecFixtureTests`, which runs the shared spec's fixtures. | `UnnamedManagerKit`, `spec/` |
 | `spec/` | A git submodule of the `unnamed-manager` repo: the config format shared with the Windows app, its schema and fixtures. Never edited from here. | none |
 
@@ -32,6 +32,7 @@ ConfigStore (main) ── onLoad ─► EngineBox.replace(config)
 - **`ConfigStore` is the one owner of the file:** it reads, validates, saves atomically, refuses a document with errors, and watches the folder for outside edits. The Bindings window and Settings edit a draft `ConfigDocument` through `BindingsEditor`.
 - **`ConfigStore` loads and validates on the main thread.** A valid config replaces the engine's config under the lock. A reload with errors keeps the last valid one.
 - **Icons are looked up when the config loads, never when the Guide shows.** `IconSource` (Kit) names where an icon comes from; `GuideIcons` (main) caches the images; `EntryIcon` draws one the same way in the Guide and the Bindings editor, and only the editor looks up on a miss. `AppGlyph` draws the app's glyph for the menu bar and for menus.
+- **Every kind of action except Context Aware is a family** (S-060). A family is one value type conforming to `ActionValue` (Kit, `Actions/`): its `type` values and UI names, reading and checking its fields through `ActionFields`, writing them through `ActionFieldWriter`, its part of the schema, its plan and its icon. `ActionRegistry.standard` lists the families; the decoder, the validator, the schema, the writer, the Guide and the Type picker all read it. `Config.Action` is `.family(AnyActionValue)` or the `.contextual` shell case. In the app, a family's form comes from `EditableAction`, and a step the built-in `ActionPlan` cases don't cover is an `ActionStep` that also conforms to `PerformableStep`. Each is a retroactive conformance in the family's own app file, so a new family changes no shared file except the one registry line.
 - **`Launcher` owns permissions, Enabled, the tap, the engine box and the Guide.** The menu bar menu reads its state through `MenuBarStatus`, a plain value the self-test checks.
 
 ## Seams
@@ -42,6 +43,7 @@ ConfigStore (main) ── onLoad ─► EngineBox.replace(config)
 | `Launcher.start(captureKeys:)` | the real tap; no tap | Snapshots and the self-test never capture the keyboard |
 | `KeyEvent` into `SequenceEngine` | the event tap; unit tests | Every sequence rule is tested without a keyboard |
 | `ActionPerformer` | `SystemPerformer` (NSWorkspace, Process, CGEvent); `RecordingPerformer` | The self-test checks action plans without launching or typing anything |
+| `ActionRegistry` (`JSONDecoder.userInfo`, `ConfigLoader.load(_:registry:)`) | `.standard`; `.standard.adding(…)` with a family of the test's own | `TestFamilyTests` and the self-test add a family in one file and check it loads, validates, appears in the schema and the Type picker, and runs |
 | `LauncherMigration.sourceURL` (`APP_LAUNCHER_STORE`) | the real Unnamed Launcher config; a file in `/tmp`; none while `APP_STORE` is set | The self-test copies a config without reading the real one. `LauncherMigration.swift` is the one file that names the old app (`AppNameTests`) |
 
 ## Reviews

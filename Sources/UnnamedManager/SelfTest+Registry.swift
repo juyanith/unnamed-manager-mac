@@ -32,6 +32,14 @@ extension SelfTest {
             return
         }
         check("S-060 a family added outside the app loads", action.displayName == "Chime")
+        let types = Config.Action.types(allowsContextAware: true, registry: registry)
+        check("S-060 the Type picker lists it, in name order",
+              types.contains("selftest.chime")
+              && types.map { Config.Action.empty(of: $0, registry: registry).displayName }
+                  == types.map { Config.Action.empty(of: $0, registry: registry).displayName }.sorted { $0.localizedStandardCompare($1) == .orderedAscending },
+              "\(types)")
+        check("S-060 its blank action comes from the family",
+              Config.Action.empty(of: "selftest.chime", registry: registry) == .family(AnyActionValue(ChimeAction())))
 
         let recorder = RecordingPerformer()
         try? await ActionRunner(performer: recorder).run(action, id: "chime")

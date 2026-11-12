@@ -631,11 +631,12 @@ Screens: actions, hud
 Depends: S-059
 Acceptance:
 - [unit] A family declares its `type` values, decodes and checks its own fields (unknown fields and missing fields reported with the spec's rule ids), writes itself back in a stable key order, adds its part of the JSON Schema, and gives its UI name, default SF Symbol and action plan.
-- [unit] The seven existing types are families. Every existing test passes unchanged, and the generated schema is byte-for-byte the same.
+- [unit] Six of the seven existing types are families; Context Aware stays in the shell, since it combines other actions. Every existing test passes unchanged, and the generated schema is byte-for-byte the same.
 - [unit] A family registered only in the tests loads from JSON, appears in the schema and the Type picker's list, and runs through `RecordingPerformer`, with no change to shared files.
 - [self] The self-test's action plans are unchanged.
 - [snap] The Actions page and the Guide look the same as before, in light and dark.
-Status: todo
+Status: done
+Verified: the schema, the starter and every valid spec fixture written back are byte-for-byte the golden files from before the change (`ActionGoldenTests`); 155 unit tests, including `ActionRegistryTests` and a Beep family added only in the tests (`TestFamilyTests`); 141 self-test checks, including a Chime family in its own file that loads, shows in the Type picker, records its step and runs it; actions, actions-app, actions-help, hud and bindings in light and dark (snapshots), grid checks.
 
 ## M11 Window actions
 
