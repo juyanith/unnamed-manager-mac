@@ -29,6 +29,8 @@ extension LoadedConfig {
             guard let url = try? ActionPlanner.openURL(target, home: home) else { return nil }
             // The path as written, ~ expanded: a folder's file URL adds a trailing slash.
             return url.isFileURL ? .file(ActionPlanner.expandTilde(target, home: home)) : .url(url)
+        case let .family(value):
+            return value.value.iconSource(home: home)
         default:
             return nil
         }

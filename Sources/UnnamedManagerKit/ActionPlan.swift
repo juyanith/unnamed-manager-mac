@@ -52,10 +52,8 @@ public enum ActionPlanner {
             return .spawn(program: expandTilde(program, home: home), arguments: Array(arguments), cwd: directory, env: env)
         case let .send(keys):
             return .send(try chords(keys))
-        case .noop:
-            return .nothing
-        case .help:
-            return .showHelp
+        case let .family(value):
+            return try value.value.plan(home: home)
         case .contextual:
             // Resolve with `ContextResolver` first.
             throw PlanError("Context Aware must be resolved for the app in front first.")

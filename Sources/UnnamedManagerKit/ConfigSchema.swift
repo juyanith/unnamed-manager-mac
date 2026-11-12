@@ -34,6 +34,11 @@ public enum ConfigSchema {
     }
 
     public static var json: String {
+        json(registry: .standard)
+    }
+
+    /// The schema for the families in `registry` (S-060).
+    public static func json(registry: ActionRegistry) -> String {
         let schema: [String: Any] = [
             "$schema": "https://json-schema.org/draft/2020-12/schema",
             "title": "Unnamed Manager config",
@@ -89,15 +94,15 @@ public enum ConfigSchema {
                 ],
             ],
             "$defs": [
-                "action": ["oneOf": actionVariants(allowingContextual: true)],
-                "plainAction": ["oneOf": actionVariants(allowingContextual: false)],
+                "action": ["oneOf": actionVariants(allowingContextual: true, registry: registry)],
+                "plainAction": ["oneOf": actionVariants(allowingContextual: false, registry: registry)],
             ],
         ]
         let data = try! JSONSerialization.data(withJSONObject: schema, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])
         return String(decoding: data, as: UTF8.self) + "\n"
     }
 
-    private static func actionVariants(allowingContextual: Bool) -> [[String: Any]] {
+    private static func actionVariants(allowingContextual: Bool, registry: ActionRegistry) -> [[String: Any]] {
         // The type is a one-item enum, not a const: editors that read the
         // schema as an older draft ignore const, and then Do Nothing and
         // Show Help, which have no other fields, both match and oneOf fails.
@@ -120,9 +125,11 @@ public enum ConfigSchema {
                 "env": ["type": "object", "additionalProperties": ["type": "string"]],
             ], required: ["command"]),
             variant("send", ["keys": ["type": "string", "pattern": keysPattern]], required: ["keys"]),
-            variant("noop", [:]),
-            variant("help", [:]),
         ]
+        for kind in registry.kinds {
+            let schema = registry.family(for: kind.type)!.schema(kind.type)
+            variants.append(variant(kind.type, schema.properties, required: schema.required))
+        }
         if allowingContextual {
             variants.append(variant("contextual", [
                 "variants": ["type": "object", "additionalProperties": ["$ref": "#/$defs/plainAction"]],
@@ -134,6 +141,10 @@ public enum ConfigSchema {
 
     /// The action types the schema allows, in order.
     public static var actionTypes: [String] {
-        ["application", "open", "exec", "send", "noop", "help", "contextual"]
+        actionTypes(registry: .standard)
+    }
+
+    public static func actionTypes(registry: ActionRegistry) -> [String] {
+        ["application", "open", "exec", "send"] + registry.kinds.map(\.type) + ["contextual"]
     }
 }

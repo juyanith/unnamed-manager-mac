@@ -98,9 +98,17 @@ public struct Config: Sendable, Equatable {
         case exec(command: [String], cwd: String?, env: [String: String])
         case send(keys: String)
         case contextual(variants: [String: Action], fallback: Action?)
-        case noop
+        /// An action of any family in the registry (S-060).
+        case family(AnyActionValue)
+
+        public static var noop: Action { .family(AnyActionValue(BasicAction.noop)) }
         /// Show Help: open the Help page of the Bindings window (S-053).
-        case help
+        public static var help: Action { .family(AnyActionValue(BasicAction.help)) }
+
+        /// The family's value, when this is a family's action.
+        public var familyValue: (any ActionValue)? {
+            if case let .family(value) = self { value.value } else { nil }
+        }
 
         /// The `type` value in the file.
         public var type: String {
@@ -110,8 +118,7 @@ public struct Config: Sendable, Equatable {
             case .exec: "exec"
             case .send: "send"
             case .contextual: "contextual"
-            case .noop: "noop"
-            case .help: "help"
+            case let .family(value): value.value.type
             }
         }
 
@@ -123,8 +130,7 @@ public struct Config: Sendable, Equatable {
             case .exec: "Run Command"
             case .send: "Send Shortcut"
             case .contextual: "Context Aware"
-            case .noop: "Do Nothing"
-            case .help: "Show Help"
+            case let .family(value): value.value.displayName
             }
         }
     }
@@ -229,6 +235,11 @@ extension Config.Action: Decodable {
         let c = try decoder.container(keyedBy: AnyKey.self)
         let type: String = try c.required("type")
         let path = "an action of type “\(type)”"
+        let registry = ActionRegistry.from(decoder)
+        if let family = registry.family(for: type) {
+            self = .family(AnyActionValue(try family.init(type: type, fields: ActionFields(c, type: type))))
+            return
+        }
         switch type {
         case "application":
             try c.rejectUnknown(allowed: ["type", "bundleId", "mode"], at: path)
@@ -254,15 +265,10 @@ extension Config.Action: Decodable {
             try c.rejectUnknown(allowed: ["type", "variants", "fallback"], at: path)
             self = .contextual(variants: try c.value("variants", default: [:]),
                                fallback: try c.decodeIfPresent(Config.Action.self, forKey: AnyKey("fallback")))
-        case "noop":
-            try c.rejectUnknown(allowed: ["type"], at: path)
-            self = .noop
-        case "help":
-            try c.rejectUnknown(allowed: ["type"], at: path)
-            self = .help
         default:
+            let types = ["application", "open", "exec", "send"] + registry.kinds.map(\.type) + ["contextual"]
             throw DecodingError.dataCorrupted(.init(codingPath: c.codingPath,
-                debugDescription: "Unknown action type “\(type)”. Use application, open, exec, send, contextual, noop or help.",
+                debugDescription: "Unknown action type “\(type)”. Use \(types.dropLast().joined(separator: ", ")) or \(types.last!).",
                 underlyingError: RuleMarker(rule: .unknownActionType)))
         }
     }
