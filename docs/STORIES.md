@@ -735,7 +735,8 @@ Acceptance:
 - [unit] The anchor (a corner, an edge or the center) stays where it was; the default anchor is the top-left corner.
 - [unit] The result is clamped to the usable area.
 - [self] A fake window with a fixed size reports no failure and stays as it was.
-Status: todo
+Status: done
+Verified: `by` and `to` sizes, all nine anchors, clamping, and reading, writing and planning `to` and `by` (unit tests, `ResizeTests`); the format and its fixtures came with S-065. Against `FakeWindowSystem`: a fixed-size window stays as it was with no failure, and Resize to half keeps the bottom right corner (self-test, 154 checks).
 
 ### S-068 Focus the nearest window left, right, up or down
 As the user, I press a direction key and the window next to the one I'm in comes to the front with focus, even if it's on another display.

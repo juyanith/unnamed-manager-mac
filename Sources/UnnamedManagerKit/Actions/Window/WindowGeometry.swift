@@ -76,6 +76,32 @@ public enum WindowGeometry {
         return CGRect(x: x, y: frame.minY, width: width, height: frame.height)
     }
 
+    /// The size Resize Window asks for with `to` or `by` (S-067), never
+    /// bigger than the usable area. nil for `step`, which has its own rule.
+    public static func size(_ frame: CGRect, in usable: CGRect, _ change: ResizeAction.Change) -> CGSize? {
+        let size: CGSize
+        switch change {
+        case let .to(width, height):
+            size = CGSize(width: (width * usable.width).rounded(), height: (height * usable.height).rounded())
+        case let .by(dw, dh):
+            size = CGSize(width: frame.width + dw, height: frame.height + dh)
+        case .step:
+            return nil
+        }
+        return CGSize(width: min(max(size.width, 1), usable.width), height: min(max(size.height, 1), usable.height))
+    }
+
+    /// A window of `size` with `anchor` where it was on `frame`, moved
+    /// back inside the usable area if it runs past it.
+    public static func resized(_ frame: CGRect, to size: CGSize, keeping anchor: Anchor, in usable: CGRect) -> CGRect {
+        let (ax, ay) = anchor.unit
+        let x = frame.minX + ax * (frame.width - size.width)
+        let y = frame.minY + ay * (frame.height - size.height)
+        return CGRect(x: min(max(x.rounded(), usable.minX), max(usable.minX, usable.maxX - size.width)),
+                      y: min(max(y.rounded(), usable.minY), max(usable.minY, usable.maxY - size.height)),
+                      width: size.width, height: size.height)
+    }
+
     /// How much of a window's title bar stays on its screen after a move or resize.
     public static let titleBarKept: CGFloat = 40
 

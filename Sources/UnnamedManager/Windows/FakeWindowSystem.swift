@@ -11,6 +11,8 @@ final class FakeWindowSystem: WindowSystem {
         /// A window that won't shrink past this.
         var minSize: CGSize?
         var isMinimized = false
+        /// A window that never changes size, such as a dialog.
+        var isFixedSize = false
     }
 
     var app: FrontApp? = FrontApp(pid: 1, name: "TextEdit")
@@ -32,7 +34,7 @@ final class FakeWindowSystem: WindowSystem {
 
     func setFrame(_ frame: CGRect, of window: WindowRef) {
         guard let id = window.id.base as? String, var window = windows[id] else { return }
-        var size = frame.size
+        var size = window.isFixedSize ? window.frame.size : frame.size
         if let maxSize = window.maxSize {
             size = CGSize(width: min(size.width, maxSize.width), height: min(size.height, maxSize.height))
         }

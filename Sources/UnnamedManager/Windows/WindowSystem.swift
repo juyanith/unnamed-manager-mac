@@ -73,8 +73,13 @@ final class WindowControl {
             if let next = WindowGeometry.step(frame, in: screen.usable, widths: widths ?? ResizeAction.defaultWidths, step) {
                 system.setFrame(next, of: window)
             }
-        case .resize:
-            throw PlanError("Resize Window with “to” or “by” isn't built yet.")
+        case let .resize(change, anchor):
+            guard let size = WindowGeometry.size(frame, in: screen.usable, change) else { return }
+            system.setFrame(WindowGeometry.resized(frame, to: size, keeping: anchor, in: screen.usable), of: window)
+            // A window with a fixed, minimum or maximum size keeps its anchor at the size it took.
+            if let actual = system.frame(of: window), actual.size != size {
+                system.setFrame(WindowGeometry.resized(frame, to: actual.size, keeping: anchor, in: screen.usable), of: window)
+            }
         case let .move(move):
             system.setFrame(WindowGeometry.moved(frame, in: screen.usable, move), of: window)
         }

@@ -294,3 +294,49 @@ struct MoveTests {
         #expect(try ActionPlanner.plan(nudge, home: testHome) == .custom(AnyActionStep(WindowCommand.move(.by(dx: 0, dy: -40)))))
     }
 }
+
+@Suite("Resize by a step or to a size (S-067)")
+struct ResizeTests {
+    static let usable = CGRect(x: 0, y: 25, width: 1440, height: 875)
+    static let window = CGRect(x: 200, y: 200, width: 600, height: 400)
+
+    func resize(_ change: ResizeAction.Change, _ anchor: Anchor = .topLeft, _ frame: CGRect = Self.window) -> CGRect {
+        WindowGeometry.resized(frame, to: WindowGeometry.size(frame, in: Self.usable, change)!, keeping: anchor, in: Self.usable)
+    }
+
+    @Test("by changes the size by points; to sets it as fractions")
+    func sizes() {
+        #expect(resize(.by(dw: 100, dh: -50)).size == CGSize(width: 700, height: 350))
+        #expect(resize(.to(width: 0.5, height: 0.5)).size == CGSize(width: 720, height: 438))
+    }
+
+    @Test("The anchor stays where it was; the default is the top left", arguments: Anchor.allCases)
+    func anchor(_ anchor: Anchor) {
+        let after = resize(.by(dw: 100, dh: 60), anchor)
+        let (ax, ay) = anchor.unit
+        #expect(after.minX + ax * after.width == Self.window.minX + ax * Self.window.width)
+        #expect(after.minY + ay * after.height == Self.window.minY + ay * Self.window.height)
+        #expect(ResizeAction(.by(dw: 1, dh: 1)).anchor == .topLeft)
+    }
+
+    @Test("The result is clamped to the usable area")
+    func clamped() {
+        let big = resize(.by(dw: 5000, dh: 5000))
+        #expect(big == Self.usable)
+        let nearEdge = CGRect(x: 1000, y: 600, width: 400, height: 280)
+        let grown = resize(.by(dw: 200, dh: 100), .topLeft, nearEdge)
+        #expect(Self.usable.contains(grown))
+        #expect(grown.size == CGSize(width: 600, height: 380))
+    }
+
+    @Test("It reads, writes and plans as the spec says")
+    func family() throws {
+        let json = #"{ "type": "window.resize", "to": { "width": 0.5, "height": 0.5 }, "anchor": "center" }"#
+        let half = try ActionRegistryTests.decode(json)
+        #expect(ConfigWriter.action(half, contexts: []) == json)
+        let taller = try ActionRegistryTests.decode(#"{ "type": "window.resize", "by": { "dh": 100 } }"#)
+        #expect(ConfigWriter.action(taller, contexts: []) == #"{ "type": "window.resize", "by": { "dh": 100 } }"#)
+        #expect(try ActionPlanner.plan(taller, home: testHome)
+                == .custom(AnyActionStep(WindowCommand.resize(.by(dw: 0, dh: 100), anchor: .topLeft))))
+    }
+}

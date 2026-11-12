@@ -3,6 +3,21 @@ import Foundation
 /// The point of a window that stays put while it resizes (spec v2).
 public enum Anchor: String, CaseIterable, Sendable {
     case topLeft, top, topRight, left, center, right, bottomLeft, bottom, bottomRight
+
+    /// Where the anchor sits on a window, from 0 (left, top) to 1 (right, bottom).
+    var unit: (CGFloat, CGFloat) {
+        switch self {
+        case .topLeft: (0, 0)
+        case .top: (0.5, 0)
+        case .topRight: (1, 0)
+        case .left: (0, 0.5)
+        case .center: (0.5, 0.5)
+        case .right: (1, 0.5)
+        case .bottomLeft: (0, 1)
+        case .bottom: (0.5, 1)
+        case .bottomRight: (1, 1)
+        }
+    }
 }
 
 /// Which way `step` goes through the widths.

@@ -73,6 +73,20 @@ extension SelfTest {
               fake.windows["narrow"]?.frame == CGRect(x: -440, y: 860, width: 480, height: 500),
               "\(String(describing: fake.windows["narrow"]?.frame))")
 
+        fake.windows["dialog"] = .init(frame: start, isFixedSize: true)
+        fake.focused = "dialog"
+        do throws(PlanError) {
+            try await runner.run(.family(AnyActionValue(ResizeAction(.by(dw: 200, dh: 100), anchor: .center))), id: "bigger")
+            check("S-067 a window with a fixed size reports no failure and stays as it was", fake.windows["dialog"]?.frame == start,
+                  "\(String(describing: fake.windows["dialog"]?.frame))")
+        } catch {
+            check("S-067 a window with a fixed size reports no failure and stays as it was", false, error.message)
+        }
+        fake.focused = "notes"
+        try? await runner.run(.family(AnyActionValue(ResizeAction(.to(width: 0.5, height: 0.5), anchor: .bottomRight))), id: "half")
+        check("S-067 Resize to half keeps the bottom right corner", fake.windows["notes"]?.frame == CGRect(x: 180, y: 262, width: 720, height: 438),
+              "\(String(describing: fake.windows["notes"]?.frame))")
+
         fake.canControlWindows = false
         do throws(PlanError) {
             try await runner.run(maximize, id: "maximize")
