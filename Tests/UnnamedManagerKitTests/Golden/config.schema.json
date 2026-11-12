@@ -353,6 +353,31 @@
         {
           "additionalProperties" : false,
           "properties" : {
+            "direction" : {
+              "enum" : [
+                "left",
+                "right",
+                "up",
+                "down",
+                "next",
+                "previous"
+              ]
+            },
+            "type" : {
+              "enum" : [
+                "window.focus"
+              ]
+            }
+          },
+          "required" : [
+            "type",
+            "direction"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
             "fallback" : {
               "$ref" : "#/$defs/plainAction"
             },
@@ -722,6 +747,31 @@
           },
           "required" : [
             "type"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "direction" : {
+              "enum" : [
+                "left",
+                "right",
+                "up",
+                "down",
+                "next",
+                "previous"
+              ]
+            },
+            "type" : {
+              "enum" : [
+                "window.focus"
+              ]
+            }
+          },
+          "required" : [
+            "type",
+            "direction"
           ],
           "type" : "object"
         }

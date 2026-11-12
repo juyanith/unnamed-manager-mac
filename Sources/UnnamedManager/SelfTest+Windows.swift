@@ -87,6 +87,8 @@ extension SelfTest {
         check("S-067 Resize to half keeps the bottom right corner", fake.windows["notes"]?.frame == CGRect(x: 180, y: 262, width: 720, height: 438),
               "\(String(describing: fake.windows["notes"]?.frame))")
 
+        await focusChecks()
+
         fake.canControlWindows = false
         do throws(PlanError) {
             try await runner.run(maximize, id: "maximize")
@@ -94,6 +96,40 @@ extension SelfTest {
         } catch {
             check("S-062 without Accessibility, window actions say what to allow",
                   error.message == "Unnamed Manager needs Accessibility access to move windows.", error.message)
+        }
+    }
+
+    /// S-068: four windows in a 2×2 grid across two displays side by side.
+    static func focusChecks() async {
+        let fake = FakeWindowSystem()
+        fake.displays = [
+            .init(frame: CGRect(x: 0, y: 0, width: 1440, height: 900), usable: CGRect(x: 0, y: 25, width: 1440, height: 875)),
+            .init(frame: CGRect(x: 1440, y: 0, width: 1920, height: 1080), usable: CGRect(x: 1440, y: 25, width: 1920, height: 1055)),
+        ]
+        fake.windows = [
+            "a": .init(frame: CGRect(x: 100, y: 50, width: 1200, height: 380)),
+            "b": .init(frame: CGRect(x: 1540, y: 50, width: 1600, height: 380)),
+            "c": .init(frame: CGRect(x: 100, y: 480, width: 1200, height: 380)),
+            "d": .init(frame: CGRect(x: 1540, y: 480, width: 1600, height: 380)),
+        ]
+        let runner = ActionRunner(performer: SystemPerformer(context: StepContext(windows: WindowControl(system: fake))))
+        let moves: [(String, FocusDirection, String)] = [
+            ("a", .right, "b"), ("b", .down, "d"), ("d", .left, "c"), ("c", .up, "a"),
+            ("b", .left, "a"), ("a", .down, "c"), ("c", .right, "d"), ("d", .up, "b"),
+        ]
+        var picks: [String] = []
+        for (from, direction, _) in moves {
+            fake.focused = from
+            try? await runner.run(.family(AnyActionValue(FocusAction(direction))), id: "focus")
+            picks.append(fake.focused ?? "none")
+        }
+        check("S-068 each direction picks the expected window across two displays", picks == moves.map(\.2), "\(picks)")
+        fake.focused = "a"
+        do throws(PlanError) {
+            try await runner.run(.family(AnyActionValue(FocusAction(.left))), id: "focus")
+            check("S-068 no window that way says so", false, "no failure")
+        } catch {
+            check("S-068 no window that way says so", error.message == "No window to the left." && fake.focused == "a", error.message)
         }
     }
 }

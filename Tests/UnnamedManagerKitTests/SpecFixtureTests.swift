@@ -34,14 +34,10 @@ struct SpecFixtureTests {
         return manifest.fixtures.filter { $0.platforms?.contains("mac") ?? true }
     }()
 
-    /// Spec v2 fixtures for window actions the app doesn't have yet, with
-    /// the story that builds each. A pending fixture must still fail, so
+    /// Fixtures from a newer spec the app doesn't pass yet, with the story
+    /// that builds each (spec v2's window fixtures came off in S-062 to S-068). A pending fixture must still fail, so
     /// one that starts passing fails the test until it's taken off here.
-    static let pending: [String: String] = [
-        "valid/window-actions.json": "S-062 to S-069",
-        "invalid/window-bad-direction.json": "S-068",
-        "invalid/window-focus-no-direction.json": "S-068",
-    ]
+    static let pending: [String: String] = [:]
 
     @Test("Every pending fixture is in the manifest")
     func pendingExist() {

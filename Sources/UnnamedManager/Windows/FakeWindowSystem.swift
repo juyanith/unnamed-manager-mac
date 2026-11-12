@@ -13,6 +13,7 @@ final class FakeWindowSystem: WindowSystem {
         var isMinimized = false
         /// A window that never changes size, such as a dialog.
         var isFixedSize = false
+        var pid: pid_t = 1
     }
 
     var app: FrontApp? = FrontApp(pid: 1, name: "TextEdit")
@@ -51,4 +52,12 @@ final class FakeWindowSystem: WindowSystem {
     }
 
     func screens() -> [WindowGeometry.Screen] { displays }
+
+    func focusableWindows() -> [WindowInfo] {
+        windows.filter { !$0.value.isMinimized }.map { WindowInfo(ref: WindowRef(id: $0.key), frame: $0.value.frame, pid: $0.value.pid) }
+    }
+
+    func focus(_ window: WindowInfo) async throws(PlanError) {
+        focused = window.ref.id.base as? String
+    }
 }

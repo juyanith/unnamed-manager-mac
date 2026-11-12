@@ -748,7 +748,8 @@ Acceptance:
 - [unit] With no window that way, it fails with "No window to the left." (right, above, below).
 - [self] With fake windows in a 2×2 grid across two displays, each direction picks the expected window.
 - [manual] Focus moves between Zed and Ghostty side by side, and across to the external display, and the focused window gets the keys.
-Status: todo
+Status: done
+Verified: the nearest center, the 45° cone, the overlap tie-break, each direction, the failure for each, and reading, writing and planning `window.focus` (unit tests, `FocusDirectionTests`); its schema is the spec's, and with it every spec v2 fixture passes: the pending list is empty and `valid/window-actions.json` has its own writer golden file (194 unit tests). Against `FakeWindowSystem`, a 2×2 grid across two displays gives the expected window in all eight moves, and no window to the left leaves focus where it was (self-test, 156 checks). Candidates on a real Mac (on-screen windows matched to Accessibility windows by owner and frame, this app's skipped) are checked only by hand: the manual line.
 
 ### S-069 Focus the next or previous window
 As the user, I press a key to go to the next window, and another to go back, in a fixed order I can predict.

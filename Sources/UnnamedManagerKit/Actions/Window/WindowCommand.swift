@@ -8,6 +8,12 @@ public enum WindowCommand: ActionStep {
     case place(FractionFrame)
     case resize(ResizeAction.Change, anchor: Anchor)
     case move(MoveAction)
+    case focus(FocusDirection)
+
+    /// How Focus Window says there's nothing that way.
+    public var failure: String? {
+        if case let .focus(direction) = self { direction.failure } else { nil }
+    }
 
     /// The verb in "<App> has no window to maximize."
     public var verb: String {
@@ -17,6 +23,7 @@ public enum WindowCommand: ActionStep {
         case .place: "place"
         case .resize: "resize"
         case .move: "move"
+        case .focus: "focus from"
         }
     }
 }

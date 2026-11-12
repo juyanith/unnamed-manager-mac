@@ -340,3 +340,59 @@ struct ResizeTests {
                 == .custom(AnyActionStep(WindowCommand.resize(.by(dw: 0, dh: 100), anchor: .topLeft))))
     }
 }
+
+@Suite("Focus a window by direction (S-068)")
+struct FocusDirectionTests {
+    static let current = CGRect(x: 600, y: 400, width: 400, height: 300)
+
+    @Test("The nearest center within 45° of the direction wins")
+    func nearest() {
+        let near = CGRect(x: 1100, y: 420, width: 300, height: 300)
+        let far = CGRect(x: 1600, y: 400, width: 300, height: 300)
+        #expect(WindowGeometry.neighbor(of: Self.current, .right, among: [far, near]) == 1)
+    }
+
+    @Test("A window outside the 45° cone isn't that way")
+    func cone() {
+        let steep = CGRect(x: 1100, y: 1200, width: 300, height: 300)
+        #expect(WindowGeometry.neighbor(of: Self.current, .right, among: [steep]) == nil)
+        #expect(WindowGeometry.neighbor(of: Self.current, .down, among: [steep]) == 0)
+    }
+
+    @Test("A tie goes to the window that overlaps more on the other axis")
+    func tie() {
+        // Both centers are 500 points away; the second lines up exactly.
+        let offset = CGRect(x: 1000, y: 100, width: 400, height: 300)
+        let aligned = CGRect(x: 1100, y: 400, width: 400, height: 300)
+        let a = hypot(offset.midX - Self.current.midX, offset.midY - Self.current.midY)
+        let b = hypot(aligned.midX - Self.current.midX, aligned.midY - Self.current.midY)
+        #expect(abs(a - b) < 0.5)
+        #expect(WindowGeometry.neighbor(of: Self.current, .right, among: [offset, aligned]) == 1)
+    }
+
+    @Test("Each direction looks its own way, up being smaller y")
+    func directions() {
+        let left = CGRect(x: 0, y: 400, width: 300, height: 300)
+        let above = CGRect(x: 600, y: 0, width: 400, height: 300)
+        let windows = [left, above]
+        #expect(WindowGeometry.neighbor(of: Self.current, .left, among: windows) == 0)
+        #expect(WindowGeometry.neighbor(of: Self.current, .up, among: windows) == 1)
+        #expect(WindowGeometry.neighbor(of: Self.current, .down, among: windows) == nil)
+    }
+
+    @Test("With no window that way, it says which way")
+    func failures() {
+        #expect(WindowCommand.focus(.left).failure == "No window to the left.")
+        #expect(WindowCommand.focus(.right).failure == "No window to the right.")
+        #expect(WindowCommand.focus(.up).failure == "No window above.")
+        #expect(WindowCommand.focus(.down).failure == "No window below.")
+    }
+
+    @Test("It reads, writes and plans as the spec says")
+    func family() throws {
+        let json = #"{ "type": "window.focus", "direction": "left" }"#
+        let left = try ActionRegistryTests.decode(json)
+        #expect(ConfigWriter.action(left, contexts: []) == json)
+        #expect(try ActionPlanner.plan(left, home: testHome) == .custom(AnyActionStep(WindowCommand.focus(.left))))
+    }
+}

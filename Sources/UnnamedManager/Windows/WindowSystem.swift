@@ -7,6 +7,13 @@ struct WindowRef: Hashable {
     let id: AnyHashable
 }
 
+/// A window Focus Window can go to.
+struct WindowInfo {
+    let ref: WindowRef
+    let frame: CGRect
+    let pid: pid_t
+}
+
 /// The app in front, which window actions work on.
 struct FrontApp: Equatable {
     let pid: pid_t
@@ -28,6 +35,11 @@ protocol WindowSystem: AnyObject {
     func minimize(_ window: WindowRef)
     /// Every display, main display first.
     func screens() -> [WindowGeometry.Screen]
+    /// The standard, visible windows that aren't minimized, on the current
+    /// Space of every display, without this app's own (S-068).
+    func focusableWindows() -> [WindowInfo]
+    /// Brings a window and its app to the front with focus.
+    func focus(_ window: WindowInfo) async throws(PlanError)
 }
 
 /// Carries out window commands on the focused window of the app in front,
@@ -40,7 +52,7 @@ final class WindowControl {
         self.system = system
     }
 
-    func run(_ command: WindowCommand) throws(PlanError) {
+    func run(_ command: WindowCommand) async throws(PlanError) {
         guard system.canControlWindows else {
             throw PlanError("Unnamed Manager needs Accessibility access to move windows.")
         }
@@ -82,12 +94,18 @@ final class WindowControl {
             }
         case let .move(move):
             system.setFrame(WindowGeometry.moved(frame, in: screen.usable, move), of: window)
+        case let .focus(direction):
+            let others = system.focusableWindows().filter { $0.ref != window }
+            guard let index = WindowGeometry.neighbor(of: frame, direction, among: others.map(\.frame)) else {
+                throw PlanError(command.failure ?? "")
+            }
+            try await system.focus(others[index])
         }
     }
 }
 
 extension WindowCommand: PerformableStep {
     func perform(in context: StepContext) async throws(PlanError) {
-        try context.windows.run(self)
+        try await context.windows.run(self)
     }
 }
