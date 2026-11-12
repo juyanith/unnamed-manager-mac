@@ -47,7 +47,12 @@ struct ConfigSchemaTests {
         let defs = schema["$defs"] as! [String: Any]
         let variants = (defs["action"] as! [String: Any])["oneOf"] as! [[String: Any]]
         let types = variants.map { (($0["properties"] as! [String: Any])["type"] as! [String: Any])["enum"] as! [String] }
-        #expect(types == ConfigSchema.actionTypes.map { [$0] })
+        // One variant per shape: application has three (bundleId, and exe and appId for Windows).
+        var distinct: [[String]] = []
+        for type in types where distinct.last != type { distinct.append(type) }
+        #expect(distinct == ConfigSchema.actionTypes.map { [$0] })
+        let application = zip(variants, types).filter { $1 == ["application"] }.map { $0.0["required"] as! [String] }
+        #expect(application == [["type", "bundleId"], ["type", "exe"], ["type", "appId"]])
         let props = schema["properties"] as! [String: Any]
         let runtime = (props["runtime"] as! [String: Any])["properties"] as! [String: Any]
         #expect((runtime["hudDelayMs"] as! [String: Any])["minimum"] as? Int == 0)
