@@ -723,7 +723,8 @@ Acceptance:
 - [unit] `by` moves by points; `to` places the window at fractions of the free space (the usable area less the window's size), so `{ 0, 0 }` is the top left corner, `{ 0.5, 0.5 }` centered and `{ 1, 1 }` the bottom right.
 - [unit] A move never leaves the window entirely off screen: at least 40 pt of its title bar stays on its screen.
 - [self] Against a fake window, its size is unchanged after a move.
-Status: todo
+Status: done
+Verified: `to` at fractions of the free space, a window wider than the area, `by` in points, the title bar kept on every side, and reading, writing and planning `window.move` (unit tests, `MoveTests`); its schema is the spec's, and two fixtures are off the pending list. Three moves against `FakeWindowSystem` keep the size and end with 40 points on screen (self-test, 152 checks).
 
 ### S-067 Resize the window by a step or to an exact size
 As the user, I make the window bigger or smaller by a set amount, or set it to an exact fraction of the screen, keeping one corner or the center in place.

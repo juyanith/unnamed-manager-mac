@@ -65,6 +65,14 @@ extension SelfTest {
               fake.windows["narrow"]?.frame == CGRect(x: 100, y: 100, width: 480, height: 500),
               "\(String(describing: fake.windows["narrow"]?.frame))")
 
+        fake.focused = "narrow"
+        for move in [MoveAction.to(x: 0.5, y: 0.5), .by(dx: 40, dy: -40), .by(dx: -9000, dy: 9000)] {
+            try? await runner.run(.family(AnyActionValue(move)), id: "move")
+        }
+        check("S-066 a window's size is unchanged after moves, and it stays on screen",
+              fake.windows["narrow"]?.frame == CGRect(x: -440, y: 860, width: 480, height: 500),
+              "\(String(describing: fake.windows["narrow"]?.frame))")
+
         fake.canControlWindows = false
         do throws(PlanError) {
             try await runner.run(maximize, id: "maximize")

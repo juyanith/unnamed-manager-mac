@@ -250,3 +250,47 @@ struct ResizeStepTests {
                 == .custom(AnyActionStep(WindowCommand.resize(.step(.shrink, widths: [0.75, 0.5, 0.25]), anchor: .topLeft))))
     }
 }
+
+@Suite("Move Window (S-066)")
+struct MoveTests {
+    static let usable = CGRect(x: 0, y: 25, width: 1440, height: 875)
+    static let window = CGRect(x: 100, y: 100, width: 800, height: 600)
+
+    @Test("to places the window at fractions of the free space")
+    func to() {
+        #expect(WindowGeometry.moved(Self.window, in: Self.usable, .to(x: 0, y: 0)) == CGRect(x: 0, y: 25, width: 800, height: 600))
+        #expect(WindowGeometry.moved(Self.window, in: Self.usable, .to(x: 0.5, y: 0.5)) == CGRect(x: 320, y: 163, width: 800, height: 600))
+        #expect(WindowGeometry.moved(Self.window, in: Self.usable, .to(x: 1, y: 1)) == CGRect(x: 640, y: 300, width: 800, height: 600))
+        // Wider than the usable area: no free space, so the left edge.
+        let wide = CGRect(x: 100, y: 100, width: 1600, height: 600)
+        #expect(WindowGeometry.moved(wide, in: Self.usable, .to(x: 1, y: 0)).minX == 0)
+    }
+
+    @Test("by moves by points, and positive dy is down")
+    func by() {
+        #expect(WindowGeometry.moved(Self.window, in: Self.usable, .by(dx: 40, dy: 20)) == CGRect(x: 140, y: 120, width: 800, height: 600))
+    }
+
+    @Test("A move never takes the title bar off screen")
+    func onScreen() {
+        let left = WindowGeometry.moved(Self.window, in: Self.usable, .by(dx: -5000, dy: 0))
+        #expect(left.maxX == 40)
+        let right = WindowGeometry.moved(Self.window, in: Self.usable, .by(dx: 5000, dy: 0))
+        #expect(right.minX == 1400)
+        let down = WindowGeometry.moved(Self.window, in: Self.usable, .by(dx: 0, dy: 5000))
+        #expect(down.minY == 860)
+        let up = WindowGeometry.moved(Self.window, in: Self.usable, .by(dx: 0, dy: -5000))
+        #expect(up.minY == 25)
+        #expect(left.size == Self.window.size && down.size == Self.window.size)
+    }
+
+    @Test("It reads, writes and plans as the spec says")
+    func family() throws {
+        let json = #"{ "type": "window.move", "to": { "x": 0.5, "y": 0.5 } }"#
+        let center = try ActionRegistryTests.decode(json)
+        #expect(ConfigWriter.action(center, contexts: []) == json)
+        let nudge = try ActionRegistryTests.decode(#"{ "type": "window.move", "by": { "dx": 0, "dy": -40 } }"#)
+        #expect(ConfigWriter.action(nudge, contexts: []) == #"{ "type": "window.move", "by": { "dy": -40 } }"#)
+        #expect(try ActionPlanner.plan(nudge, home: testHome) == .custom(AnyActionStep(WindowCommand.move(.by(dx: 0, dy: -40)))))
+    }
+}

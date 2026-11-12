@@ -223,6 +223,57 @@
         {
           "additionalProperties" : false,
           "properties" : {
+            "by" : {
+              "additionalProperties" : false,
+              "description" : "Points. Positive dy moves down.",
+              "properties" : {
+                "dx" : {
+                  "type" : "number"
+                },
+                "dy" : {
+                  "type" : "number"
+                }
+              },
+              "required" : [
+
+              ],
+              "type" : "object"
+            },
+            "to" : {
+              "additionalProperties" : false,
+              "description" : "Fractions of the free space: 0 is the left or top edge, 0.5 centered, 1 the right or bottom edge.",
+              "properties" : {
+                "x" : {
+                  "maximum" : 1,
+                  "minimum" : 0,
+                  "type" : "number"
+                },
+                "y" : {
+                  "maximum" : 1,
+                  "minimum" : 0,
+                  "type" : "number"
+                }
+              },
+              "required" : [
+                "x",
+                "y"
+              ],
+              "type" : "object"
+            },
+            "type" : {
+              "enum" : [
+                "window.move"
+              ]
+            }
+          },
+          "required" : [
+            "type"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
             "anchor" : {
               "description" : "The point that stays put with to and by. Default topLeft.",
               "enum" : [
@@ -536,6 +587,57 @@
             "type" : {
               "enum" : [
                 "window.place"
+              ]
+            }
+          },
+          "required" : [
+            "type"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "by" : {
+              "additionalProperties" : false,
+              "description" : "Points. Positive dy moves down.",
+              "properties" : {
+                "dx" : {
+                  "type" : "number"
+                },
+                "dy" : {
+                  "type" : "number"
+                }
+              },
+              "required" : [
+
+              ],
+              "type" : "object"
+            },
+            "to" : {
+              "additionalProperties" : false,
+              "description" : "Fractions of the free space: 0 is the left or top edge, 0.5 centered, 1 the right or bottom edge.",
+              "properties" : {
+                "x" : {
+                  "maximum" : 1,
+                  "minimum" : 0,
+                  "type" : "number"
+                },
+                "y" : {
+                  "maximum" : 1,
+                  "minimum" : 0,
+                  "type" : "number"
+                }
+              },
+              "required" : [
+                "x",
+                "y"
+              ],
+              "type" : "object"
+            },
+            "type" : {
+              "enum" : [
+                "window.move"
               ]
             }
           },

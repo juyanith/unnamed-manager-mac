@@ -93,7 +93,7 @@ public struct ActionRegistry: @unchecked Sendable {
 
     public static let standard = ActionRegistry(families: [
         UseApplicationAction.self, OpenAction.self, RunCommandAction.self, SendShortcutAction.self, BasicAction.self,
-        MaximizeAction.self, MinimizeAction.self, PlaceAction.self, ResizeAction.self,
+        MaximizeAction.self, MinimizeAction.self, PlaceAction.self, MoveAction.self, ResizeAction.self,
     ])
 
     public func adding(_ family: any ActionValue.Type) -> ActionRegistry {

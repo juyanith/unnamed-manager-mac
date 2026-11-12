@@ -7,6 +7,7 @@ public enum WindowCommand: ActionStep {
     case minimize
     case place(FractionFrame)
     case resize(ResizeAction.Change, anchor: Anchor)
+    case move(MoveAction)
 
     /// The verb in "<App> has no window to maximize."
     public var verb: String {
@@ -15,6 +16,7 @@ public enum WindowCommand: ActionStep {
         case .minimize: "minimize"
         case .place: "place"
         case .resize: "resize"
+        case .move: "move"
         }
     }
 }

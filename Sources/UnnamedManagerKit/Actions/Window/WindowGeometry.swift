@@ -76,6 +76,30 @@ public enum WindowGeometry {
         return CGRect(x: x, y: frame.minY, width: width, height: frame.height)
     }
 
+    /// How much of a window's title bar stays on its screen after a move or resize.
+    public static let titleBarKept: CGFloat = 40
+
+    /// The window after Move Window (S-066). The size stays the same.
+    public static func moved(_ frame: CGRect, in usable: CGRect, _ move: MoveAction) -> CGRect {
+        switch move {
+        case let .to(x, y):
+            let freeX = max(0, usable.width - frame.width), freeY = max(0, usable.height - frame.height)
+            return CGRect(x: usable.minX + (x * freeX).rounded(), y: usable.minY + (y * freeY).rounded(),
+                          width: frame.width, height: frame.height)
+        case let .by(dx, dy):
+            return onScreen(frame.offsetBy(dx: dx, dy: dy), in: usable)
+        }
+    }
+
+    /// Keeps at least `titleBarKept` points of the title bar on the usable
+    /// area: the top edge inside it, and that much of the top edge's length.
+    public static func onScreen(_ frame: CGRect, in usable: CGRect) -> CGRect {
+        let keep = min(titleBarKept, frame.width)
+        let x = min(max(frame.minX, usable.minX - frame.width + keep), usable.maxX - keep)
+        let y = min(max(frame.minY, usable.minY), usable.maxY - titleBarKept)
+        return CGRect(x: x, y: y, width: frame.width, height: frame.height)
+    }
+
     /// Whether every edge of `a` is within the tolerance of the same edge of `b`.
     public static func matches(_ a: CGRect, _ b: CGRect) -> Bool {
         abs(a.minX - b.minX) <= tolerance && abs(a.minY - b.minY) <= tolerance

@@ -75,6 +75,8 @@ final class WindowControl {
             }
         case .resize:
             throw PlanError("Resize Window with “to” or “by” isn't built yet.")
+        case let .move(move):
+            system.setFrame(WindowGeometry.moved(frame, in: screen.usable, move), of: window)
         }
     }
 }
