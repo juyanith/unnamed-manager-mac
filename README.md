@@ -4,6 +4,9 @@ A keyboard manager for macOS that lives in the menu bar. It grew out of [Unnamed
 
 If you finish the sequence quickly, nothing appears on screen. If you pause, a small HUD shows where you are and which keys come next. The app in front never loses focus.
 
+> [!WARNING]
+> **Work in progress.** Unnamed Manager is still being built. Features can change or break between releases, and the config format can change too. It reads every key you press and can move, and type into, other apps' windows. If you choose to use it, you do so at your own risk: it comes as is, with no warranty of any kind (see the [license](LICENSE)).
+
 ## Features
 
 - **Leader chords and menus.** Bindings form a tree with as many levels as you need. Back (Backspace) goes up a level and Cancel (Escape) ends the sequence. You can have as many leaders as you like.
