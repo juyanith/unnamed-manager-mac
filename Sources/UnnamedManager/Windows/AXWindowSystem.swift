@@ -106,7 +106,7 @@ final class AXWindowSystem: WindowSystem {
     }
 
     /// Raises the window, makes it its app's focused window, then brings
-    /// the app forward through NSWorkspace, which works from the background.
+    /// the app forward.
     func focus(_ window: WindowInfo) async throws(PlanError) {
         guard let element = window.ref.id.base as? Element,
               let running = NSRunningApplication(processIdentifier: window.pid) else { return }
@@ -114,6 +114,7 @@ final class AXWindowSystem: WindowSystem {
         AXUIElementSetAttributeValue(app, kAXFocusedWindowAttribute as CFString, element.element)
         AXUIElementSetAttributeValue(element.element, kAXMainAttribute as CFString, kCFBooleanTrue)
         AXUIElementPerformAction(element.element, kAXRaiseAction as CFString)
+        if Self.bringForward(pid: window.pid) { return }
         guard let url = running.bundleURL else {
             running.activate()
             return
@@ -141,6 +142,18 @@ final class AXWindowSystem: WindowSystem {
 extension AXWindowSystem {
     // Use Application's return to the last focused window (S-047).
     // LastWindow decides which window; this reads and raises.
+
+    /// Makes a running app the one in front, through Accessibility, which
+    /// works from the background. Unlike opening the app again, it doesn't
+    /// ask the app to reopen, which makes some apps (Messages) add a window.
+    /// False when Accessibility isn't allowed or the app refuses.
+    @discardableResult
+    static func bringForward(pid: pid_t) -> Bool {
+        guard AXIsProcessTrusted() else { return false }
+        let app = AXUIElementCreateApplication(pid)
+        AXUIElementSetMessagingTimeout(app, Self.timeout)
+        return AXUIElementSetAttributeValue(app, kAXFrontmostAttribute as CFString, kCFBooleanTrue) == .success
+    }
 
     /// Raises the app's last focused window. False when there's nothing to
     /// raise or Accessibility isn't allowed; activation then decides alone.

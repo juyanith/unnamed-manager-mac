@@ -94,15 +94,19 @@ struct SystemPerformer: ActionPerformer {
     }
 
     /// Brings the app forward if it's running, otherwise launches it. Going
-    /// through NSWorkspace activates it even though this app isn't active.
+    /// through NSWorkspace activates it even though this app isn't active,
+    /// and gives an app with no window a new one.
     /// With `newCopy`, starts another copy even if one is running (Start).
     /// Otherwise a running app comes back to its last focused window (S-047).
     private func openApp(_ bundleId: String, newCopy: Bool = false) async throws(PlanError) {
         guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId) else {
             throw PlanError("Couldn't open \(bundleId): not installed.")
         }
-        if !newCopy, let running = NSRunningApplication.runningApplications(withBundleIdentifier: bundleId).first {
-            AXWindowSystem.raiseLastFocused(pid: running.processIdentifier)
+        // With a window raised, the app only has to come forward; opening it again would ask it for another window.
+        if !newCopy, let running = NSRunningApplication.runningApplications(withBundleIdentifier: bundleId).first,
+           AXWindowSystem.raiseLastFocused(pid: running.processIdentifier),
+           AXWindowSystem.bringForward(pid: running.processIdentifier) {
+            return
         }
         let configuration = NSWorkspace.OpenConfiguration()
         configuration.activates = true
@@ -121,7 +125,10 @@ struct SystemPerformer: ActionPerformer {
                 .map { FileManager.default.displayName(atPath: $0.path(percentEncoded: false)).replacingOccurrences(of: ".app", with: "") }
             throw PlanError("\(name ?? bundleId) isn't running.")
         }
-        AXWindowSystem.raiseLastFocused(pid: running.processIdentifier)
+        if AXWindowSystem.raiseLastFocused(pid: running.processIdentifier),
+           AXWindowSystem.bringForward(pid: running.processIdentifier) {
+            return
+        }
         guard let url = running.bundleURL else { return }
         let configuration = NSWorkspace.OpenConfiguration()
         configuration.activates = true
