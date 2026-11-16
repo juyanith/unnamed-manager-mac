@@ -808,7 +808,7 @@ Acceptance:
 - [self] With no window at all, it fails with "No window to focus."
 - [manual] With Finder's desktop in front and no Finder window, a Focus Window key focuses the window on top.
 Status: done
-Verified: both checks against `FakeWindowSystem` (self-test). The real front-to-back order (the window server's) is checked only by hand: the manual line. `spec/CONFIG-SPEC.md` still says a window action fails with no focused window; the spec repo needs this exception for `window.focus`.
+Verified: both checks against `FakeWindowSystem` (self-test). The real front-to-back order (the window server's) is checked only by hand: the manual line. The rule is in `spec/CONFIG-SPEC.md`, `window.focus` (spec v5).
 
 ## Later
 - Import and export a single menu as a JSON snippet.

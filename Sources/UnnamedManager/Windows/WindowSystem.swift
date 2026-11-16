@@ -62,7 +62,7 @@ final class WindowControl {
         }
         let app = system.frontApp()
         let focused = app.flatMap { system.focusedWindow(of: $0) }
-        // With no focused window, Focus Window goes to the window in front of the others (S-072).
+        // With no focused window, Focus Window goes to the window in front of the others (S-072, spec v5).
         if case .focus = command, focused.flatMap({ system.frame(of: $0) }) == nil {
             guard let top = system.focusableWindows().first else { throw PlanError("No window to focus.") }
             try await system.focus(top)
