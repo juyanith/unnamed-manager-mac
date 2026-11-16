@@ -62,7 +62,15 @@ final class WindowControl {
         }
         let app = system.frontApp()
         let focused = app.flatMap { system.focusedWindow(of: $0) }
-        // With no focused window, Focus Window goes to the window in front of the others (S-072, spec v5).
+        // First and Last don't need a focused window, and stay on a window that's already there (S-073).
+        if case let .focus(direction) = command, direction == .first || direction == .last {
+            let windows = system.focusableWindows()
+            let order = WindowGeometry.cycleOrder(windows.map(\.frame), owners: windows.map(\.pid), screens: system.screens())
+            guard let index = direction == .first ? order.first : order.last else { throw PlanError(command.failure ?? "") }
+            if windows[index].ref != focused { try await system.focus(windows[index]) }
+            return
+        }
+        // With no focused window, any other direction goes to the window in front of the others (S-072, spec v5).
         if case .focus = command, focused.flatMap({ system.frame(of: $0) }) == nil {
             guard let top = system.focusableWindows().first else { throw PlanError("No window to focus.") }
             try await system.focus(top)

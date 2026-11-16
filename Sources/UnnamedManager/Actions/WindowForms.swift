@@ -30,7 +30,7 @@ extension FocusAction: EditableAction {
                 ForEach(FocusDirection.allCases, id: \.self) { Text($0.displayName).tag($0) }
             }
         } footer: {
-            Text("Left, Right, Up and Down go to the nearest window that way, on any display. Next Window and Previous Window go through windows by display, then top to bottom.")
+            Text("Left, Right, Up and Down go to the nearest window that way, on any display. Next Window and Previous Window go through windows from left to right, display by display. First Window and Last Window go to the leftmost and the rightmost.")
         }
     }
 }

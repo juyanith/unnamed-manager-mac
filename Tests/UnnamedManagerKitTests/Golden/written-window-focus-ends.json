@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "entries": [
+    { "keys": "Meh+Home", "title": "First window", "action": "focus-first" },
+    { "keys": "Meh+End", "title": "Last window", "action": "focus-last" }
+  ],
+  "actions": {
+    "focus-first": { "type": "window.focus", "direction": "first" },
+    "focus-last": { "type": "window.focus", "direction": "last" }
+  }
+}

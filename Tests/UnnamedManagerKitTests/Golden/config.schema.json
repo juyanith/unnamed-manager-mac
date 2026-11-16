@@ -416,7 +416,9 @@
                 "up",
                 "down",
                 "next",
-                "previous"
+                "previous",
+                "first",
+                "last"
               ]
             },
             "type" : {
@@ -872,7 +874,9 @@
                 "up",
                 "down",
                 "next",
-                "previous"
+                "previous",
+                "first",
+                "last"
               ]
             },
             "type" : {

@@ -810,6 +810,21 @@ Acceptance:
 Status: done
 Verified: both checks against `FakeWindowSystem` (self-test). The real front-to-back order (the window server's) is checked only by hand: the manual line. The rule is in `spec/CONFIG-SPEC.md`, `window.focus` (spec v5).
 
+### S-073 Focus the first or last window
+As the user, I press a key and the leftmost window takes focus, and another for the rightmost, and Next and Previous walk the windows between them from left to right.
+Screens: actions-window
+Depends: S-069, S-072
+Acceptance:
+- [unit] `window.focus` reads and writes `first` and `last` (spec v6); the schema lists them and `valid/window-focus-ends.json` passes.
+- [unit] The order is by display, left to right, then by window center, left to right and then top to bottom.
+- [self] With fake windows, First and Last go to the two ends of the order, also with no focused window, and stay put on a window that's already there.
+- [self] With no window at all, First fails with "No window to focus."
+- [snap] Focus Window's Direction picker has First Window and Last Window, and the footer says what they do.
+UX:
+- Words: "First Window", "Last Window"; footer "Next Window and Previous Window go through windows from left to right, display by display. First Window and Last Window go to the leftmost and the rightmost."
+Status: done
+Verified: the new order, the two values and their golden file (unit tests, `FocusCycleTests`, `ActionGoldenTests`, the spec-v6 fixtures); both checks against `FakeWindowSystem` (self-test); actions-window in light and dark, grid checks. This changes S-069's order: stacked windows used to come top to bottom before left to right.
+
 ## Later
 - Import and export a single menu as a JSON snippet.
 - A basic automatic tiling mode.

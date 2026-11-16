@@ -147,6 +147,16 @@ extension SelfTest {
         check("S-069 Next from the last window goes to the first, and Previous goes back",
               wrapped == "a" && fake.focused == "d", "\(String(describing: wrapped)), \(String(describing: fake.focused))")
 
+        // S-073: the order is a, c (left display), b, d; First and Last are its ends.
+        var ends: [String] = []
+        for (from, direction) in [("b", FocusDirection.first), ("c", .last), ("d", .last), (nil, .first), (nil, .last)] {
+            fake.focused = from
+            try? await runner.run(.family(AnyActionValue(FocusAction(direction))), id: "focus")
+            ends.append(fake.focused ?? "none")
+        }
+        check("S-073 First and Last go to the leftmost and rightmost window, with or without a focused one",
+              ends == ["a", "d", "d", "a", "d"], "\(ends)")
+
         fake.focused = "a"
         do throws(PlanError) {
             try await runner.run(.family(AnyActionValue(FocusAction(.left))), id: "focus")
@@ -175,6 +185,12 @@ extension SelfTest {
             check("S-072 no window at all says so", false, "no failure")
         } catch {
             check("S-072 no window at all says so", error.message == "No window to focus.", error.message)
+        }
+        do throws(PlanError) {
+            try await runner.run(.family(AnyActionValue(FocusAction(.first))), id: "focus")
+            check("S-073 First with no window at all says so", false, "no failure")
+        } catch {
+            check("S-073 First with no window at all says so", error.message == "No window to focus.", error.message)
         }
     }
 

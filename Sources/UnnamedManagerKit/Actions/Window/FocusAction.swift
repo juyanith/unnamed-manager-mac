@@ -1,8 +1,8 @@
 import Foundation
 
-/// Which window Focus Window goes to (spec v2).
+/// Which window Focus Window goes to (spec v2; first and last from spec v6).
 public enum FocusDirection: String, CaseIterable, Sendable {
-    case left, right, up, down, next, previous
+    case left, right, up, down, next, previous, first, last
 
     /// The end of "No window to the left.", for a direction.
     var failure: String {
@@ -12,12 +12,13 @@ public enum FocusDirection: String, CaseIterable, Sendable {
         case .up: "No window above."
         case .down: "No window below."
         case .next, .previous: "No other window to focus."
+        case .first, .last: "No window to focus."
         }
     }
 }
 
-/// Focus Window (S-068, S-069): the nearest window in a direction, or the
-/// next or previous one.
+/// Focus Window (S-068, S-069, S-073): the nearest window in a direction,
+/// the next or previous one, or the first or last one.
 public struct FocusAction: ActionValue {
     public var direction: FocusDirection
 
@@ -58,6 +59,8 @@ public struct FocusAction: ActionValue {
         case .down: "arrow.down.square"
         case .next: "arrow.forward.circle"
         case .previous: "arrow.backward.circle"
+        case .first: "arrow.left.to.line.circle"
+        case .last: "arrow.right.to.line.circle"
         }
         return .symbol(symbol)
     }
@@ -78,7 +81,7 @@ extension WindowGeometry {
         case .right: (1, 0)
         case .up: (0, -1)
         case .down: (0, 1)
-        case .next, .previous: (0, 0)
+        case .next, .previous, .first, .last: (0, 0)
         }
         guard dx != 0 || dy != 0 else { return nil }
         struct Candidate { let index: Int; let distance: CGFloat; let overlap: CGFloat }
@@ -97,8 +100,9 @@ extension WindowGeometry {
         }?.index
     }
 
-    /// The order Next and Previous go through (S-069): by display, left to
-    /// right, then by window center, top to bottom and then left to right.
+    /// The order Next and Previous go through, and First and Last are the
+    /// ends of (S-069, S-073): by display, left to right, then by window
+    /// center, left to right and then top to bottom (spec v6).
     /// `owners` (process ids) break the ties that are left, so the same
     /// windows always give the same order, whatever their order here.
     public static func cycleOrder(_ windows: [CGRect], owners: [Int32], screens: [Screen]) -> [Int] {
@@ -108,7 +112,7 @@ extension WindowGeometry {
         }
         let keys = windows.indices.map { index in
             let window = windows[index]
-            return (display(window), window.midY, window.midX, owners[index], window.width, window.height)
+            return (display(window), window.midX, window.midY, owners[index], window.width, window.height)
         }
         return windows.indices.sorted { a, b in
             let x = keys[a], y = keys[b]

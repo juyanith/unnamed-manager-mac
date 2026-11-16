@@ -403,11 +403,11 @@ struct FocusCycleTests {
         WindowGeometry.Screen(frame: CGRect(x: 0, y: 0, width: 1440, height: 900), usable: CGRect(x: 0, y: 25, width: 1440, height: 875)),
         WindowGeometry.Screen(frame: CGRect(x: -1920, y: 0, width: 1920, height: 1080), usable: CGRect(x: -1920, y: 25, width: 1920, height: 1055)),
     ]
-    // Named by where they should come: the left display first, then top to bottom, left to right.
+    // Named by where they should come: the left display first, then left to right, top to bottom.
     static let named: [(String, CGRect)] = [
         ("3", CGRect(x: 100, y: 500, width: 600, height: 300)),
         ("1", CGRect(x: -1800, y: 100, width: 800, height: 400)),
-        ("4", CGRect(x: 800, y: 500, width: 600, height: 300)),
+        ("4", CGRect(x: 800, y: 100, width: 600, height: 300)),
         ("2", CGRect(x: 100, y: 100, width: 600, height: 300)),
     ]
 
@@ -415,7 +415,7 @@ struct FocusCycleTests {
         WindowGeometry.cycleOrder(windows.map(\.1), owners: windows.map { _ in 1 }, screens: Self.screens).map { windows[$0].0 }
     }
 
-    @Test("The order is by display left to right, then top to bottom and left to right")
+    @Test("The order is by display left to right, then left to right and top to bottom")
     func ordered() {
         #expect(order(Self.named) == ["1", "2", "3", "4"])
     }
@@ -447,6 +447,16 @@ struct FocusCycleTests {
     func alone() {
         #expect(WindowGeometry.step(from: 0, in: [0], .next) == nil)
         #expect(WindowCommand.focus(.next).failure == "No other window to focus.")
+    }
+
+    @Test("First and Last read, write and plan, and have no neighbor of their own (S-073)")
+    func ends() throws {
+        for direction in [FocusDirection.first, .last] {
+            #expect(FocusDirection(rawValue: direction.rawValue) == direction)
+            #expect(WindowGeometry.neighbor(of: .zero, direction, among: [CGRect(x: 10, y: 0, width: 5, height: 5)]) == nil)
+            #expect(WindowCommand.focus(direction).failure == "No window to focus.")
+        }
+        #expect(order(Self.named).first == "1" && order(Self.named).last == "4")
     }
 }
 

@@ -14,6 +14,8 @@ extension FocusDirection {
         case .down: "Down"
         case .next: "Next Window"
         case .previous: "Previous Window"
+        case .first: "First Window"
+        case .last: "Last Window"
         }
     }
 }
