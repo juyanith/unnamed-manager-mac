@@ -48,12 +48,13 @@ final class WindowControl {
     let system: any WindowSystem
     private var filled = FillMemory<WindowRef>()
 
-    /// The gap Place Window and Fill leave around windows (spec v3, v7), read when an action runs.
-    let gap: () -> Double
+    /// The window settings: the gap (spec v3, v7) and Arrange Windows' limits (spec v8), read when an action runs.
+    let settings: () -> Config.Windows
+    private var gap: CGFloat { CGFloat(settings().gap).rounded() }
 
-    init(system: any WindowSystem, gap: @escaping () -> Double = { Config.Windows().gap }) {
+    init(system: any WindowSystem, settings: @escaping () -> Config.Windows = { Config.Windows() }) {
         self.system = system
-        self.gap = gap
+        self.settings = settings
     }
 
     func run(_ command: WindowCommand) async throws(PlanError) {
@@ -76,6 +77,10 @@ final class WindowControl {
             try await system.focus(top)
             return
         }
+        if case let .arrange(action) = command {
+            try arrange(action, focused: focused)
+            return
+        }
         guard let app else { throw PlanError("No app is in front.") }
         guard let window = focused, let frame = system.frame(of: window) else {
             throw PlanError("\(app.name) has no window to \(command.verb).")
@@ -83,7 +88,6 @@ final class WindowControl {
         guard let screen = WindowGeometry.screen(for: frame, among: system.screens()) else { return }
         switch command {
         case let .fill(toggle):
-            let gap = CGFloat(gap()).rounded()
             switch filled.step(for: window, frame: frame, area: WindowGeometry.withGap(screen.usable, in: screen.usable, gap: gap), toggle: toggle) {
             case let .fill(area):
                 system.setFrame(area, of: window)
@@ -96,14 +100,7 @@ final class WindowControl {
         case .minimize:
             system.minimize(window)
         case let .place(fractions):
-            let gap = CGFloat(gap()).rounded()
-            let target = WindowGeometry.withGap(WindowGeometry.rect(fractions, in: screen.usable), in: screen.usable, gap: gap)
-            system.setFrame(target, of: window)
-            // A window with a minimum or maximum size keeps the edge it was placed against, a gap in from the screen's.
-            if let actual = system.frame(of: window), !WindowGeometry.matches(actual, target) {
-                let inside = screen.usable.insetBy(dx: gap, dy: gap)
-                system.setFrame(WindowGeometry.anchored(actual.size, to: target, in: inside), of: window)
-            }
+            place(window, in: WindowGeometry.rect(fractions, in: screen.usable), on: screen)
         case let .resize(.step(step, widths), _):
             if let next = WindowGeometry.step(frame, in: screen.usable, widths: widths ?? ResizeAction.defaultWidths, step) {
                 system.setFrame(next, of: window)
@@ -130,6 +127,47 @@ final class WindowControl {
                 throw PlanError(command.failure ?? "")
             }
             try await system.focus(others[index])
+        case .arrange:
+            break
+        }
+    }
+
+    /// Puts a window in `frame` on a screen, with the gap around it.
+    private func place(_ window: WindowRef, in frame: CGRect, on screen: WindowGeometry.Screen) {
+        let gap = gap
+        let target = WindowGeometry.withGap(frame, in: screen.usable, gap: gap)
+        system.setFrame(target, of: window)
+        // A window with a minimum or maximum size keeps the edge it was placed against, a gap in from the screen's.
+        if let actual = system.frame(of: window), !WindowGeometry.matches(actual, target) {
+            let inside = screen.usable.insetBy(dx: gap, dy: gap)
+            system.setFrame(WindowGeometry.anchored(actual.size, to: target, in: inside), of: window)
+        }
+    }
+
+    /// Arrange Windows (S-075, S-076): the windows on the focused window's
+    /// display, the focused one first and then front to back, each in the
+    /// cell `ArrangeGrid` gives it. With no focused window, the one in front
+    /// counts as focused.
+    private func arrange(_ action: ArrangeAction, focused: WindowRef?) throws(PlanError) {
+        let screens = system.screens(), candidates = system.focusableWindows()
+        guard let anchor = focused.flatMap({ system.frame(of: $0) }) ?? candidates.first?.frame,
+              let screen = WindowGeometry.screen(for: anchor, among: screens) else {
+            throw PlanError("No window to arrange.")
+        }
+        var windows = candidates.filter { WindowGeometry.screen(for: $0.frame, among: screens) == screen }
+        if let index = windows.firstIndex(where: { $0.ref == focused }) {
+            windows.insert(windows.remove(at: index), at: 0)
+        }
+        guard !windows.isEmpty else { throw PlanError("No window to arrange.") }
+        let settings = settings()
+        let plan = ArrangeGrid.plan(action, maxColumns: settings.maxColumns, maxRows: settings.maxRows,
+                                    usable: screen.usable, windows: windows.map(\.frame))
+        for (index, cell) in plan {
+            let frame = cell.rect(in: screen.usable)
+            // A window that's in its cell already stays untouched, so the action can be repeated.
+            if !WindowGeometry.matches(windows[index].frame, WindowGeometry.withGap(frame, in: screen.usable, gap: gap)) {
+                place(windows[index].ref, in: frame, on: screen)
+            }
         }
     }
 }

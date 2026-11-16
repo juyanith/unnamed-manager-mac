@@ -11,8 +11,11 @@ public enum ConfigWriter {
         if let runtime = runtimeFields(config.runtime) { sections.append("  \"runtime\": \(runtime)") }
         if let ui = uiFields(config.ui) { sections.append("  \"ui\": \(ui)") }
         if config.windows != Config.Windows() {
+            let standard = Config.Windows()
             var fields = ActionFieldWriter()
-            fields.number("gap", config.windows.gap)
+            if config.windows.gap != standard.gap { fields.number("gap", config.windows.gap) }
+            if config.windows.maxColumns != standard.maxColumns { fields.number("maxColumns", Double(config.windows.maxColumns)) }
+            if config.windows.maxRows != standard.maxRows { fields.number("maxRows", Double(config.windows.maxRows)) }
             sections.append("  \"windows\": \(object(fields.fields))")
         }
         sections.append(list("entries", config.entries.map(entry)))

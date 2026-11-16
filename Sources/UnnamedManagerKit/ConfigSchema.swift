@@ -71,6 +71,10 @@ public enum ConfigSchema {
                     "type": "object", "additionalProperties": false,
                     "properties": [
                         "gap": ["type": "number", "minimum": 0, "description": "Points Place Window and Fill leave around windows and between them. Default 8."],
+                        "maxColumns": ["type": "integer", "minimum": Config.Windows.limitRange.lowerBound, "maximum": Config.Windows.limitRange.upperBound,
+                                       "description": "The most columns Arrange Windows picks by itself. Default 2."],
+                        "maxRows": ["type": "integer", "minimum": Config.Windows.limitRange.lowerBound, "maximum": Config.Windows.limitRange.upperBound,
+                                    "description": "The most rows Arrange Windows picks by itself. Default 2."],
                     ],
                 ],
                 "entries": [

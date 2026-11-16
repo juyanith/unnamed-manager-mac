@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "windows": { "maxColumns": 3 },
+  "entries": [
+    { "keys": "Meh+W", "title": "Windows" },
+    { "keys": "Meh+W A", "title": "Two side by side", "action": "pair" },
+    { "keys": "Meh+W S", "title": "Two stacked", "action": "stack" },
+    { "keys": "Meh+W T", "title": "Three columns", "action": "thirds" },
+    { "keys": "Meh+W M", "title": "Three, one large", "action": "main" },
+    { "keys": "Meh+W E", "title": "Every window", "action": "all" },
+    { "keys": "Meh+W R", "title": "Every window in rows", "action": "all-rows" }
+  ],
+  "actions": {
+    "pair": { "type": "window.arrange" },
+    "stack": { "type": "window.arrange", "layout": "rows" },
+    "thirds": { "type": "window.arrange", "count": 3, "groups": 3 },
+    "main": { "type": "window.arrange", "count": 3, "groups": 2, "layout": "columns" },
+    "all": { "type": "window.arrange", "count": "all" },
+    "all-rows": { "type": "window.arrange", "count": "all", "groups": 4, "layout": "rows" }
+  }
+}

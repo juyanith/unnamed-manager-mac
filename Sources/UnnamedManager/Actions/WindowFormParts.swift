@@ -20,6 +20,16 @@ extension FocusDirection {
     }
 }
 
+extension ArrangeLayout {
+    var displayName: String {
+        switch self {
+        case .auto: "Automatic"
+        case .columns: "Columns"
+        case .rows: "Rows"
+        }
+    }
+}
+
 extension PlacePreset {
     var displayName: String {
         switch self {

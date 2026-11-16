@@ -72,10 +72,16 @@ struct SettingsView: View {
                         editor.edit("Change Gap", undo: undo) { $0.config.windows.gap = value }
                     }))
                 }
+                Picker("Maximum Columns", selection: windowLimit(\.maxColumns, "Change Maximum Columns")) {
+                    ForEach(Array(Config.Windows.limitRange), id: \.self) { Text("\($0)").tag($0) }
+                }
+                Picker("Maximum Rows", selection: windowLimit(\.maxRows, "Change Maximum Rows")) {
+                    ForEach(Array(Config.Windows.limitRange), id: \.self) { Text("\($0)").tag($0) }
+                }
             } header: {
                 Text("Windows")
             } footer: {
-                Text("Place Window and Fill leave this space between a window and the screen's edges, and between windows side by side. 0 puts them edge to edge.")
+                Text("Place Window, Fill and Arrange Windows leave the gap between a window and the screen's edges, and between windows side by side. 0 puts them edge to edge. The maximums limit the grid Arrange Windows picks when its action leaves Groups on Automatic.")
             }
 
             Section {
@@ -116,6 +122,14 @@ struct SettingsView: View {
         Binding(get: { ui[keyPath: key] }, set: { value in
             guard ui[keyPath: key] != value else { return }
             editor.edit(name, undo: undo) { $0.config.ui[keyPath: key] = value }
+        })
+    }
+
+    /// One of Arrange Windows' limits (S-076).
+    private func windowLimit(_ key: WritableKeyPath<Config.Windows, Int>, _ name: String) -> Binding<Int> {
+        Binding(get: { editor.draft.config.windows[keyPath: key] }, set: { value in
+            guard editor.draft.config.windows[keyPath: key] != value else { return }
+            editor.edit(name, undo: undo) { $0.config.windows[keyPath: key] = value }
         })
     }
 

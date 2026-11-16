@@ -454,6 +454,49 @@
         {
           "additionalProperties" : false,
           "properties" : {
+            "count" : {
+              "description" : "How many windows: the focused one and the ones used before it. \"all\" is every window on the display, up to windows.maxColumns times windows.maxRows. Default 2.",
+              "oneOf" : [
+                {
+                  "maximum" : 8,
+                  "minimum" : 2,
+                  "type" : "integer"
+                },
+                {
+                  "enum" : [
+                    "all"
+                  ]
+                }
+              ]
+            },
+            "groups" : {
+              "description" : "How many columns or rows. Without it, as many as there are windows, up to windows.maxColumns or windows.maxRows.",
+              "maximum" : 8,
+              "minimum" : 1,
+              "type" : "integer"
+            },
+            "layout" : {
+              "description" : "auto (default) is columns on a wide screen and rows on a tall one.",
+              "enum" : [
+                "auto",
+                "columns",
+                "rows"
+              ]
+            },
+            "type" : {
+              "enum" : [
+                "window.arrange"
+              ]
+            }
+          },
+          "required" : [
+            "type"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
             "fallback" : {
               "$ref" : "#/$defs/plainAction"
             },
@@ -926,6 +969,49 @@
             "direction"
           ],
           "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "count" : {
+              "description" : "How many windows: the focused one and the ones used before it. \"all\" is every window on the display, up to windows.maxColumns times windows.maxRows. Default 2.",
+              "oneOf" : [
+                {
+                  "maximum" : 8,
+                  "minimum" : 2,
+                  "type" : "integer"
+                },
+                {
+                  "enum" : [
+                    "all"
+                  ]
+                }
+              ]
+            },
+            "groups" : {
+              "description" : "How many columns or rows. Without it, as many as there are windows, up to windows.maxColumns or windows.maxRows.",
+              "maximum" : 8,
+              "minimum" : 1,
+              "type" : "integer"
+            },
+            "layout" : {
+              "description" : "auto (default) is columns on a wide screen and rows on a tall one.",
+              "enum" : [
+                "auto",
+                "columns",
+                "rows"
+              ]
+            },
+            "type" : {
+              "enum" : [
+                "window.arrange"
+              ]
+            }
+          },
+          "required" : [
+            "type"
+          ],
+          "type" : "object"
         }
       ]
     }
@@ -1061,6 +1147,18 @@
           "description" : "Points Place Window and Fill leave around windows and between them. Default 8.",
           "minimum" : 0,
           "type" : "number"
+        },
+        "maxColumns" : {
+          "description" : "The most columns Arrange Windows picks by itself. Default 2.",
+          "maximum" : 8,
+          "minimum" : 1,
+          "type" : "integer"
+        },
+        "maxRows" : {
+          "description" : "The most rows Arrange Windows picks by itself. Default 2.",
+          "maximum" : 8,
+          "minimum" : 1,
+          "type" : "integer"
         }
       },
       "type" : "object"

@@ -44,7 +44,7 @@ ConfigStore (main) ── onLoad ─► EngineBox.replace(config)
 | `KeyEvent` into `SequenceEngine` | the event tap; unit tests | Every sequence rule is tested without a keyboard |
 | `ActionPerformer` | `SystemPerformer` (NSWorkspace, Process, CGEvent); `RecordingPerformer` | The self-test checks action plans without launching or typing anything |
 | `ActionRegistry` (`JSONDecoder.userInfo`, `ConfigLoader.load(_:registry:)`) | `.standard`; `.standard.adding(…)` with a family of the test's own | `TestFamilyTests` and the self-test add a family in one file and check it loads, validates, appears in the schema and the Type picker, and runs |
-| `WindowSystem` (in `StepContext.windows`, S-062) | `AXWindowSystem` (Accessibility, top-left coordinates, `NSScreen` flipped); `FakeWindowSystem` (frames in memory) | The self-test runs window actions through `SystemPerformer` against fake windows and displays. `WindowControl` holds the logic both share; the decisions are pure Kit code (`WindowGeometry`, `FillMemory`) |
+| `WindowSystem` (in `StepContext.windows`, S-062) | `AXWindowSystem` (Accessibility, top-left coordinates, `NSScreen` flipped); `FakeWindowSystem` (frames in memory) | The self-test runs window actions through `SystemPerformer` against fake windows and displays. `WindowControl` holds the logic both share; the decisions are pure Kit code (`WindowGeometry`, `FillMemory`, `ArrangeGrid`) |
 | `LauncherMigration.sourceURL` (`APP_LAUNCHER_STORE`) | the real Unnamed Launcher config; a file in `/tmp`; none while `APP_STORE` is set | The self-test copies a config without reading the real one. `LauncherMigration.swift` is the one file that names the old app (`AppNameTests`) |
 
 ## Reviews

@@ -58,7 +58,7 @@ enum Snapshot {
                 if only?.contains("actions") ?? true {
                     // S-070: each window action's form.
                     model.sidebar = .actions
-                    for id in ["left-half", "move-center", "wider", "half-size", "focus-right", "fill"] {
+                    for id in ["left-half", "move-center", "wider", "half-size", "focus-right", "fill", "arrange"] {
                         model.actionSelection = id
                         try? await Task.sleep(for: .seconds(0.8))
                         capture(to: "\(dir)/actions-window-\(id)-\(mode).png")

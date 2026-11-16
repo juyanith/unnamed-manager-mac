@@ -9,6 +9,7 @@ public enum WindowCommand: ActionStep {
     case resize(ResizeAction.Change, anchor: WindowAnchor)
     case move(MoveAction)
     case focus(FocusDirection)
+    case arrange(ArrangeAction)
 
     /// How Focus Window says there's nothing that way.
     public var failure: String? {
@@ -24,6 +25,7 @@ public enum WindowCommand: ActionStep {
         case .resize: "resize"
         case .move: "move"
         case .focus: "focus from"
+        case .arrange: "arrange"
         }
     }
 }

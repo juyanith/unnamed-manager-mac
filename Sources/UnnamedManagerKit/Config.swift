@@ -40,9 +40,19 @@ public struct Config: Sendable, Equatable {
     }
 
     public struct Windows: Sendable, Equatable {
-        /// Points Place Window leaves around windows and between them.
-        public var gap: Double = 8
-        public init() {}
+        /// Points Place Window, Fill and Arrange Windows leave around windows and between them.
+        public var gap: Double
+        /// The most columns and rows Arrange Windows picks by itself (spec v8).
+        public var maxColumns: Int
+        public var maxRows: Int
+        /// The range both limits take.
+        public static let limitRange = 1...8
+
+        public init(gap: Double = 8, maxColumns: Int = 2, maxRows: Int = 2) {
+            self.gap = gap
+            self.maxColumns = maxColumns
+            self.maxRows = maxRows
+        }
     }
 
     public struct UI: Sendable, Equatable {
@@ -205,8 +215,10 @@ extension Config.Runtime: Decodable {
 extension Config.Windows: Decodable {
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: AnyKey.self)
-        try c.rejectUnknown(allowed: ["gap"], at: "windows")
+        try c.rejectUnknown(allowed: ["gap", "maxColumns", "maxRows"], at: "windows")
         gap = try c.value("gap", default: Self().gap)
+        maxColumns = try c.value("maxColumns", default: Self().maxColumns)
+        maxRows = try c.value("maxRows", default: Self().maxRows)
     }
 }
 

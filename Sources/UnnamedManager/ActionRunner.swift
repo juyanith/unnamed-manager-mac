@@ -33,8 +33,8 @@ struct ActionRunner {
 
 /// Does each plan with NSWorkspace.
 struct SystemPerformer: ActionPerformer {
-    var context = StepContext(windows: WindowControl(system: AXWindowSystem(), gap: {
-        AppModel.current?.store.loaded?.config.windows.gap ?? Config.Windows().gap
+    var context = StepContext(windows: WindowControl(system: AXWindowSystem(), settings: {
+        AppModel.current?.store.loaded?.config.windows ?? Config.Windows()
     }))
 
     func perform(_ plan: ActionPlan) async throws(PlanError) {

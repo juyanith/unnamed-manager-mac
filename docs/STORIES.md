@@ -842,6 +842,41 @@ UX:
 Status: done
 Verified: reading, writing, planning, the old name and the gapped area (unit tests, `FillTests`, `ActionGoldenTests`, the spec-v7 fixtures); the gap, the restore and the picker against `FakeWindowSystem` (self-test, 169 checks); actions-window-fill and settings in light and dark, grid checks. This renames S-062's Maximize. Not yet tried by hand on real windows.
 
+### S-075 Arrange the windows used last in a grid
+As the user, I press a key and the window I'm using and the one I used before it stand side by side in halves, or more of them in columns or rows, with the gap.
+Screens: actions-window
+Depends: S-064, S-068, S-071
+Acceptance:
+- [unit] `window.arrange` reads, writes and plans `count` (2 to 8), `groups` and `layout` (spec v8); the schema lists it and the spec-v8 fixtures pass.
+- [unit] The grid: equal groups, extra cells in the leftmost columns or the bottom rows, edges shared between neighbours on any width.
+- [unit] Windows keep their order from left to right, then top to bottom; windows in the same spot go by use, the more recent one further right or up.
+- [unit] When the cells differ in size, the focused window takes the roomiest cell, on the right or at the top.
+- [unit] With fewer windows than cells, the cells on the left and at the bottom stay empty.
+- [self] Two fake windows end in halves, 8 points apart; a third window, a window on another display and the focus stay as they were; run again, nothing moves.
+- [self] With no focused window, the one in front counts as focused; with no window, it fails with "No window to arrange."
+- [snap] The Arrange Windows form has Windows, Groups and Layout, and a footer that says where windows go.
+UX:
+- Words: type "Arrange Windows"; pickers "Windows" (Last 2 to Last 8, All on the Display), "Groups" (Automatic, 1 to 8), "Layout" (Automatic, Columns, Rows). The glossary's words: cell, group.
+- No toggle and no memory, as with Place Window.
+Status: done
+Verified: the grid, the order, ties, the roomiest cell, empty cells, and reading, writing and planning (unit tests, `ArrangeTests`, `ActionGoldenTests`, the spec-v8 fixtures); halves, the other display, running it again, rows, no focused window and no window against `FakeWindowSystem` (self-test); actions-window-arrange in light and dark, grid checks. Not yet tried by hand on real windows.
+
+### S-076 Arrange every window on the display, within limits from Settings
+As the user, I press a key and every window on the display I'm on gets a cell, and Settings says how many columns and rows that may take.
+Screens: actions-window, settings
+Depends: S-075
+Acceptance:
+- [unit] `"count": "all"` arranges the windows on the display, at most Maximum Columns times Maximum Rows, and never more than 8; older windows stay as they are.
+- [unit] Without `groups`, the grid has as many groups as cells, up to the maximum for its layout; an automatic layout is rows on a tall display.
+- [unit] `windows.maxColumns` and `windows.maxRows` are read, written only when they aren't 2, and rejected outside 1 to 8 (`bad-window-limit`).
+- [self] With three fake windows, All gives the focused one the right half and stacks the others; with Maximum Columns at 3 they're three columns.
+- [self] Changing Maximum Columns in the editor saves it in the file.
+- [snap] Settings has Maximum Columns and Maximum Rows under Gap Between Windows.
+UX:
+- Words: "Maximum Columns", "Maximum Rows"; footer "The maximums limit the grid Arrange Windows picks when its action leaves Groups on Automatic."
+Status: done
+Verified: the limit, the automatic groups and layout, and the two settings (unit tests, `ArrangeTests`, `invalid/window-limit.json`); both arrangements and the saved setting (self-test, 178 checks); settings in light and dark, grid checks. Not yet tried by hand on real windows.
+
 ## Later
 - Import and export a single menu as a JSON snippet.
 - A basic automatic tiling mode.

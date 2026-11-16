@@ -10,14 +10,14 @@ App name `UnnamedManager`, display name "Unnamed Manager", bundle id `net.unname
 
 ## Main jobs
 1. **Run a binding by key sequence or direct chord.** Unchanged from the launcher: Hyper+Space → E opens the editor; the Guide appears only if you pause; the app in front keeps focus.
-2. **Manage the window in front from the keyboard.** Focus the nearest window left, right, up or down, or the next or previous one. Place it on a half, third, quarter or corner of the screen. Move or resize it by a step or to an exact fraction. Fill the screen with it (again restores) or minimize it.
+2. **Manage the window in front from the keyboard.** Focus the nearest window left, right, up or down, or the next or previous one. Place it on a half, third, quarter or corner of the screen. Move or resize it by a step or to an exact fraction. Fill the screen with it (again restores) or minimize it. Arrange the windows used last in a grid of columns or rows.
 3. **See and edit bindings in the Bindings window**, including the new window actions, each with its own editor. Every change is written back to the config file.
 4. **Check status from the menu bar.** Unchanged: on or off, reload, permissions, last error, quit.
 
 ## Data
 One JSON file, `~/.config/unnamed-manager/config.json`, in the shared format. On first run, if it's missing and `~/.config/unnamed-launcher/config.json` exists, the app offers to copy it.
 - **One config per platform** (decided 2026-11-11): the Mac and Windows apps share the format and validation rules, not the file. Mac actions name apps by `bundleId`; contexts list bundle ids.
-- **Entry, Action, Context, Settings:** as in the spec. New action types are `window.focus`, `window.place`, `window.move`, `window.resize`, `window.fill` (`window.maximize` before spec v7) and `window.minimize`. Their fields are settled in the spec repo first, then built here.
+- **Entry, Action, Context, Settings:** as in the spec. New action types are `window.focus`, `window.place`, `window.move`, `window.resize`, `window.fill` (`window.maximize` before spec v7), `window.arrange` (spec v8) and `window.minimize`. Their fields are settled in the spec repo first, then built here.
 - **Window memory:** the frame each window had before Fill, kept in memory only, so Fill can toggle back.
 
 ## Shape

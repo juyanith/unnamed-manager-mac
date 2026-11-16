@@ -23,6 +23,34 @@ extension FillAction: EditableAction {
     }
 }
 
+extension ArrangeAction: EditableAction {
+    @MainActor static func form(_ value: Binding<ArrangeAction>) -> some View {
+        let action = value.wrappedValue
+        // A number of windows can't have more groups than windows.
+        let mostGroups = if case let .windows(number) = action.count { number } else { ArrangeAction.groupsRange.upperBound }
+        return Section {
+            Picker("Windows", selection: Binding(get: { action.count }, set: { new in
+                value.wrappedValue.count = new
+                if case let .windows(number) = new, let groups = action.groups, groups > number { value.wrappedValue.groups = number }
+            })) {
+                ForEach(Array(ArrangeAction.countRange), id: \.self) { Text("Last \($0)").tag(ArrangeCount.windows($0)) }
+                Divider()
+                Text("All on the Display").tag(ArrangeCount.all)
+            }
+            Picker("Groups", selection: value.groups) {
+                Text("Automatic").tag(Int?.none)
+                Divider()
+                ForEach(Array(1...mostGroups), id: \.self) { Text("\($0)").tag(Optional($0)) }
+            }
+            Picker("Layout", selection: value.layout) {
+                ForEach(ArrangeLayout.allCases, id: \.self) { Text($0.displayName).tag($0) }
+            }
+        } footer: {
+            Text("Arranges the window in front and the ones you used before it, on its display, in columns or rows of equal size, with the gap from Settings. Windows keep their order from left to right. When the cells differ in size, the window in front gets the roomiest one, on the right or at the top. Automatic groups go up to Maximum Columns and Maximum Rows in Settings, and an automatic layout is columns on a wide display and rows on a tall one.")
+        }
+    }
+}
+
 extension FocusAction: EditableAction {
     @MainActor static func form(_ value: Binding<FocusAction>) -> some View {
         Section {
