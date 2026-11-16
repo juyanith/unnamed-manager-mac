@@ -46,14 +46,55 @@ struct ArrangeTests {
         #expect(thirds == [Self.right, Self.bottomLeft, Self.topLeft])
     }
 
-    @Test("Three windows in two columns: the focused one takes the right half, the others keep their order")
+    @Test("Three windows in two columns: the focused one takes the whole column on its side, the others keep their order")
     func uneven() {
         let focused = CGRect(x: 0, y: 30, width: 400, height: 300)
         let upper = CGRect(x: 600, y: 40, width: 400, height: 300), lower = CGRect(x: 300, y: 500, width: 400, height: 300)
-        #expect(arranged(ArrangeAction(count: .windows(3)), [focused, lower, upper]) == [Self.right, Self.bottomLeft, Self.topLeft])
-        // Focusing another window and running it again swaps that one into the roomy cell.
-        #expect(arranged(ArrangeAction(count: .windows(3)), [Self.topLeft, Self.right, Self.bottomLeft])
+        let topRight = CGRect(x: 720, y: 25, width: 720, height: 438), bottomRight = CGRect(x: 720, y: 463, width: 720, height: 437)
+        #expect(arranged(ArrangeAction(count: .windows(3)), [focused, lower, upper]) == [Self.left, bottomRight, topRight])
+        // Focusing another window and running it again gives that one its column, on its side.
+        #expect(arranged(ArrangeAction(count: .windows(3)), [topRight, Self.left, bottomRight])
                 == [Self.right, Self.topLeft, Self.bottomLeft])
+    }
+
+    /// Five windows spread from left to right, the focused one at `place`, and where each ends in three columns.
+    func five(focusedAt place: Int) -> [CGRect?] {
+        var windows = (0..<5).map { CGRect(x: 100 + 200 * CGFloat($0), y: 100 + 50 * CGFloat($0), width: 400, height: 300) }
+        windows.insert(windows.remove(at: place), at: 0)
+        var frames = arranged(ArrangeAction(count: .windows(5)), maxColumns: 3, windows)
+        frames.insert(frames.remove(at: 0), at: place)
+        return frames
+    }
+
+    @Test("Five windows in three columns: the focused one fills the column it's in, top to bottom")
+    func spare() {
+        func cell(_ column: CGFloat, _ row: Int?) -> CGRect {
+            switch row {
+            case 0: CGRect(x: 480 * column, y: 25, width: 480, height: 438)
+            case 1: CGRect(x: 480 * column, y: 463, width: 480, height: 437)
+            default: CGRect(x: 480 * column, y: 25, width: 480, height: 875)
+            }
+        }
+        #expect(five(focusedAt: 4) == [cell(0, 0), cell(0, 1), cell(1, 0), cell(1, 1), cell(2, nil)])
+        #expect(five(focusedAt: 2) == [cell(0, 0), cell(0, 1), cell(1, nil), cell(2, 0), cell(2, 1)])
+        #expect(five(focusedAt: 0) == [cell(0, nil), cell(1, 0), cell(1, 1), cell(2, 0), cell(2, 1)])
+    }
+
+    @Test("Eight windows in three columns: the focused one takes the spare cell next to it, and its neighbour keeps a third")
+    func shared() {
+        let windows = [CGRect(x: 900, y: 500, width: 400, height: 300), CGRect(x: 900, y: 40, width: 400, height: 300)]
+            + (0..<6).map { CGRect(x: 50 * CGFloat($0), y: 100, width: 400, height: 300) }
+        let frames = arranged(ArrangeAction(count: .windows(8), groups: 3), windows)
+        #expect(frames[1] == CGRect(x: 960, y: 25, width: 480, height: 292) && frames[0] == CGRect(x: 960, y: 317, width: 480, height: 583))
+        #expect(frames.dropFirst(2).allSatisfy { $0?.height == 292 || $0?.height == 291 })
+    }
+
+    @Test("Four windows in three columns: the focused one fills its column, and the last column has one window too")
+    func leftover() {
+        let windows = [1, 0, 2, 3].map { CGRect(x: 100 + 200 * CGFloat($0), y: 100, width: 400, height: 300) }
+        let frames = arranged(ArrangeAction(count: .windows(4), groups: 3), windows)
+        #expect(frames == [CGRect(x: 480, y: 25, width: 480, height: 875), CGRect(x: 0, y: 25, width: 480, height: 438),
+                           CGRect(x: 0, y: 463, width: 480, height: 437), CGRect(x: 960, y: 25, width: 480, height: 875)])
     }
 
     @Test("With groups, three windows are three equal columns")
@@ -68,8 +109,9 @@ struct ArrangeTests {
         #expect(arranged([Self.small]) == [Self.right])
         #expect(arranged(ArrangeAction(count: .windows(3), groups: 3), [Self.small, Self.small])
                 == [CGRect(x: 960, y: 25, width: 480, height: 875), CGRect(x: 480, y: 25, width: 480, height: 875)])
-        // Two windows for three cells in two columns: the right half and the top left.
-        #expect(arranged(ArrangeAction(count: .windows(3)), [Self.small, Self.small]) == [Self.right, Self.topLeft])
+        // Two windows for three cells in two columns: the focused one's column, and the top of the other.
+        #expect(arranged(ArrangeAction(count: .windows(3)), [Self.small, Self.small])
+                == [Self.left, CGRect(x: 720, y: 25, width: 720, height: 438)])
     }
 
     @Test("Windows past the count are left alone")
@@ -84,14 +126,15 @@ struct ArrangeTests {
         #expect(four.compactMap { $0 }.count == 4 && four[4] == nil && four[5] == nil)
         #expect(Set(four.compactMap { $0 }.map(\.width)) == [720] && four[0] == CGRect(x: 720, y: 25, width: 720, height: 438))
         #expect(arranged(ArrangeAction(count: .all), [Self.small]) == [Self.wide])
-        #expect(arranged(ArrangeAction(count: .all), Array(windows.prefix(3))) == [Self.right, Self.topLeft, Self.bottomLeft])
+        #expect(arranged(ArrangeAction(count: .all), Array(windows.prefix(3)))
+                == [Self.left, CGRect(x: 720, y: 25, width: 720, height: 438), CGRect(x: 720, y: 463, width: 720, height: 437)])
         // Wider settings: three equal columns, and never more than 8 windows.
         #expect(arranged(ArrangeAction(count: .all), maxColumns: 4, Array(windows.prefix(3))).compactMap { $0?.width } == [480, 480, 480])
         #expect(arranged(ArrangeAction(count: .all), maxColumns: 8, maxRows: 8, Array(repeating: Self.small, count: 10))
             .compactMap { $0 }.count == 8)
     }
 
-    @Test("An automatic layout is rows on a tall display, with the roomiest cell at the top")
+    @Test("An automatic layout is rows on a tall display, and the focused window fills the row it's in")
     func rows() {
         let frames = arranged(ArrangeAction(count: .windows(3)), usable: Self.tall, [Self.small, Self.small, Self.small])
         #expect(frames == [CGRect(x: 0, y: 0, width: 1080, height: 960), CGRect(x: 540, y: 960, width: 540, height: 960),
@@ -100,15 +143,31 @@ struct ArrangeTests {
                 == CGRect(x: 540, y: 0, width: 540, height: 1920))
     }
 
-    @Test("Cells share their edges on every width, so the gap between neighbours is exact", arguments: [1440.0, 1512, 1727, 3440, 1001])
-    func edges(_ width: Double) {
+    @Test("Any grid fills the usable area, gives the focused window the most room, and stays when run again",
+          arguments: [1440.0, 1512, 1727, 3440, 1001])
+    func grids(_ width: Double) {
         let usable = CGRect(x: 0, y: 0, width: width, height: 901)
         for count in 2...8 {
             for groups in 1...count {
-                let cells = ArrangeGrid.cells(count: count, groups: groups, rows: false).map { $0.rect(in: usable) }
-                #expect(cells.count == count)
-                #expect(cells.reduce(CGFloat(0)) { $0 + $1.width * $1.height } == CGFloat(width * 901))
-                for cell in cells { #expect(cell.intersection(usable) == cell) }
+                for layout in [ArrangeLayout.columns, .rows] {
+                    let action = ArrangeAction(count: .windows(count), groups: groups, layout: layout)
+                    let start = arranged(action, usable: usable, Array(repeating: Self.small, count: count)).compactMap { $0 }
+                    // Each window in turn has the focus.
+                    for focused in 0..<count {
+                        var windows = start
+                        windows.insert(windows.remove(at: focused), at: 0)
+                        let cells = arranged(action, usable: usable, windows).compactMap { $0 }
+                        let areas = cells.map { $0.width * $0.height }
+                        #expect(cells.count == count && areas.reduce(0, +) == CGFloat(width * 901))
+                        #expect(areas[0] >= areas.max()! - CGFloat(max(width, 901)), "\(count) in \(groups), \(layout)")
+                        for cell in cells { #expect(cell.intersection(usable) == cell) }
+                        #expect(arranged(action, usable: usable, cells) == cells, "\(count) in \(groups), \(layout), focus \(focused)")
+                        // With one window gone, the others stay too.
+                        let fewer = Array(cells.dropLast())
+                        let once = arranged(action, usable: usable, fewer).compactMap { $0 }
+                        #expect(arranged(action, usable: usable, once) == once, "\(count - 1) of \(count) in \(groups), \(layout)")
+                    }
+                }
             }
         }
     }

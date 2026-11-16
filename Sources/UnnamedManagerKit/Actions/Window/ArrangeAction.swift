@@ -123,15 +123,13 @@ public struct ArrangeAction: ActionValue {
 }
 
 /// The grid Arrange Windows makes, and which window goes in which cell
-/// (spec v8). Pure, so both the app and the tests can ask it.
+/// (spec v8, with the focused window's cell as proposed for spec v9).
+/// Pure, so both the app and the tests can ask it.
 public enum ArrangeGrid {
     /// One cell, as fractions of the usable area. Neighbours get the same
     /// value for the edge they share, so they round to the same point.
     public struct Cell: Sendable, Equatable {
         public var minX: Double, maxX: Double, minY: Double, maxY: Double
-        /// Which column or row it's in, and how many cells that group has.
-        public var group: Int
-        public var groupSize: Int
 
         /// The cell in the usable area, before the gap. Edges round to whole points.
         public func rect(in usable: CGRect) -> CGRect {
@@ -141,24 +139,20 @@ public enum ArrangeGrid {
         }
     }
 
-    /// `count` cells in `groups` columns, or rows. Extra cells go to the
-    /// leftmost columns or the bottom rows, so the roomiest cells are on
-    /// the right and at the top. Columns come left to right with their
-    /// cells top to bottom; rows come top to bottom with theirs left to right.
-    public static func cells(count: Int, groups: Int, rows: Bool) -> [Cell] {
-        let groups = max(1, min(groups, count)), base = count / groups, extra = count % groups
-        var cells: [Cell] = []
-        for group in 0..<groups {
-            let size = base + ((rows ? group >= groups - extra : group < extra) ? 1 : 0)
-            for index in 0..<size {
-                let along = (Double(group) / Double(groups), Double(group + 1) / Double(groups))
-                let across = (Double(index) / Double(size), Double(index + 1) / Double(size))
-                cells.append(rows
-                    ? Cell(minX: across.0, maxX: across.1, minY: along.0, maxY: along.1, group: group, groupSize: size)
-                    : Cell(minX: along.0, maxX: along.1, minY: across.0, maxY: across.1, group: group, groupSize: size))
-            }
-        }
-        return cells
+    /// How many windows each group holds, for `count` windows in `groups`
+    /// columns or rows. The plain grid has `per` cells in every group, and
+    /// `spare` of them have no window. The focused window, in the group
+    /// `focused`, gets the spare cells: its cell spans `span` cells there.
+    /// With more spare cells than its group has, the other groups share
+    /// the rest, the ones with a single window on the right or at the top.
+    static func shape(count: Int, groups: Int, rows: Bool, focused: Int) -> (sizes: [Int], per: Int, focused: Int?, span: Int) {
+        let per = (count + groups - 1) / groups, spare = groups * per - count
+        guard spare > 0 else { return (Array(repeating: per, count: groups), per, nil, 1) }
+        let span = min(spare + 1, per), own = per - span + 1
+        let others = groups - 1, base = (count - own) / others, extra = (count - own) % others
+        var sizes = (0..<others).map { base + ((rows ? $0 >= others - extra : $0 < extra) ? 1 : 0) }
+        sizes.insert(own, at: focused)
+        return (sizes, per, focused, span)
     }
 
     /// Where each window goes. `windows` are the frames of the candidates
@@ -176,22 +170,11 @@ public enum ArrangeGrid {
         let rows = action.layout == .rows || (action.layout == .auto && usable.height > usable.width)
         let groups = min(count, max(1, action.groups ?? (rows ? maxRows : maxColumns)))
         let used = Array(windows.indices.prefix(count))
-        // The best cells first: roomier, then further right, then further up.
-        let best = cells(count: count, groups: groups, rows: rows).sorted {
-            ($0.groupSize, -$0.maxX, $0.minY) < ($1.groupSize, -$1.maxX, $1.minY)
-        }.prefix(used.count)
-        guard let first = best.first else { return [] }
-        if best.allSatisfy({ $0.groupSize == first.groupSize }) {
-            return inOrder(used, windows, into: Array(best), rows: rows)
-        }
-        return [(0, first)] + inOrder(Array(used.dropFirst()), windows, into: Array(best.dropFirst()), rows: rows)
-    }
 
-    /// Windows keep the order they're in: sorted along the groups and dealt
-    /// into them, then sorted across each group. Centers within the
-    /// tolerance are the same; what's still tied goes by use, the window
-    /// used more recently further right, or further up.
-    private static func inOrder(_ indices: [Int], _ windows: [CGRect], into cells: [Cell], rows: Bool) -> [(window: Int, cell: Cell)] {
+        /// Windows keep the order they're in: by center along the groups,
+        /// or across one. Centers within the tolerance are the same; what's
+        /// still tied goes by use, the window used more recently further
+        /// right, or further up.
         func before(_ a: Int, _ b: Int, along: Bool) -> Bool {
             let byX = along != rows
             let first: (CGRect) -> CGFloat = byX ? \.midX : \.midY
@@ -201,13 +184,38 @@ public enum ArrangeGrid {
             }
             return byX ? a > b : a < b
         }
-        var rest = indices.sorted { before($0, $1, along: true) }[...]
-        var result: [(window: Int, cell: Cell)] = []
-        for group in Set(cells.map(\.group)).sorted() {
-            let places = cells.filter { $0.group == group }.sorted { rows ? $0.minX < $1.minX : $0.minY < $1.minY }
-            let members = rest.prefix(places.count).sorted { before($0, $1, along: false) }
-            rest = rest.dropFirst(places.count)
-            result += zip(members, places).map { ($0, $1) }
+        /// A missing window (nil) counts as furthest left and furthest down, so the empty cells end there.
+        func ordered(_ members: [Int?], along: Bool) -> [Int?] {
+            let real: [Int?] = members.compactMap { $0 }.sorted { before($0, $1, along: along) }
+            let missing = [Int?](repeating: nil, count: members.count - real.count)
+            return along != rows ? missing + real : real + missing
+        }
+
+        // The focused window stays in the group its center is in.
+        let center = rows ? (windows[0].midY - usable.minY) / usable.height : (windows[0].midX - usable.minX) / usable.width
+        let home = center.isFinite ? min(groups - 1, max(0, Int((center * CGFloat(groups)).rounded(.down)))) : 0
+        let shape = shape(count: count, groups: groups, rows: rows, focused: home)
+        var order = ordered(used + Array(repeating: nil, count: count - used.count), along: true)
+        // The focused window is dealt into its own group; the others fill the groups in order.
+        if shape.focused != nil { order.removeAll { $0 == 0 } }
+        var rest = order[...], result: [(window: Int, cell: Cell)] = []
+        for (group, size) in shape.sizes.enumerated() {
+            let own = group == shape.focused
+            let taken = rest.prefix(own ? size - 1 : size)
+            rest = rest.dropFirst(taken.count)
+            // The focused window's group keeps the plain grid's cells; another group splits equally.
+            let parts = own ? shape.per : size
+            var start = 0
+            for member in ordered(taken + (own ? [0] : []), along: false) {
+                let length = own && member == 0 ? shape.span : 1
+                defer { start += length }
+                guard let member else { continue }
+                let along = (Double(group) / Double(groups), Double(group + 1) / Double(groups))
+                let across = (Double(start) / Double(parts), Double(start + length) / Double(parts))
+                result.append((member, rows
+                    ? Cell(minX: across.0, maxX: across.1, minY: along.0, maxY: along.1)
+                    : Cell(minX: along.0, maxX: along.1, minY: across.0, maxY: across.1)))
+            }
         }
         return result
     }

@@ -170,15 +170,24 @@ extension SelfTest {
               "\(String(describing: frame("browser"))), \(String(describing: frame("editor")))")
 
         _ = await run(ArrangeAction(count: .all))
-        check("S-076 All gives the focused window the right half and stacks the two others on the left",
+        check("S-076 All gives the focused window the whole column it's in and stacks the two others in the other one",
               frame("browser") == right && frame("editor") == CGRect(x: 8, y: 467, width: 708, height: 425)
                   && frame("notes") == CGRect(x: 8, y: 33, width: 708, height: 426) && frame("away") == away,
               "\(String(describing: frame("browser"))), \(String(describing: frame("editor"))), \(String(describing: frame("notes")))")
 
+        // A window in the left column gets focus: it fills that column, and the two others stack on the right.
+        fake.focused = "notes"
+        fake.stacking = ["notes", "browser", "editor", "away"]
+        _ = await run(ArrangeAction(count: .all))
+        check("S-076 run again from a window on the left, that one fills the left column where it is",
+              frame("notes") == left && frame("browser") == CGRect(x: 724, y: 33, width: 708, height: 426)
+                  && frame("editor") == CGRect(x: 724, y: 467, width: 708, height: 425),
+              "\(String(describing: frame("notes"))), \(String(describing: frame("browser"))), \(String(describing: frame("editor")))")
+
         settings.maxColumns = 3
         _ = await run(ArrangeAction(count: .all))
         check("S-076 with Maximum Columns at 3, the three are columns, 8 points apart",
-              frame("browser") == CGRect(x: 964, y: 33, width: 468, height: 859) && frame("editor") == CGRect(x: 484, y: 33, width: 472, height: 859)
+              frame("editor") == CGRect(x: 964, y: 33, width: 468, height: 859) && frame("browser") == CGRect(x: 484, y: 33, width: 472, height: 859)
                   && frame("notes") == CGRect(x: 8, y: 33, width: 468, height: 859),
               "\(["browser", "editor", "notes"].map { String(describing: frame($0)) })")
 

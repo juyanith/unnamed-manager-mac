@@ -848,9 +848,9 @@ Screens: actions-window
 Depends: S-064, S-068, S-071
 Acceptance:
 - [unit] `window.arrange` reads, writes and plans `count` (2 to 8), `groups` and `layout` (spec v8); the schema lists it and the spec-v8 fixtures pass.
-- [unit] The grid: equal groups, extra cells in the leftmost columns or the bottom rows, edges shared between neighbours on any width.
+- [unit] The grid: equal groups of equal cells, edges shared between neighbours on any width; any count in any number of groups fills the usable area.
 - [unit] Windows keep their order from left to right, then top to bottom; windows in the same spot go by use, the more recent one further right or up.
-- [unit] When the cells differ in size, the focused window takes the roomiest cell, on the right or at the top.
+- [unit] When the grid has more cells than windows, the focused window stays in the group its center is in and takes the spare cells there (five windows in three columns: it fills its column); the others keep their order in the other cells. With more spare cells than its group has, other groups with one window are on the right or at the top. Run again, from any window, nothing else moves.
 - [unit] With fewer windows than cells, the cells on the left and at the bottom stay empty.
 - [self] Two fake windows end in halves, 8 points apart; a third window, a window on another display and the focus stay as they were; run again, nothing moves.
 - [self] With no focused window, the one in front counts as focused; with no window, it fails with "No window to arrange."
@@ -859,7 +859,7 @@ UX:
 - Words: type "Arrange Windows"; pickers "Windows" (Last 2 to Last 8, All on the Display), "Groups" (Automatic, 1 to 8), "Layout" (Automatic, Columns, Rows). The glossary's words: cell, group.
 - No toggle and no memory, as with Place Window.
 Status: done
-Verified: the grid, the order, ties, the roomiest cell, empty cells, and reading, writing and planning (unit tests, `ArrangeTests`, `ActionGoldenTests`, the spec-v8 fixtures); halves, the other display, running it again, rows, no focused window and no window against `FakeWindowSystem` (self-test); actions-window-arrange in light and dark, grid checks. Not yet tried by hand on real windows.
+Verified: the grid, the order, ties, the focused window taking the spare cells where it is, empty cells, and reading, writing and planning (unit tests, `ArrangeTests`, `ActionGoldenTests`, the spec-v8 fixtures); halves, the other display, running it again, rows, no focused window and no window against `FakeWindowSystem` (self-test); actions-window-arrange in light and dark, grid checks. Not yet tried by hand on real windows.
 
 ### S-076 Arrange every window on the display, within limits from Settings
 As the user, I press a key and every window on the display I'm on gets a cell, and Settings says how many columns and rows that may take.
@@ -869,7 +869,7 @@ Acceptance:
 - [unit] `"count": "all"` arranges the windows on the display, at most Maximum Columns times Maximum Rows, and never more than 8; older windows stay as they are.
 - [unit] Without `groups`, the grid has as many groups as cells, up to the maximum for its layout; an automatic layout is rows on a tall display.
 - [unit] `windows.maxColumns` and `windows.maxRows` are read, written only when they aren't 2, and rejected outside 1 to 8 (`bad-window-limit`).
-- [self] With three fake windows, All gives the focused one the right half and stacks the others; with Maximum Columns at 3 they're three columns.
+- [self] With three fake windows, All gives the focused one the whole column it's in and stacks the others in the other; run from a window on the left, that one fills the left column; with Maximum Columns at 3 they're three columns.
 - [self] Changing Maximum Columns in the editor saves it in the file.
 - [snap] Settings has Maximum Columns and Maximum Rows under Gap Between Windows.
 UX:
