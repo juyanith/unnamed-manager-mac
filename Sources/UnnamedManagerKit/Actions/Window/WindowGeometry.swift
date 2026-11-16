@@ -145,13 +145,13 @@ public enum WindowGeometry {
     }
 }
 
-/// What Maximize does next for one window, and the frame it had before
+/// What Fill does next for one window, and the frame it had before
 /// (S-062). Kept per window, in memory only.
-public struct MaximizeMemory<Window: Hashable> {
+public struct FillMemory<Window: Hashable> {
     public enum Step: Equatable {
-        /// Fill the usable area.
+        /// Fill the area.
         case fill(CGRect)
-        /// Go back to the frame from before Maximize.
+        /// Go back to the frame from before Fill.
         case restore(CGRect)
         /// Leave the window as it is.
         case stay
@@ -161,10 +161,11 @@ public struct MaximizeMemory<Window: Hashable> {
 
     public init() {}
 
-    /// The next step for a window at `frame` on a screen with `usable` area.
-    /// A window that moved or resized since Maximize forgets its old frame.
-    public mutating func step(for window: Window, frame: CGRect, usable: CGRect, toggle: Bool) -> Step {
-        let filled = WindowGeometry.matches(frame, usable)
+    /// The next step for a window at `frame` that Fill would give `area`:
+    /// the usable area, less the gap (spec v7).
+    /// A window that moved or resized since Fill forgets its old frame.
+    public mutating func step(for window: Window, frame: CGRect, area: CGRect, toggle: Bool) -> Step {
+        let filled = WindowGeometry.matches(frame, area)
         if let memory = saved[window] {
             if filled || WindowGeometry.matches(frame, memory.after) {
                 guard toggle else { return .stay }
@@ -173,11 +174,11 @@ public struct MaximizeMemory<Window: Hashable> {
             }
             saved[window] = nil
         }
-        return filled ? .stay : .fill(usable)
+        return filled ? .stay : .fill(area)
     }
 
-    /// Remembers a window's frame from before Maximize, and the frame it
-    /// took, which can differ from the usable area for an app that snaps
+    /// Remembers a window's frame from before Fill, and the frame it
+    /// took, which can differ from the area for an app that snaps
     /// its size (a terminal's character grid).
     public mutating func record(_ window: Window, before: CGRect, after: CGRect) {
         saved[window] = (before, after)

@@ -35,74 +35,95 @@ struct WindowGeometryTests {
     }
 }
 
-@Suite("Maximize (S-062)")
-struct MaximizeTests {
+@Suite("Fill (S-062, S-074)")
+struct FillTests {
     static let usable = CGRect(x: 0, y: 33, width: 1512, height: 949)
     static let small = CGRect(x: 100, y: 100, width: 800, height: 600)
 
     @Test("A window that doesn't fill the usable area fills it")
     func fill() {
-        var memory = MaximizeMemory<Int>()
-        #expect(memory.step(for: 1, frame: Self.small, usable: Self.usable, toggle: true) == .fill(Self.usable))
+        var memory = FillMemory<Int>()
+        #expect(memory.step(for: 1, frame: Self.small, area: Self.usable, toggle: true) == .fill(Self.usable))
     }
 
-    @Test("Maximize again goes back to the frame from before")
+    @Test("Fill again goes back to the frame from before")
     func restore() {
-        var memory = MaximizeMemory<Int>()
-        _ = memory.step(for: 1, frame: Self.small, usable: Self.usable, toggle: true)
+        var memory = FillMemory<Int>()
+        _ = memory.step(for: 1, frame: Self.small, area: Self.usable, toggle: true)
         memory.record(1, before: Self.small, after: Self.usable)
-        #expect(memory.step(for: 1, frame: Self.usable.insetBy(dx: 1, dy: 1), usable: Self.usable, toggle: true) == .restore(Self.small))
+        #expect(memory.step(for: 1, frame: Self.usable.insetBy(dx: 1, dy: 1), area: Self.usable, toggle: true) == .restore(Self.small))
         // Restored, it fills again next time.
-        #expect(memory.step(for: 1, frame: Self.small, usable: Self.usable, toggle: true) == .fill(Self.usable))
+        #expect(memory.step(for: 1, frame: Self.small, area: Self.usable, toggle: true) == .fill(Self.usable))
     }
 
     @Test("A window that fills the area with nothing remembered stays put")
     func nothingRemembered() {
-        var memory = MaximizeMemory<Int>()
-        #expect(memory.step(for: 1, frame: Self.usable, usable: Self.usable, toggle: true) == .stay)
+        var memory = FillMemory<Int>()
+        #expect(memory.step(for: 1, frame: Self.usable, area: Self.usable, toggle: true) == .stay)
     }
 
-    @Test("Without toggle, a maximized window stays maximized")
+    @Test("Without toggle, a window that fills the area stays there")
     func noToggle() {
-        var memory = MaximizeMemory<Int>()
+        var memory = FillMemory<Int>()
         memory.record(1, before: Self.small, after: Self.usable)
-        #expect(memory.step(for: 1, frame: Self.usable, usable: Self.usable, toggle: false) == .stay)
+        #expect(memory.step(for: 1, frame: Self.usable, area: Self.usable, toggle: false) == .stay)
     }
 
     @Test("The memory is per window")
     func perWindow() {
-        var memory = MaximizeMemory<Int>()
+        var memory = FillMemory<Int>()
         memory.record(1, before: Self.small, after: Self.usable)
-        #expect(memory.step(for: 2, frame: Self.usable, usable: Self.usable, toggle: true) == .stay)
-        #expect(memory.step(for: 1, frame: Self.usable, usable: Self.usable, toggle: true) == .restore(Self.small))
+        #expect(memory.step(for: 2, frame: Self.usable, area: Self.usable, toggle: true) == .stay)
+        #expect(memory.step(for: 1, frame: Self.usable, area: Self.usable, toggle: true) == .restore(Self.small))
     }
 
-    @Test("A window that moved since Maximize forgets its old frame")
+    @Test("A window that moved since Fill forgets its old frame")
     func moved() {
-        var memory = MaximizeMemory<Int>()
+        var memory = FillMemory<Int>()
         memory.record(1, before: Self.small, after: Self.usable)
         let moved = CGRect(x: 300, y: 200, width: 700, height: 500)
-        #expect(memory.step(for: 1, frame: moved, usable: Self.usable, toggle: true) == .fill(Self.usable))
-        #expect(memory.step(for: 1, frame: Self.usable, usable: Self.usable, toggle: true) == .stay)
+        #expect(memory.step(for: 1, frame: moved, area: Self.usable, toggle: true) == .fill(Self.usable))
+        #expect(memory.step(for: 1, frame: Self.usable, area: Self.usable, toggle: true) == .stay)
     }
 
     @Test("An app that snaps its size short of the area still restores")
     func snapped() {
-        var memory = MaximizeMemory<Int>()
+        var memory = FillMemory<Int>()
         let snapped = CGRect(x: 0, y: 33, width: 1505, height: 940)
         memory.record(1, before: Self.small, after: snapped)
-        #expect(memory.step(for: 1, frame: snapped, usable: Self.usable, toggle: true) == .restore(Self.small))
+        #expect(memory.step(for: 1, frame: snapped, area: Self.usable, toggle: true) == .restore(Self.small))
     }
 
     @Test("It reads, writes and plans as the spec says")
     func family() throws {
-        let toggled = try ActionRegistryTests.decode(#"{ "type": "window.maximize" }"#)
-        #expect(toggled == .family(AnyActionValue(MaximizeAction(toggle: true))))
-        let fill = try ActionRegistryTests.decode(#"{ "type": "window.maximize", "toggle": false }"#)
-        #expect(ConfigWriter.action(fill, contexts: []) == #"{ "type": "window.maximize", "toggle": false }"#)
-        #expect(ConfigWriter.action(toggled, contexts: []) == #"{ "type": "window.maximize" }"#)
-        #expect(try ActionPlanner.plan(fill, home: testHome) == .custom(AnyActionStep(WindowCommand.maximize(toggle: false))))
-        #expect(toggled.displayName == "Maximize")
+        let toggled = try ActionRegistryTests.decode(#"{ "type": "window.fill" }"#)
+        #expect(toggled == .family(AnyActionValue(FillAction(toggle: true))))
+        let fill = try ActionRegistryTests.decode(#"{ "type": "window.fill", "toggle": false }"#)
+        #expect(ConfigWriter.action(fill, contexts: []) == #"{ "type": "window.fill", "toggle": false }"#)
+        #expect(ConfigWriter.action(toggled, contexts: []) == #"{ "type": "window.fill" }"#)
+        #expect(try ActionPlanner.plan(fill, home: testHome) == .custom(AnyActionStep(WindowCommand.fill(toggle: false))))
+        #expect(toggled.displayName == "Fill")
+    }
+
+    @Test("With a gap, the area to fill is one gap in from every edge")
+    func gap() {
+        let area = WindowGeometry.withGap(Self.usable, in: Self.usable, gap: 8)
+        #expect(area == CGRect(x: 8, y: 41, width: 1496, height: 933))
+        var memory = FillMemory<Int>()
+        #expect(memory.step(for: 1, frame: Self.small, area: area, toggle: true) == .fill(area))
+        memory.record(1, before: Self.small, after: area)
+        #expect(memory.step(for: 1, frame: area, area: area, toggle: true) == .restore(Self.small))
+    }
+
+    @Test("The old name, window.maximize, reads as Fill and keeps its name when written (spec v7)")
+    func oldName() throws {
+        let old = try ActionRegistryTests.decode(#"{ "type": "window.maximize", "toggle": false }"#)
+        #expect(old == .family(AnyActionValue(FillAction(toggle: false, type: FillAction.oldType))))
+        #expect(old.displayName == "Fill")
+        #expect(ConfigWriter.action(old, contexts: []) == #"{ "type": "window.maximize", "toggle": false }"#)
+        #expect(try ActionPlanner.plan(old, home: testHome) == .custom(AnyActionStep(WindowCommand.fill(toggle: false))))
+        #expect(ActionRegistry.standard.currentType("window.maximize") == "window.fill")
+        #expect(ActionRegistry.standard.currentType("window.fill") == "window.fill")
     }
 }
 

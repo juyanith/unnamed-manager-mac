@@ -259,7 +259,7 @@ extension Config.Action: Decodable {
             self = .contextual(variants: try c.value("variants", default: [:]),
                                fallback: try c.decodeIfPresent(Config.Action.self, forKey: AnyKey("fallback")))
         default:
-            let types = registry.kinds.map(\.type) + ["contextual"]
+            let types = registry.kinds.filter { $0.replacedBy == nil }.map(\.type) + ["contextual"]
             throw DecodingError.dataCorrupted(.init(codingPath: c.codingPath,
                 debugDescription: "Unknown action type “\(type)”. Use \(types.dropLast().joined(separator: ", ")) or \(types.last!).",
                 underlyingError: RuleMarker(rule: .unknownActionType)))

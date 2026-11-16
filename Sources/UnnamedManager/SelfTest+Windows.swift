@@ -10,28 +10,28 @@ extension SelfTest {
         fake.windows = ["notes": .init(frame: start)]
         fake.focused = "notes"
         let runner = ActionRunner(performer: SystemPerformer(context: StepContext(windows: WindowControl(system: fake, gap: { 0 }))))
-        let maximize = Config.Action.family(AnyActionValue(MaximizeAction()))
+        let fill = Config.Action.family(AnyActionValue(FillAction()))
 
-        try? await runner.run(maximize, id: "maximize")
-        check("S-062 Maximize fills the usable area", fake.windows["notes"]?.frame == fake.displays[0].usable,
+        try? await runner.run(fill, id: "fill")
+        check("S-062 Fill fills the usable area", fake.windows["notes"]?.frame == fake.displays[0].usable,
               "\(String(describing: fake.windows["notes"]?.frame))")
-        try? await runner.run(maximize, id: "maximize")
-        check("S-062 Maximize again restores the first frame exactly", fake.windows["notes"]?.frame == start,
+        try? await runner.run(fill, id: "fill")
+        check("S-062 Fill again restores the first frame exactly", fake.windows["notes"]?.frame == start,
               "\(String(describing: fake.windows["notes"]?.frame))")
 
         fake.windows["capped"] = .init(frame: start, maxSize: CGSize(width: 1200, height: 800))
         fake.focused = "capped"
-        try? await runner.run(maximize, id: "maximize")
-        try? await runner.run(maximize, id: "maximize")
+        try? await runner.run(fill, id: "fill")
+        try? await runner.run(fill, id: "fill")
         check("S-062 a window with a maximum size still restores", fake.windows["capped"]?.frame == start,
               "\(String(describing: fake.windows["capped"]?.frame))")
 
         fake.focused = nil
         do throws(PlanError) {
-            try await runner.run(maximize, id: "maximize")
+            try await runner.run(fill, id: "fill")
             check("S-062 no focused window says so", false, "no failure")
         } catch {
-            check("S-062 no focused window says so", error.message == "TextEdit has no window to maximize.", error.message)
+            check("S-062 no focused window says so", error.message == "TextEdit has no window to fill.", error.message)
         }
 
         fake.focused = "notes"
@@ -72,6 +72,18 @@ extension SelfTest {
         check("S-071 a window wider than its half keeps the right edge one gap in",
               fake.windows["wide"]?.frame.maxX == 1432, "\(String(describing: fake.windows["wide"]?.frame))")
 
+        // Spec v7: Fill leaves the gap too, and the old name does the same.
+        fake.windows["filled"] = .init(frame: start)
+        fake.focused = "filled"
+        try? await gapped.run(fill, id: "fill")
+        check("S-074 Fill stands 8 points from every edge of the usable area",
+              fake.windows["filled"]?.frame == CGRect(x: 8, y: 33, width: 1424, height: 859),
+              "\(String(describing: fake.windows["filled"]?.frame))")
+        let oldName = Config.Action.family(AnyActionValue(FillAction(type: FillAction.oldType)))
+        try? await gapped.run(oldName, id: "maximize")
+        check("S-074 pressed again, under its old name, it restores the first frame exactly",
+              fake.windows["filled"]?.frame == start, "\(String(describing: fake.windows["filled"]?.frame))")
+
         fake.windows["narrow"] = .init(frame: CGRect(x: 100, y: 100, width: 300, height: 500))
         fake.focused = "narrow"
         let grow = Config.Action.family(AnyActionValue(ResizeAction(.step(.grow, widths: nil))))
@@ -107,7 +119,7 @@ extension SelfTest {
 
         fake.canControlWindows = false
         do throws(PlanError) {
-            try await runner.run(maximize, id: "maximize")
+            try await runner.run(fill, id: "fill")
             check("S-062 without Accessibility, window actions say what to allow", false, "no failure")
         } catch {
             check("S-062 without Accessibility, window actions say what to allow",
@@ -198,9 +210,11 @@ extension SelfTest {
     /// saved as the spec writes it, then undone.
     static func windowEditingChecks(_ model: AppModel) async {
         let names = Config.Action.types(allowsContextAware: true).map { Config.Action.empty(of: $0).displayName }
-        let window = ["Focus Window", "Maximize", "Minimize", "Move Window", "Place Window", "Resize Window"]
+        let window = ["Fill", "Focus Window", "Minimize", "Move Window", "Place Window", "Resize Window"]
         check("S-070 the Type picker lists the window actions with the others, alphabetically",
               Set(window).isSubset(of: names) && names == names.sorted { $0.localizedStandardCompare($1) == .orderedAscending }, "\(names)")
+        check("S-074 the Type picker offers Fill once, and not under its old name",
+              names.count { $0 == "Fill" } == 1 && !Config.Action.types(allowsContextAware: true).contains(FillAction.oldType), "\(names)")
 
         let editor = model.editor
         editor.reloadFromStore()
@@ -210,7 +224,7 @@ extension SelfTest {
         let before = file()
         let cases: [(Config.Action, String)] = [
             (.family(AnyActionValue(FocusAction(.previous))), #"{ "type": "window.focus", "direction": "previous" }"#),
-            (.family(AnyActionValue(MaximizeAction(toggle: false))), #"{ "type": "window.maximize", "toggle": false }"#),
+            (.family(AnyActionValue(FillAction(toggle: false))), #"{ "type": "window.fill", "toggle": false }"#),
             (.family(AnyActionValue(MinimizeAction())), #"{ "type": "window.minimize" }"#),
             (.family(AnyActionValue(MoveAction.by(dx: 40, dy: 0))), #"{ "type": "window.move", "by": { "dx": 40 } }"#),
             (.family(AnyActionValue(PlaceAction.frame(FractionFrame(x: 0.1, y: 0.05, width: 0.8, height: 0.9)))),

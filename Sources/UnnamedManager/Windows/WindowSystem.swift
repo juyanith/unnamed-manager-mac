@@ -2,7 +2,7 @@ import CoreGraphics
 import UnnamedManagerKit
 
 /// One window, as a window system knows it. Equal for the same window
-/// across calls, so Maximize can remember it.
+/// across calls, so Fill can remember it.
 struct WindowRef: Hashable {
     let id: AnyHashable
 }
@@ -43,12 +43,12 @@ protocol WindowSystem: AnyObject {
 }
 
 /// Carries out window commands on the focused window of the app in front,
-/// and keeps what Maximize remembers (S-062).
+/// and keeps what Fill remembers (S-062).
 final class WindowControl {
     let system: any WindowSystem
-    private var maximized = MaximizeMemory<WindowRef>()
+    private var filled = FillMemory<WindowRef>()
 
-    /// The gap Place Window leaves around windows (spec v3), read when an action runs.
+    /// The gap Place Window and Fill leave around windows (spec v3, v7), read when an action runs.
     let gap: () -> Double
 
     init(system: any WindowSystem, gap: @escaping () -> Double = { Config.Windows().gap }) {
@@ -82,11 +82,12 @@ final class WindowControl {
         }
         guard let screen = WindowGeometry.screen(for: frame, among: system.screens()) else { return }
         switch command {
-        case let .maximize(toggle):
-            switch maximized.step(for: window, frame: frame, usable: screen.usable, toggle: toggle) {
-            case let .fill(usable):
-                system.setFrame(usable, of: window)
-                maximized.record(window, before: frame, after: system.frame(of: window) ?? usable)
+        case let .fill(toggle):
+            let gap = CGFloat(gap()).rounded()
+            switch filled.step(for: window, frame: frame, area: WindowGeometry.withGap(screen.usable, in: screen.usable, gap: gap), toggle: toggle) {
+            case let .fill(area):
+                system.setFrame(area, of: window)
+                filled.record(window, before: frame, after: system.frame(of: window) ?? area)
             case let .restore(before):
                 system.setFrame(before, of: window)
             case .stay:

@@ -70,7 +70,7 @@ public enum ConfigSchema {
                 "windows": [
                     "type": "object", "additionalProperties": false,
                     "properties": [
-                        "gap": ["type": "number", "minimum": 0, "description": "Points Place Window leaves around windows and between them. Default 8."],
+                        "gap": ["type": "number", "minimum": 0, "description": "Points Place Window and Fill leave around windows and between them. Default 8."],
                     ],
                 ],
                 "entries": [

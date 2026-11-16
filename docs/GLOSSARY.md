@@ -40,9 +40,9 @@ One name per idea. Use these words in the UI, the docs, the log and VoiceOver la
 | Bindings window | The window for editing bindings, actions and contexts, opened by Edit Bindings… (⌘B). | editor, config editor, settings window |
 | Help page | The Help page of the Bindings window: your leaders and direct bindings, the keys that work in every sequence, and links. | manual, documentation, cheat sheet |
 | Settings | The Settings window (Settings… ⌘,): Guide, keys, feedback, Open at Login. | Preferences, options |
-| Window action | An action that works on the focused window of the app in front: Focus Window, Maximize, Minimize, Move Window, Place Window, Resize Window. | window command, tiling |
+| Window action | An action that works on the focused window of the app in front: Fill, Focus Window, Minimize, Move Window, Place Window, Resize Window. | window command, tiling |
+| Fill | Fill the screen without the menu bar and Dock, less the gap. With Press Again to Restore, pressing it again puts the window back. Called Maximize before spec v7. | maximize, zoom, full screen |
 | Focus Window | Bring the nearest window in a direction to the front, or the Next Window or Previous Window. | switch, activate, cycle |
-| Maximize | Fill the screen without the menu bar and Dock. With Press Again to Restore, pressing it again puts the window back. | zoom, full screen, fill |
 | Minimize | Send the window in front to the Dock, as ⌘M does. | hide, dock |
 | Move Window | Move the window To a Spot (such as Center) or By Points. Its size stays the same. | position, drag, nudge |
 | Place Window | Move and resize the window to a Preset, such as Left Half, or a Custom part of the screen. | snap, tile, layout |

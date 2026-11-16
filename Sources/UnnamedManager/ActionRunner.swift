@@ -16,7 +16,7 @@ protocol PerformableStep: ActionStep {
 
 /// What a family's step can use, so the self-test can hand it fakes.
 struct StepContext {
-    /// The windows on screen, and what Maximize remembers (S-062).
+    /// The windows on screen, and what Fill remembers (S-062).
     var windows: WindowControl
 }
 

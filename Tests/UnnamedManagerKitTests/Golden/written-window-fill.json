@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "entries": [
+    { "keys": "Meh+W", "title": "Windows" },
+    { "keys": "Meh+W F", "title": "Fill", "action": "fill" },
+    { "keys": "Meh+W S", "title": "Fill and stay", "action": "fill-stay" },
+    { "keys": "Meh+W M", "title": "Old name", "action": "old-name" }
+  ],
+  "actions": {
+    "fill": { "type": "window.fill" },
+    "fill-stay": { "type": "window.fill", "toggle": false },
+    "old-name": { "type": "window.maximize" }
+  }
+}

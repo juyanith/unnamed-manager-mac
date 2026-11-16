@@ -13,12 +13,12 @@ extension MinimizeAction: EditableAction {
     }
 }
 
-extension MaximizeAction: EditableAction {
-    @MainActor static func form(_ value: Binding<MaximizeAction>) -> some View {
+extension FillAction: EditableAction {
+    @MainActor static func form(_ value: Binding<FillAction>) -> some View {
         Section {
             Toggle("Press Again to Restore", isOn: value.toggle)
         } footer: {
-            Text("Fills the screen without the menu bar and Dock. Not full screen.")
+            Text("Fills the screen without the menu bar and Dock, less the gap from Settings. Not full screen.")
         }
     }
 }

@@ -7,11 +7,15 @@ public struct ActionKind: Sendable, Hashable {
     public let displayName: String
     /// nil shows no icon, unless the action finds one itself (`iconSource`).
     public let symbol: String?
+    /// The type that took this one's place, when this is an old name that
+    /// still loads (spec v7). The Type picker offers only the new one.
+    public let replacedBy: String?
 
-    public init(type: String, displayName: String, symbol: String? = nil) {
+    public init(type: String, displayName: String, symbol: String? = nil, replacedBy: String? = nil) {
         self.type = type
         self.displayName = displayName
         self.symbol = symbol
+        self.replacedBy = replacedBy
     }
 }
 
@@ -97,7 +101,7 @@ public struct ActionRegistry: @unchecked Sendable {
 
     public static let standard = ActionRegistry(families: [
         UseApplicationAction.self, OpenAction.self, RunCommandAction.self, SendShortcutAction.self, BasicAction.self,
-        MaximizeAction.self, MinimizeAction.self, PlaceAction.self, MoveAction.self, ResizeAction.self, FocusAction.self,
+        FillAction.self, MinimizeAction.self, PlaceAction.self, MoveAction.self, ResizeAction.self, FocusAction.self,
     ])
 
     public func adding(_ family: any ActionValue.Type) -> ActionRegistry {
@@ -107,6 +111,11 @@ public struct ActionRegistry: @unchecked Sendable {
     /// Every kind, in family order, then each family's own order.
     public var kinds: [ActionKind] {
         families.flatMap { $0.kinds }
+    }
+
+    /// The name a type goes by now: itself, unless it's an old name.
+    public func currentType(_ type: String) -> String {
+        kinds.first { $0.type == type }?.replacedBy ?? type
     }
 
     public func family(for type: String) -> (any ActionValue.Type)? {

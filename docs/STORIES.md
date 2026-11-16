@@ -825,6 +825,23 @@ UX:
 Status: done
 Verified: the new order, the two values and their golden file (unit tests, `FocusCycleTests`, `ActionGoldenTests`, the spec-v6 fixtures); both checks against `FakeWindowSystem` (self-test); actions-window in light and dark, grid checks. This changes S-069's order: stacked windows used to come top to bottom before left to right.
 
+### S-074 Fill the screen, with the gap
+As the user, I press a key and the window fills its screen, the same gap from the edges as my placed windows; I press it again and it goes back to where it was.
+Screens: actions-window, settings
+Depends: S-062, S-071
+Acceptance:
+- [unit] `window.fill` reads, writes and plans as Maximize did (spec v7); the schema lists it and `valid/window-fill.json` passes.
+- [unit] `window.maximize` still loads, runs as Fill, and is written back as `window.maximize`.
+- [unit] The frame to fill is the usable area, one gap in from every edge; a window within 2 pt of it goes back.
+- [self] With a gap of 8, Fill stands 8 points from every edge, and pressed again restores the first frame exactly, also under the old name.
+- [self] The Type picker offers Fill once, and not under its old name.
+- [snap] The Fill form and the Gap footer in Settings both say Fill leaves the gap.
+UX:
+- Words: type "Fill"; footer "Fills the screen without the menu bar and Dock, less the gap from Settings. Not full screen."; Settings footer "Place Window and Fill leave this space…".
+- Place Window stays plain: it puts the window where it says, and pressing it again does nothing.
+Status: done
+Verified: reading, writing, planning, the old name and the gapped area (unit tests, `FillTests`, `ActionGoldenTests`, the spec-v7 fixtures); the gap, the restore and the picker against `FakeWindowSystem` (self-test, 169 checks); actions-window-fill and settings in light and dark, grid checks. This renames S-062's Maximize. Not yet tried by hand on real windows.
+
 ## Later
 - Import and export a single menu as a JSON snippet.
 - A basic automatic tiling mode.

@@ -75,7 +75,7 @@ struct SettingsView: View {
             } header: {
                 Text("Windows")
             } footer: {
-                Text("Place Window leaves this space between a window and the screen's edges, and between windows side by side. 0 puts them edge to edge.")
+                Text("Place Window and Fill leave this space between a window and the screen's edges, and between windows side by side. 0 puts them edge to edge.")
             }
 
             Section {

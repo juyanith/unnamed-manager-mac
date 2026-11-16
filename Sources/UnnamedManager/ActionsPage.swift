@@ -145,7 +145,7 @@ struct ActionEditor: View {
 
     var body: some View {
         Section {
-            Picker("Type", selection: Binding(get: { action.type }, set: { action = .empty(of: $0) })) {
+            Picker("Type", selection: Binding(get: { ActionRegistry.standard.currentType(action.type) }, set: { action = .empty(of: $0) })) {
                 ForEach(Config.Action.types(allowsContextAware: allowsContextAware), id: \.self) { type in
                     Text(Config.Action.empty(of: type).displayName).tag(type)
                 }
@@ -193,7 +193,7 @@ struct ActionEditor: View {
 extension Config.Action {
     /// The types for the Type picker, alphabetical by the name shown (S-046).
     static func types(allowsContextAware: Bool, registry: ActionRegistry = .standard) -> [String] {
-        let types = registry.kinds.map(\.type) + (allowsContextAware ? ["contextual"] : [])
+        let types = registry.kinds.filter { $0.replacedBy == nil }.map(\.type) + (allowsContextAware ? ["contextual"] : [])
         func name(_ type: String) -> String { empty(of: type, registry: registry).displayName }
         return types.sorted { name($0).localizedStandardCompare(name($1)) == .orderedAscending }
     }

@@ -1,6 +1,6 @@
 # Unnamed Manager
 
-A keyboard manager for macOS that lives in the menu bar. It grew out of [Unnamed Launcher](https://github.com/juyanith/unnamed-launcher), and window actions (focus, place, move, resize, maximize, minimize) are on the way. Press a leader chord such as Hyper+Space, then one key per menu level, to open apps, files and URLs, run commands, or send shortcuts to the app in front.
+A keyboard manager for macOS that lives in the menu bar. It grew out of [Unnamed Launcher](https://github.com/juyanith/unnamed-launcher), and window actions (focus, place, move, resize, fill, minimize) are on the way. Press a leader chord such as Hyper+Space, then one key per menu level, to open apps, files and URLs, run commands, or send shortcuts to the app in front.
 
 If you finish the sequence quickly, nothing appears on screen. If you pause, a small HUD shows where you are and which keys come next. The app in front never loses focus.
 

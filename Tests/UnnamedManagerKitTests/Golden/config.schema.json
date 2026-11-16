@@ -189,6 +189,24 @@
             },
             "type" : {
               "enum" : [
+                "window.fill"
+              ]
+            }
+          },
+          "required" : [
+            "type"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "toggle" : {
+              "description" : "The old name of window.fill. true (default): a window that already fills the usable area goes back to where it was.",
+              "type" : "boolean"
+            },
+            "type" : {
+              "enum" : [
                 "window.maximize"
               ]
             }
@@ -647,6 +665,24 @@
             },
             "type" : {
               "enum" : [
+                "window.fill"
+              ]
+            }
+          },
+          "required" : [
+            "type"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "toggle" : {
+              "description" : "The old name of window.fill. true (default): a window that already fills the usable area goes back to where it was.",
+              "type" : "boolean"
+            },
+            "type" : {
+              "enum" : [
                 "window.maximize"
               ]
             }
@@ -1022,7 +1058,7 @@
       "additionalProperties" : false,
       "properties" : {
         "gap" : {
-          "description" : "Points Place Window leaves around windows and between them. Default 8.",
+          "description" : "Points Place Window and Fill leave around windows and between them. Default 8.",
           "minimum" : 0,
           "type" : "number"
         }
