@@ -123,8 +123,7 @@ public struct ArrangeAction: ActionValue {
 }
 
 /// The grid Arrange Windows makes, and which window goes in which cell
-/// (spec v8, with the focused window's cell as proposed for spec v9).
-/// Pure, so both the app and the tests can ask it.
+/// (spec v8, with the focused window's cell from spec v9). Pure, so both the app and the tests can ask it.
 public enum ArrangeGrid {
     /// One cell, as fractions of the usable area. Neighbours get the same
     /// value for the edge they share, so they round to the same point.

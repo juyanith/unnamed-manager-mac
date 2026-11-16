@@ -859,7 +859,7 @@ UX:
 - Words: type "Arrange Windows"; pickers "Windows" (Last 2 to Last 8, All on the Display), "Groups" (Automatic, 1 to 8), "Layout" (Automatic, Columns, Rows). The glossary's words: cell, group.
 - No toggle and no memory, as with Place Window.
 Status: done
-Verified: the grid, the order, ties, the focused window taking the spare cells where it is, empty cells, and reading, writing and planning (unit tests, `ArrangeTests`, `ActionGoldenTests`, the spec-v8 fixtures); halves, the other display, running it again, rows, no focused window and no window against `FakeWindowSystem` (self-test); actions-window-arrange in light and dark, grid checks. Not yet tried by hand on real windows.
+Verified: the grid, the order, ties, the focused window taking the spare cells where it is, empty cells, and reading, writing and planning (unit tests, `ArrangeTests`, `ActionGoldenTests`, the spec-v9 fixtures); halves, the other display, running it again, rows, no focused window and no window against `FakeWindowSystem` (self-test); actions-window-arrange in light and dark, grid checks. Not yet tried by hand on real windows.
 
 ### S-076 Arrange every window on the display, within limits from Settings
 As the user, I press a key and every window on the display I'm on gets a cell, and Settings says how many columns and rows that may take.

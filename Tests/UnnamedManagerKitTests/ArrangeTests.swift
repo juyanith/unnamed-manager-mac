@@ -3,7 +3,7 @@ import Foundation
 import Testing
 @testable import UnnamedManagerKit
 
-@Suite("Arrange Windows (S-075, S-076, spec v8)")
+@Suite("Arrange Windows (S-075, S-076, spec v8 and v9)")
 struct ArrangeTests {
     static let wide = CGRect(x: 0, y: 25, width: 1440, height: 875)
     static let tall = CGRect(x: 0, y: 0, width: 1080, height: 1920)
