@@ -52,7 +52,7 @@ struct SpecFixtureTests {
     @Test("Each fixture loads or is rejected as the spec says", arguments: fixtures)
     func fixture(_ fixture: Fixture) throws {
         if let story = Self.pending[fixture.file] {
-            try withKnownIssue("Pending until \(story)") { try check(fixture) }
+            withKnownIssue("Pending until \(story)") { try check(fixture) }
         } else {
             try check(fixture)
         }
