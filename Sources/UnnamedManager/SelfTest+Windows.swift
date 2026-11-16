@@ -154,6 +154,28 @@ extension SelfTest {
         } catch {
             check("S-068 no window that way says so", error.message == "No window to the left." && fake.focused == "a", error.message)
         }
+
+        // S-072: with nothing focused, every direction goes to the window in front.
+        fake.stacking = ["c", "b"]
+        var tops: [String] = []
+        for direction in [FocusDirection.left, .up, .next, .previous] {
+            fake.focused = nil
+            try? await runner.run(.family(AnyActionValue(FocusAction(direction))), id: "focus")
+            tops.append(fake.focused ?? "none")
+        }
+        fake.app = nil
+        fake.focused = nil
+        try? await runner.run(.family(AnyActionValue(FocusAction(.right))), id: "focus")
+        tops.append(fake.focused ?? "none")
+        check("S-072 with no focused window, Focus Window goes to the window in front", tops == Array(repeating: "c", count: 5), "\(tops)")
+        fake.windows = [:]
+        fake.focused = nil
+        do throws(PlanError) {
+            try await runner.run(.family(AnyActionValue(FocusAction(.next))), id: "focus")
+            check("S-072 no window at all says so", false, "no failure")
+        } catch {
+            check("S-072 no window at all says so", error.message == "No window to focus.", error.message)
+        }
     }
 
     /// S-070: the window types in the Type picker, and each form's value

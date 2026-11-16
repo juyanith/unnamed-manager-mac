@@ -73,32 +73,36 @@ final class AXWindowSystem: WindowSystem {
     }
 
     /// Windows the window server shows on the current Spaces, matched to
-    /// their apps' Accessibility windows by owner and frame.
+    /// their apps' Accessibility windows by owner and frame. In the window
+    /// server's order, front to back.
     func focusableWindows() -> [WindowInfo] {
         let own = ProcessInfo.processInfo.processIdentifier
         let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
-        var onScreen: [pid_t: [CGRect]] = [:]
+        var unmatched: [pid_t: [WindowInfo]] = [:]
+        var result: [WindowInfo] = []
         for info in list where info[kCGWindowLayer as String] as? Int == 0 {
             guard let pid = info[kCGWindowOwnerPID as String] as? pid_t, pid != own,
                   let bounds = info[kCGWindowBounds as String] as? NSDictionary,
                   let frame = CGRect(dictionaryRepresentation: bounds) else { continue }
-            onScreen[pid, default: []].append(frame)
-        }
-        var result: [WindowInfo] = []
-        for (pid, frames) in onScreen {
-            let app = AXUIElementCreateApplication(pid)
-            AXUIElementSetMessagingTimeout(app, Self.timeout)
-            let windows: [AXUIElement] = value(app, kAXWindowsAttribute) ?? []
-            for element in windows {
-                let subrole: String? = value(element, kAXSubroleAttribute)
-                let minimized: Bool = value(element, kAXMinimizedAttribute) ?? false
-                guard subrole == kAXStandardWindowSubrole, !minimized else { continue }
-                let ref = WindowRef(id: Element(element: element, pid: pid))
-                guard let frame = frame(of: ref), frames.contains(where: { WindowGeometry.matches($0, frame) }) else { continue }
-                result.append(WindowInfo(ref: ref, frame: frame, pid: pid))
-            }
+            let windows = unmatched[pid] ?? standardWindows(of: pid)
+            result += windows.filter { WindowGeometry.matches($0.frame, frame) }
+            unmatched[pid] = windows.filter { !WindowGeometry.matches($0.frame, frame) }
         }
         return result
+    }
+
+    /// An app's standard windows that aren't minimized.
+    private func standardWindows(of pid: pid_t) -> [WindowInfo] {
+        let app = AXUIElementCreateApplication(pid)
+        AXUIElementSetMessagingTimeout(app, Self.timeout)
+        let windows: [AXUIElement] = value(app, kAXWindowsAttribute) ?? []
+        return windows.compactMap { element in
+            let subrole: String? = value(element, kAXSubroleAttribute)
+            let minimized: Bool = value(element, kAXMinimizedAttribute) ?? false
+            guard subrole == kAXStandardWindowSubrole, !minimized else { return nil }
+            let ref = WindowRef(id: Element(element: element, pid: pid))
+            return frame(of: ref).map { WindowInfo(ref: ref, frame: $0, pid: pid) }
+        }
     }
 
     /// Raises the window, makes it its app's focused window, then brings

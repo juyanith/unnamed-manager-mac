@@ -19,6 +19,8 @@ final class FakeWindowSystem: WindowSystem {
     var app: FrontApp? = FrontApp(pid: 1, name: "TextEdit")
     var windows: [String: Window] = [:]
     var focused: String?
+    /// Window ids from the front to the back; windows not listed come after, by id.
+    var stacking: [String] = []
     var displays = [WindowGeometry.Screen(frame: CGRect(x: 0, y: 0, width: 1440, height: 900),
                                           usable: CGRect(x: 0, y: 25, width: 1440, height: 875))]
     var canControlWindows = true
@@ -54,7 +56,10 @@ final class FakeWindowSystem: WindowSystem {
     func screens() -> [WindowGeometry.Screen] { displays }
 
     func focusableWindows() -> [WindowInfo] {
-        windows.filter { !$0.value.isMinimized }.map { WindowInfo(ref: WindowRef(id: $0.key), frame: $0.value.frame, pid: $0.value.pid) }
+        func depth(_ id: String) -> Int { stacking.firstIndex(of: id) ?? stacking.count }
+        return windows.filter { !$0.value.isMinimized }
+            .sorted { (depth($0.key), $0.key) < (depth($1.key), $1.key) }
+            .map { WindowInfo(ref: WindowRef(id: $0.key), frame: $0.value.frame, pid: $0.value.pid) }
     }
 
     func focus(_ window: WindowInfo) async throws(PlanError) {

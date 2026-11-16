@@ -799,6 +799,17 @@ UX:
 Status: done
 Verified: 204 unit tests (`WindowGapTests`, `SpecSchemaTests`, the spec-v3 fixtures); the two gap checks against `FakeWindowSystem` (self-test, 162 checks); settings in light and dark, grid checks. Settings now grows to 960 points, or 80 points short of a shorter screen. Move, Resize and Maximize don't use the gap.
 
+### S-072 Focus the window in front when no window has focus
+As the user, I press a Focus Window key while no window has focus, such as with the desktop in front or after closing an app's last window, and the window in front of the others takes focus.
+Screens: none (no UI)
+Depends: S-068, S-069
+Acceptance:
+- [self] With fake windows and none focused, every direction, Next and Previous go to the window in front of the others, also when no app is in front.
+- [self] With no window at all, it fails with "No window to focus."
+- [manual] With Finder's desktop in front and no Finder window, a Focus Window key focuses the window on top.
+Status: done
+Verified: both checks against `FakeWindowSystem` (self-test). The real front-to-back order (the window server's) is checked only by hand: the manual line. `spec/CONFIG-SPEC.md` still says a window action fails with no focused window; the spec repo needs this exception for `window.focus`.
+
 ## Later
 - Import and export a single menu as a JSON snippet.
 - A basic automatic tiling mode.

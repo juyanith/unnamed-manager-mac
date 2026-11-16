@@ -36,7 +36,7 @@ protocol WindowSystem: AnyObject {
     /// Every display, main display first.
     func screens() -> [WindowGeometry.Screen]
     /// The standard, visible windows that aren't minimized, on the current
-    /// Space of every display, without this app's own (S-068).
+    /// Space of every display, without this app's own (S-068), front to back.
     func focusableWindows() -> [WindowInfo]
     /// Brings a window and its app to the front with focus.
     func focus(_ window: WindowInfo) async throws(PlanError)
@@ -60,8 +60,16 @@ final class WindowControl {
         guard system.canControlWindows else {
             throw PlanError("Unnamed Manager needs Accessibility access to move windows.")
         }
-        guard let app = system.frontApp() else { throw PlanError("No app is in front.") }
-        guard let window = system.focusedWindow(of: app), let frame = system.frame(of: window) else {
+        let app = system.frontApp()
+        let focused = app.flatMap { system.focusedWindow(of: $0) }
+        // With no focused window, Focus Window goes to the window in front of the others (S-072).
+        if case .focus = command, focused.flatMap({ system.frame(of: $0) }) == nil {
+            guard let top = system.focusableWindows().first else { throw PlanError("No window to focus.") }
+            try await system.focus(top)
+            return
+        }
+        guard let app else { throw PlanError("No app is in front.") }
+        guard let window = focused, let frame = system.frame(of: window) else {
             throw PlanError("\(app.name) has no window to \(command.verb).")
         }
         guard let screen = WindowGeometry.screen(for: frame, among: system.screens()) else { return }
