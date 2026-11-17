@@ -161,13 +161,16 @@ extension SelfTest {
         try? await Task.sleep(for: .seconds(1))
         frontCheck("S-085 Help is a window of its own, and its links bring Settings back on the Bindings tab",
               helpInFront && settings?.isKeyWindow == true && model.tab == .bindings && window(WindowID.help)?.isVisible == true)
-        // macOS keeps a window within the screen, which is short on CI.
-        let screenHeight = settings?.screen?.visibleFrame.height ?? .infinity
-        let toolbar = (settings?.frame.height ?? 0) - (settings?.contentLayoutRect.height ?? 0)
-        let first = CGSize(width: Layout.settingsDefault.width, height: min(Layout.settingsDefault.height, screenHeight - toolbar))
+        // macOS keeps a window within the screen, which is short on CI:
+        // there the window is as tall as it can be.
+        let screenHeight = (settings?.screen ?? NSScreen.main)?.visibleFrame.height ?? .infinity
+        let page = settings?.contentLayoutRect.size ?? .zero
+        let firstSize = page == Layout.settingsDefault
+            || (page.width == Layout.settingsDefault.width && page.height < Layout.settingsDefault.height
+                && (settings?.frame.height ?? 0) >= screenHeight - 1)
         check("S-085 Settings can be resized, and opens at its first size",
-              settings?.styleMask.contains(.resizable) == true && settings?.contentLayoutRect.size == first,
-              "\(settings?.contentLayoutRect.size ?? .zero), resizable: \(settings?.styleMask.contains(.resizable) == true)")
+              settings?.styleMask.contains(.resizable) == true && firstSize,
+              "page \(page), window \(settings?.frame.size ?? .zero), screen \(screenHeight), resizable: \(settings?.styleMask.contains(.resizable) == true)")
         check("S-085 switching tabs never resizes Settings",
               await tabSizes(model, settings) == [settings?.frame.size ?? .zero], "\(await tabSizes(model, settings))")
         // As if you dragged the corner: the window keeps the size, on every tab.
