@@ -366,29 +366,29 @@ struct ResizeTests {
 struct FocusDirectionTests {
     static let current = CGRect(x: 600, y: 400, width: 400, height: 300)
 
-    @Test("The nearest center within 45° of the direction wins")
+    static func neighbor(_ direction: FocusDirection, _ frames: [CGRect]) -> Int? {
+        WindowGeometry.neighbor(of: current, direction, among: frames.map { SeenWindow(frame: $0) })
+    }
+
+    @Test("Of the windows in line, the nearest edge wins")
     func nearest() {
         let near = CGRect(x: 1100, y: 420, width: 300, height: 300)
         let far = CGRect(x: 1600, y: 400, width: 300, height: 300)
-        #expect(WindowGeometry.neighbor(of: Self.current, .right, among: [far, near]) == 1)
+        #expect(Self.neighbor(.right, [far, near]) == 1)
     }
 
-    @Test("A window outside the 45° cone isn't that way")
+    @Test("A window not in line and outside the 45° cone isn't that way")
     func cone() {
         let steep = CGRect(x: 1100, y: 1200, width: 300, height: 300)
-        #expect(WindowGeometry.neighbor(of: Self.current, .right, among: [steep]) == nil)
-        #expect(WindowGeometry.neighbor(of: Self.current, .down, among: [steep]) == 0)
+        #expect(Self.neighbor(.right, [steep]) == nil)
+        #expect(Self.neighbor(.down, [steep]) == 0)
     }
 
-    @Test("A tie goes to the window that overlaps more on the other axis")
-    func tie() {
-        // Both centers are 500 points away; the second lines up exactly.
+    @Test("A window in line beats one only touching the corner, at the same distance")
+    func inLine() {
         let offset = CGRect(x: 1000, y: 100, width: 400, height: 300)
         let aligned = CGRect(x: 1100, y: 400, width: 400, height: 300)
-        let a = hypot(offset.midX - Self.current.midX, offset.midY - Self.current.midY)
-        let b = hypot(aligned.midX - Self.current.midX, aligned.midY - Self.current.midY)
-        #expect(abs(a - b) < 0.5)
-        #expect(WindowGeometry.neighbor(of: Self.current, .right, among: [offset, aligned]) == 1)
+        #expect(Self.neighbor(.right, [offset, aligned]) == 1)
     }
 
     @Test("Each direction looks its own way, up being smaller y")
@@ -396,9 +396,9 @@ struct FocusDirectionTests {
         let left = CGRect(x: 0, y: 400, width: 300, height: 300)
         let above = CGRect(x: 600, y: 0, width: 400, height: 300)
         let windows = [left, above]
-        #expect(WindowGeometry.neighbor(of: Self.current, .left, among: windows) == 0)
-        #expect(WindowGeometry.neighbor(of: Self.current, .up, among: windows) == 1)
-        #expect(WindowGeometry.neighbor(of: Self.current, .down, among: windows) == nil)
+        #expect(Self.neighbor(.left, windows) == 0)
+        #expect(Self.neighbor(.up, windows) == 1)
+        #expect(Self.neighbor(.down, windows) == nil)
     }
 
     @Test("With no window that way, it says which way")
@@ -424,19 +424,19 @@ struct FocusCycleTests {
         WindowGeometry.Screen(frame: CGRect(x: 0, y: 0, width: 1440, height: 900), usable: CGRect(x: 0, y: 25, width: 1440, height: 875)),
         WindowGeometry.Screen(frame: CGRect(x: -1920, y: 0, width: 1920, height: 1080), usable: CGRect(x: -1920, y: 25, width: 1920, height: 1055)),
     ]
-    // Named by where they should come: the left display first, then left to right, top to bottom.
+    // Named by where they should come: the left display first, then in rows, as text reads (spec v12).
     static let named: [(String, CGRect)] = [
-        ("3", CGRect(x: 100, y: 500, width: 600, height: 300)),
+        ("4", CGRect(x: 100, y: 500, width: 600, height: 300)),
         ("1", CGRect(x: -1800, y: 100, width: 800, height: 400)),
-        ("4", CGRect(x: 800, y: 100, width: 600, height: 300)),
+        ("3", CGRect(x: 800, y: 100, width: 600, height: 300)),
         ("2", CGRect(x: 100, y: 100, width: 600, height: 300)),
     ]
 
     func order(_ windows: [(String, CGRect)]) -> [String] {
-        WindowGeometry.cycleOrder(windows.map(\.1), owners: windows.map { _ in 1 }, screens: Self.screens).map { windows[$0].0 }
+        WindowGeometry.cycleOrder(windows.map { SeenWindow(frame: $0.1) }, screens: Self.screens).map { windows[$0].0 }
     }
 
-    @Test("The order is by display left to right, then left to right and top to bottom")
+    @Test("The order is by display left to right, then in rows top to bottom, each left to right")
     func ordered() {
         #expect(order(Self.named) == ["1", "2", "3", "4"])
     }
@@ -446,8 +446,9 @@ struct FocusCycleTests {
         #expect(order(Self.named.reversed()) == ["1", "2", "3", "4"])
         #expect(order(Self.named.shuffled()) == ["1", "2", "3", "4"])
         let twins = [CGRect(x: 0, y: 100, width: 500, height: 500), CGRect(x: 0, y: 100, width: 500, height: 500)]
-        #expect(WindowGeometry.cycleOrder(twins, owners: [9, 3], screens: Self.screens) == [1, 0])
-        #expect(WindowGeometry.cycleOrder(twins.reversed(), owners: [3, 9], screens: Self.screens) == [0, 1])
+        let seen = [SeenWindow(frame: twins[0], owner: 9), SeenWindow(frame: twins[1], owner: 3)]
+        #expect(WindowGeometry.cycleOrder(seen, screens: Self.screens) == [1, 0])
+        #expect(WindowGeometry.cycleOrder(seen.reversed(), screens: Self.screens) == [0, 1])
     }
 
     @Test("Next and Previous wrap at the ends")
@@ -474,7 +475,7 @@ struct FocusCycleTests {
     func ends() throws {
         for direction in [FocusDirection.first, .last] {
             #expect(FocusDirection(rawValue: direction.rawValue) == direction)
-            #expect(WindowGeometry.neighbor(of: .zero, direction, among: [CGRect(x: 10, y: 0, width: 5, height: 5)]) == nil)
+            #expect(WindowGeometry.neighbor(of: .zero, direction, among: [SeenWindow(frame: CGRect(x: 10, y: 0, width: 5, height: 5))]) == nil)
             #expect(WindowCommand.focus(.window(direction)).failure == "No window to focus.")
         }
         #expect(order(Self.named).first == "1" && order(Self.named).last == "4")

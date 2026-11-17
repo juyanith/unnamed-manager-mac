@@ -114,23 +114,38 @@ final class WindowControl {
         }
     }
 
-    /// Focus Window's candidates (S-068). With `"scope": "display"`, only
-    /// those on the display of `anchor`, or of the window in front without
-    /// one (S-078).
-    private func candidates(_ scope: WindowScope, around anchor: CGRect?) -> [WindowInfo] {
-        let windows = system.focusableWindows()
-        guard scope == .display, let anchor = anchor ?? windows.first?.frame else { return windows }
-        let screens = system.screens()
-        let screen = WindowGeometry.screen(for: anchor, among: screens)
-        return windows.filter { WindowGeometry.screen(for: $0.frame, among: screens) == screen }
+    /// A window Focus Window and Swap Window can pick, and what of it shows.
+    private struct Candidate {
+        let info: WindowInfo
+        let seen: SeenWindow
     }
 
-    /// Focus Window (S-068, S-069, S-072, S-073, S-078, S-079). Finding no
-    /// window plays the alert sound (spec v10).
+    /// Focus Window's candidates (S-068), front to back: the windows you can
+    /// see, and the focused one (S-082, spec v12). Windows on every display
+    /// hide the ones behind them. With `"scope": "display"`, only those on
+    /// the display of `anchor`, or of the window in front without one (S-078).
+    private func candidates(_ scope: WindowScope, around anchor: CGRect?, focused: WindowRef?) -> [Candidate] {
+        let windows = system.focusableWindows()
+        let parts = WindowGeometry.visibleParts(windows.map(\.frame))
+        let square = CGFloat(settings().minVisible)
+        let seen = windows.indices.compactMap { index -> Candidate? in
+            let window = windows[index]
+            guard window.ref == focused || WindowGeometry.shows(parts[index], square: square) else { return nil }
+            return Candidate(info: window, seen: SeenWindow(frame: window.frame, parts: parts[index], owner: window.pid))
+        }
+        guard scope == .display, let anchor = anchor ?? seen.first?.info.frame else { return seen }
+        let screens = system.screens()
+        let screen = WindowGeometry.screen(for: anchor, among: screens)
+        return seen.filter { WindowGeometry.screen(for: $0.info.frame, among: screens) == screen }
+    }
+
+    /// Focus Window (S-068, S-069, S-072, S-073, S-078, S-079, S-082).
+    /// Finding no window plays the alert sound (spec v10).
     private func focus(_ target: WindowTarget, scope: WindowScope, from focused: WindowRef?) async throws(PlanError) {
         let frame = focused.flatMap { system.frame(of: $0) }
-        let windows = candidates(scope, around: frame)
-        let order = WindowGeometry.cycleOrder(windows.map(\.frame), owners: windows.map(\.pid), screens: system.screens())
+        let candidates = candidates(scope, around: frame, focused: focused)
+        let windows = candidates.map(\.info)
+        let order = WindowGeometry.cycleOrder(candidates.map(\.seen), screens: system.screens(), settings: settings())
         // First, Last and numbers don't need a focused window, and stay on a window that's already there (S-073, S-079).
         let direction: FocusDirection
         switch target {
@@ -159,11 +174,11 @@ final class WindowControl {
             try await system.focus(windows[index])
             return
         }
-        let others = windows.filter { $0.ref != focused }
-        guard let index = WindowGeometry.neighbor(of: frame, direction, among: others.map(\.frame)) else {
+        let others = candidates.filter { $0.info.ref != focused }
+        guard let index = WindowGeometry.neighbor(of: frame, direction, among: others.map(\.seen), settings: settings()) else {
             throw PlanError(direction.failure, alerts: true)
         }
-        try await system.focus(others[index])
+        try await system.focus(others[index].info)
     }
 
     /// The window First, Last or a number names in the order; nil past its end.
@@ -180,15 +195,15 @@ final class WindowControl {
     /// trade frames, and focus stays. Finding no window plays the alert
     /// sound (spec v10).
     private func swap(_ window: WindowRef, at frame: CGRect, with target: WindowTarget, scope: WindowScope) throws(PlanError) {
-        let windows = candidates(scope, around: frame)
-        switch WindowGeometry.swapPartner(target, current: windows.firstIndex { $0.ref == window }, frame: frame,
-                                          windows: windows.map(\.frame), owners: windows.map(\.pid), screens: system.screens()) {
+        let windows = candidates(scope, around: frame, focused: window)
+        switch WindowGeometry.swapPartner(target, current: windows.firstIndex { $0.info.ref == window }, frame: frame,
+                                          windows: windows.map(\.seen), screens: system.screens(), settings: settings()) {
         case let .none(failure):
             throw PlanError(failure, alerts: true)
         case .stay:
             break
         case let .window(index):
-            let other = windows[index]
+            let other = windows[index].info
             put(window, in: other.frame)
             put(other.ref, in: frame)
         }

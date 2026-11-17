@@ -57,7 +57,7 @@ extension FocusAction: EditableAction {
             TargetRows(label: "Focus On", target: value.target)
             scopePicker(value.scope)
         } footer: {
-            Text("Left, Right, Up and Down go to the nearest window that way. Next Window and Previous Window go through windows from left to right, display by display. First Window, Last Window and numbers count in that order. On the Same Display keeps to the display of the window in front. With no window there, you hear the alert sound.")
+            Text("Left, Right, Up and Down go to the nearest window you can see that way. Next Window and Previous Window go through the windows you can see in rows, as you read, display by display. First Window, Last Window and numbers count in that order. Windows hidden behind others are skipped. On the Same Display keeps to the display of the window in front. With no window there, you hear the alert sound.")
         }
     }
 }
@@ -68,7 +68,7 @@ extension SwapAction: EditableAction {
             TargetRows(label: "Swap With", target: value.target)
             scopePicker(value.scope)
         } footer: {
-            Text("The window in front trades place and size with that window, and keeps focus. Left, Right, Up and Down pick the nearest window that way. The others, and numbers, count windows from left to right, display by display, as Focus Window does. With no window there, nothing moves and you hear the alert sound.")
+            Text("The window in front trades place and size with that window, and keeps focus. Left, Right, Up and Down pick the nearest window you can see that way. The others, and numbers, count the windows you can see in rows, as you read, display by display, as Focus Window does. With no window there, nothing moves and you hear the alert sound.")
         }
     }
 }

@@ -95,6 +95,10 @@ public enum ConfigValidator {
         for (name, value) in [("maxColumns", config.windows.maxColumns), ("maxRows", config.windows.maxRows)] where !limits.contains(value) {
             error(.badWindowLimit, "\(name) must be from \(limits.lowerBound) to \(limits.upperBound).")
         }
+        let distances = [("minVisible", config.windows.minVisible), ("rowTolerance", config.windows.rowTolerance), ("tieTolerance", config.windows.tieTolerance)]
+        for (name, value) in distances where value < 0 {
+            error(.negativeWindowDistance, "\(name) can't be negative.")
+        }
 
         // Entries: parse, find duplicates.
         var parsed: [(entry: Config.Entry, path: KeySequence)] = []

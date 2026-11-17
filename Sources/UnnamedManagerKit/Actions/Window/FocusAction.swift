@@ -151,53 +151,77 @@ public struct FocusAction: ActionValue {
 }
 
 extension WindowGeometry {
-    /// The window Focus Window picks in a direction (S-068): of those whose
-    /// center is within 45° of the direction from the current window's
-    /// center, the nearest; a tie goes to the one that overlaps more on the
-    /// other axis. nil when there's none that way.
-    public static func neighbor(of current: CGRect, _ direction: FocusDirection, among windows: [CGRect]) -> Int? {
-        let (dx, dy): (CGFloat, CGFloat) = switch direction {
-        case .left: (-1, 0)
-        case .right: (1, 0)
-        case .up: (0, -1)
-        case .down: (0, 1)
-        case .next, .previous, .first, .last: (0, 0)
+    /// The window Focus Window picks in a direction (S-068, spec v12), among
+    /// `windows` front to back. Only the visible part past the current
+    /// window's center counts. Windows that share `windows.minVisible` points
+    /// with it across the direction are in line and come first: the smallest
+    /// gap from its edge wins, gaps within `windows.tieTolerance` tying, then
+    /// the one sharing more, then the center nearest across, then the one in
+    /// front. With none in line, the nearest center within 45° of the
+    /// direction. nil when there's none that way.
+    public static func neighbor(of current: CGRect, _ direction: FocusDirection, among windows: [SeenWindow],
+                                settings: Config.Windows = Config.Windows()) -> Int? {
+        guard let here = turned(current, direction) else { return nil }
+        struct Candidate {
+            let index: Int, gap: CGFloat, shared: CGFloat, across: CGFloat, along: CGFloat
+            var distance: CGFloat { hypot(along, across) }
+            var inCone: Bool { across <= along }
         }
-        guard dx != 0 || dy != 0 else { return nil }
-        struct Candidate { let index: Int; let distance: CGFloat; let overlap: CGFloat }
         let candidates = windows.indices.compactMap { index -> Candidate? in
-            let window = windows[index]
-            let x = window.midX - current.midX, y = window.midY - current.midY
-            let along = x * dx + y * dy, across = abs(x * dy - y * dx)
-            guard along > 0, across <= along else { return nil }
-            let overlap = dx != 0
-                ? max(0, min(window.maxY, current.maxY) - max(window.minY, current.minY))
-                : max(0, min(window.maxX, current.maxX) - max(window.minX, current.minX))
-            return Candidate(index: index, distance: (x * x + y * y).squareRoot(), overlap: overlap)
+            let past = windows[index].parts.compactMap { turned($0, direction) }.compactMap { part -> CGRect? in
+                let start = max(part.minX, here.midX)
+                return part.maxX > start ? CGRect(x: start, y: part.minY, width: part.maxX - start, height: part.height) : nil
+            }
+            guard let first = past.first else { return nil }
+            let box = past.dropFirst().reduce(first) { $0.union($1) }
+            let shared = covered(past.compactMap { part in
+                let low = max(part.minY, here.minY), high = min(part.maxY, here.maxY)
+                return high > low ? low...high : nil
+            })
+            return Candidate(index: index, gap: max(0, box.minX - here.maxX), shared: shared,
+                             across: abs(box.midY - here.midY), along: box.midX - here.midX)
         }
-        return candidates.min { a, b in
-            abs(a.distance - b.distance) < 0.5 ? a.overlap > b.overlap : a.distance < b.distance
-        }?.index
+        let minShared = CGFloat(settings.minVisible), tie = CGFloat(settings.tieTolerance)
+        let inLine = candidates.filter { $0.shared > 0 && $0.shared >= minShared }
+        if let nearest = inLine.map({ $0.gap }).min() {
+            let tied = inLine.filter { $0.gap <= nearest + tie }
+            return tied.min { a, b in (-a.shared, a.across, a.index) < (-b.shared, b.across, b.index) }?.index
+        }
+        let cone = candidates.filter { $0.inCone }
+        return cone.min { a, b in (a.distance, a.index) < (b.distance, b.index) }?.index
     }
 
-    /// The order Next and Previous go through, and First and Last are the
-    /// ends of (S-069, S-073): by display, left to right, then by window
-    /// center, left to right and then top to bottom (spec v6).
-    /// `owners` (process ids) break the ties that are left, so the same
-    /// windows always give the same order, whatever their order here.
-    public static func cycleOrder(_ windows: [CGRect], owners: [Int32], screens: [Screen]) -> [Int] {
+    /// The order Next and Previous go through, and First, Last and numbers
+    /// count in (S-069, S-073, spec v12): by display, left to right, then in
+    /// rows as text reads, by the top left of the box around each window's
+    /// visible part. Tops within `windows.rowTolerance` of a row's highest
+    /// share its row. Owners (process ids) and sizes break the ties that are
+    /// left, so the same windows always give the same order, whatever their
+    /// order here.
+    public static func cycleOrder(_ windows: [SeenWindow], screens: [Screen],
+                                  settings: Config.Windows = Config.Windows()) -> [Int] {
         let displays = screens.sorted { ($0.frame.minX, $0.frame.minY) < ($1.frame.minX, $1.frame.minY) }
         func display(_ window: CGRect) -> Int {
             screen(for: window, among: screens).flatMap { found in displays.firstIndex { $0 == found } } ?? 0
         }
-        let keys = windows.indices.map { index in
-            let window = windows[index]
-            return (display(window), window.midX, window.midY, owners[index], window.width, window.height)
+        let boxes = windows.map { $0.box }, shown = windows.map { display($0.frame) }
+        var rows = Array(repeating: 0, count: windows.count)
+        for group in Dictionary(grouping: windows.indices, by: { shown[$0] }).values {
+            var row = 0, top = -CGFloat.infinity
+            for index in group.sorted(by: { boxes[$0].minY < boxes[$1].minY }) {
+                if boxes[index].minY > top + CGFloat(settings.rowTolerance) {
+                    row += 1
+                    top = boxes[index].minY
+                }
+                rows[index] = row
+            }
         }
         return windows.indices.sorted { a, b in
-            let x = keys[a], y = keys[b]
-            if (x.0, x.1, x.2, x.3) != (y.0, y.1, y.2, y.3) { return (x.0, x.1, x.2, x.3) < (y.0, y.1, y.2, y.3) }
-            return (x.4, x.5, a) < (y.4, y.5, b)
+            let x = boxes[a], y = boxes[b]
+            if (shown[a], rows[a], x.minX, x.minY) != (shown[b], rows[b], y.minX, y.minY) {
+                return (shown[a], rows[a], x.minX, x.minY) < (shown[b], rows[b], y.minX, y.minY)
+            }
+            return (windows[a].owner, x.width, x.height, a) < (windows[b].owner, y.width, y.height, b)
         }
     }
 

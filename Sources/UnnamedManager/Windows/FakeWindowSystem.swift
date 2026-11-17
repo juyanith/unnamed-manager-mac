@@ -62,7 +62,11 @@ final class FakeWindowSystem: WindowSystem {
             .map { WindowInfo(ref: WindowRef(id: $0.key), frame: $0.value.frame, pid: $0.value.pid) }
     }
 
+    /// Focusing raises the window to the front, as the real one does.
     func focus(_ window: WindowInfo) async throws(PlanError) {
-        focused = window.ref.id.base as? String
+        guard let id = window.ref.id.base as? String else { return }
+        focused = id
+        stacking.removeAll { $0 == id }
+        stacking.insert(id, at: 0)
     }
 }

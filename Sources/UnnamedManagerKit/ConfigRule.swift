@@ -24,6 +24,7 @@ public enum ConfigRule: String, Sendable, CaseIterable {
     case negativeDelay = "negative-delay"
     case negativeGap = "negative-gap"
     case badWindowLimit = "bad-window-limit"
+    case negativeWindowDistance = "negative-window-distance"
     case badUIValue = "bad-ui-value"
     case reservedChord = "reserved-chord"
     case undefinedAction = "undefined-action"

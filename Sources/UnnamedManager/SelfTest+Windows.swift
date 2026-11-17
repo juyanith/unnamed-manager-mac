@@ -117,6 +117,7 @@ extension SelfTest {
 
         await focusChecks()
         await swapChecks()
+        await seenChecks()
         await arrangeChecks()
 
         fake.canControlWindows = false
@@ -242,7 +243,7 @@ extension SelfTest {
             try? await runner.run(.family(AnyActionValue(FocusAction(direction))), id: "focus")
             ends.append(fake.focused ?? "none")
         }
-        check("S-073 First and Last go to the leftmost and rightmost window, with or without a focused one",
+        check("S-073 First and Last go to the first and last window in the order, with or without a focused one",
               ends == ["a", "d", "d", "a", "d"], "\(ends)")
 
         fake.focused = "a"
@@ -381,6 +382,55 @@ extension SelfTest {
         }
         check("S-079 a built-in name runs its action, and an action with that name overrides it",
               frames() == [b, a, c] && fake.focused == "b", "\(frames()), \(String(describing: fake.focused))")
+    }
+
+    /// S-082: two windows stacked on the left half with one on the right,
+    /// then a small window inside a large one. Focusing raises a window.
+    static func seenChecks() async {
+        let fake = FakeWindowSystem()
+        fake.displays = [.init(frame: CGRect(x: 0, y: 0, width: 1920, height: 1080), usable: CGRect(x: 0, y: 0, width: 1920, height: 1080))]
+        let half = CGRect(x: 0, y: 0, width: 960, height: 1080), right = CGRect(x: 960, y: 0, width: 960, height: 1080)
+        func reset() {
+            fake.windows = ["front": .init(frame: half), "hidden": .init(frame: half), "right": .init(frame: right)]
+            fake.stacking = ["front", "hidden", "right"]
+            fake.focused = "front"
+        }
+        let runner = ActionRunner(performer: SystemPerformer(context: StepContext(windows: WindowControl(system: fake, settings: { Config.Windows(gap: 0) }))))
+        func run(_ action: some ActionValue) async -> PlanError? {
+            do throws(PlanError) {
+                try await runner.run(.family(AnyActionValue(action)), id: "seen")
+                return nil
+            } catch {
+                return error
+            }
+        }
+
+        reset()
+        var visits: [String] = []
+        for action in [FocusAction(.right), FocusAction(.left), FocusAction(.next), FocusAction(.next)] {
+            _ = await run(action)
+            visits.append(fake.focused ?? "none")
+        }
+        let third = await run(FocusAction(.number(3)))
+        check("S-082 Focus Window skips a window hidden behind another, by direction, Next and number",
+              visits == ["right", "front", "right", "front"] && third == PlanError("No window 3. There are 2.", alerts: true),
+              "\(visits), \(String(describing: third))")
+
+        reset()
+        _ = await run(SwapAction(.window(.next)))
+        check("S-082 Swap Window skips a hidden window too",
+              fake.windows["front"]?.frame == right && fake.windows["right"]?.frame == half && fake.windows["hidden"]?.frame == half)
+
+        let small = CGRect(x: 500, y: 300, width: 400, height: 300)
+        fake.windows = ["small": .init(frame: small), "large": .init(frame: fake.displays[0].frame)]
+        fake.stacking = ["small", "large"]
+        fake.focused = "small"
+        _ = await run(FocusAction(.left))
+        let left = fake.focused
+        let back = await run(FocusAction(.right))
+        check("S-082 from a window inside a larger one, a direction goes to the larger one, which then hides it",
+              left == "large" && fake.focused == "large" && back == PlanError("No window to the right.", alerts: true),
+              "\(String(describing: left)), \(String(describing: back))")
     }
 
     /// S-070: the window types in the Type picker, and each form's value

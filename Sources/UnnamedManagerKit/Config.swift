@@ -47,11 +47,21 @@ public struct Config: Sendable, Equatable {
         public var maxRows: Int
         /// The range both limits take.
         public static let limitRange = 1...8
+        /// What Focus Window and Swap Window see (spec v12): the square a
+        /// window must show to count, and the span it must share to be in line;
+        /// how close tops are in one row of the order; how close gaps tie.
+        public var minVisible: Double
+        public var rowTolerance: Double
+        public var tieTolerance: Double
 
-        public init(gap: Double = 8, maxColumns: Int = 2, maxRows: Int = 2) {
+        public init(gap: Double = 8, maxColumns: Int = 2, maxRows: Int = 2,
+                    minVisible: Double = 20, rowTolerance: Double = 20, tieTolerance: Double = 2) {
             self.gap = gap
             self.maxColumns = maxColumns
             self.maxRows = maxRows
+            self.minVisible = minVisible
+            self.rowTolerance = rowTolerance
+            self.tieTolerance = tieTolerance
         }
     }
 
@@ -215,10 +225,14 @@ extension Config.Runtime: Decodable {
 extension Config.Windows: Decodable {
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: AnyKey.self)
-        try c.rejectUnknown(allowed: ["gap", "maxColumns", "maxRows"], at: "windows")
-        gap = try c.value("gap", default: Self().gap)
-        maxColumns = try c.value("maxColumns", default: Self().maxColumns)
-        maxRows = try c.value("maxRows", default: Self().maxRows)
+        try c.rejectUnknown(allowed: ["gap", "maxColumns", "maxRows", "minVisible", "rowTolerance", "tieTolerance"], at: "windows")
+        let d = Self()
+        gap = try c.value("gap", default: d.gap)
+        maxColumns = try c.value("maxColumns", default: d.maxColumns)
+        maxRows = try c.value("maxRows", default: d.maxRows)
+        minVisible = try c.value("minVisible", default: d.minVisible)
+        rowTolerance = try c.value("rowTolerance", default: d.rowTolerance)
+        tieTolerance = try c.value("tieTolerance", default: d.tieTolerance)
     }
 }
 

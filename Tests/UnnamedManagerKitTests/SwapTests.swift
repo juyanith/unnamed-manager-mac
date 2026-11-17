@@ -18,8 +18,8 @@ struct SwapTests {
     /// order so the result can't just be the input order.
     func pick(_ target: WindowTarget, from current: Int?, _ windows: [CGRect] = [c, b, a]) -> SwapPick {
         let frame = current.map { windows[$0] } ?? .zero
-        return WindowGeometry.swapPartner(target, current: current, frame: frame, windows: windows,
-                                          owners: windows.map { _ in 1 }, screens: Self.screens)
+        return WindowGeometry.swapPartner(target, current: current, frame: frame,
+                                          windows: windows.map { SeenWindow(frame: $0) }, screens: Self.screens)
     }
 
     @Test("A direction picks the window Focus Window would focus, across displays")

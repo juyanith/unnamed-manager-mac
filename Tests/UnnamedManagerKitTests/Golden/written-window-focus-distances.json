@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "windows": { "minVisible": 40, "rowTolerance": 12.5, "tieTolerance": 0 },
+  "entries": [
+    { "keys": "Meh+W", "title": "Windows" },
+    { "keys": "Meh+W L", "title": "Focus right", "action": "window-focus-right" },
+    { "keys": "Meh+W 2", "title": "Swap with window 2", "action": "window-swap-2" }
+  ]
+}

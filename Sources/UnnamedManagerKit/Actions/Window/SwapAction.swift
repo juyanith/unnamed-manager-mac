@@ -78,11 +78,12 @@ public enum SwapPick: Equatable, Sendable {
 
 extension WindowGeometry {
     /// The window Swap Window trades places with (S-077), among `windows`
-    /// (Focus Window's candidates, for its scope). `current` is the focused
-    /// window's index among them, nil when it isn't one; `frame` is its frame.
-    public static func swapPartner(_ target: WindowTarget, current: Int?, frame: CGRect,
-                                   windows: [CGRect], owners: [Int32], screens: [Screen]) -> SwapPick {
-        let order = cycleOrder(windows, owners: owners, screens: screens)
+    /// (Focus Window's candidates, for its scope, front to back). `current`
+    /// is the focused window's index among them, nil when it isn't one;
+    /// `frame` is its frame.
+    public static func swapPartner(_ target: WindowTarget, current: Int?, frame: CGRect, windows: [SeenWindow],
+                                   screens: [Screen], settings: Config.Windows = Config.Windows()) -> SwapPick {
+        let order = cycleOrder(windows, screens: screens, settings: settings)
         func pick(_ index: Int?, else failure: String) -> SwapPick {
             guard let index else { return .none(failure) }
             return index == current ? .stay : .window(index)
@@ -96,7 +97,8 @@ extension WindowGeometry {
             return pick(order.last, else: "No window to swap with.")
         case let .window(direction):
             let others = windows.indices.filter { $0 != current }
-            return pick(neighbor(of: frame, direction, among: others.map { windows[$0] }).map { others[$0] }, else: direction.failure)
+            return pick(neighbor(of: frame, direction, among: others.map { windows[$0] }, settings: settings).map { others[$0] },
+                        else: direction.failure)
         case let .number(number):
             let count = order.count
             return pick(number <= count ? order[number - 1] : nil, else: WindowTarget.pastTheEnd(number, count: count))
