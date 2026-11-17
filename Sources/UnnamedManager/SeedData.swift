@@ -2,7 +2,7 @@ import Foundation
 import UnnamedManagerKit
 
 /// Sample config for snapshots and the self-test. Everything in it can be
-/// written in the config file today, and created in the Bindings window
+/// written in the config file today, and created in Settings
 /// once M4 lands.
 enum SeedData {
     static let fixtureJSON = """

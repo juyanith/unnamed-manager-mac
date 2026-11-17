@@ -174,7 +174,7 @@ extension Modifiers {
 /// the main thread swaps in a new config.
 nonisolated final class EngineBox: Sendable {
     private let engine = Mutex<SequenceEngine?>(nil)
-    /// While a key is being recorded in the Bindings window, every key
+    /// While a key is being recorded in Settings, every key
     /// passes through, so the recorder sees the leader too.
     private let paused = Mutex(false)
 

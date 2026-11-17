@@ -1,7 +1,7 @@
 import AppKit
 import UnnamedManagerKit
 
-/// The draft the Bindings window and Settings edit (M4). Every change is
+/// The draft every Settings tab edits (M4). Every change is
 /// one undoable step. A draft that validates is saved at once (S-033); one
 /// with errors stays on screen with its errors and the file isn't touched.
 @Observable

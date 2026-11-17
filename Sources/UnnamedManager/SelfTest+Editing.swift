@@ -3,9 +3,9 @@ import OSLog
 import Synchronization
 import UnnamedManagerKit
 
-/// Self-test checks for M4: editing in the Bindings window and Settings.
+/// Self-test checks for M4: editing in Settings.
 extension SelfTest {
-    /// M4: the Bindings window's editing, through the same editor the pages use.
+    /// M4: Settings' editing, through the same editor the pages use.
     static func editorChecks(_ model: AppModel) async {
         let editor = model.editor
         let store = model.store

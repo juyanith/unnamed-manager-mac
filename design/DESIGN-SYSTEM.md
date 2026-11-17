@@ -21,12 +21,12 @@ Which token to use, and when. The tokens are in `Sources/UnnamedManager/UI/`. Ap
 - **Inner corners are always concentric:** inner = outer − inset. Use `ConcentricRectangle` for a part that can appear both nested and alone.
 
 ## Layout.swift: sizes
-- **Window sizes** use `Layout.windowMin` and `Layout.windowDefault`, the sidebar uses `Layout.sidebarMin` and `Layout.sidebarIdeal`, and Settings uses `Layout.settingsWidth` (520).
+- **Window sizes:** Settings' editor tabs use `Layout.editorTabMin` and `Layout.editorTabDefault`, its Form tabs `Layout.settingsWidth` (520), and Help `Layout.helpMin` and `Layout.helpDefault`.
 - **The Guide** has `Layout.guideRowsPerColumn` (12) rows per column, up to `Layout.guideMaxColumns` (3) columns of `Layout.guideColumnWidth`. Titles beyond the column width truncate at the end, and VoiceOver reads the full title.
 - **Keycaps** are at least `Layout.keycapMinWidth` (28) wide, so a column of keys lines up.
 
 ## Surfaces.swift: surfaces and states
-- **Glass:** the Guide uses regular Liquid Glass (`.glassEffect(.regular, in: .rect(cornerRadius: Radius.guide))`). With Reduce Transparency it uses `.regularMaterial`. Never put glass on glass, and never use glass in the Bindings window or Settings, where the system's own chrome already has it.
+- **Glass:** the Guide uses regular Liquid Glass (`.glassEffect(.regular, in: .rect(cornerRadius: Radius.guide))`). With Reduce Transparency it uses `.regularMaterial`. Never put glass on glass, and never use glass in Settings or Help, where the system's own chrome already has it.
 - **Keycaps** use `Surfaces.keycap` as the fill and `Surfaces.keycapStroke` as the outline. Both are a little translucent, so they take on the glass behind them.
 - **`Surfaces.warning`** is the one warning color, for a missing permission, a config error or a failed action. Always pair it with a symbol or words.
 - **Unavailable rows** (Choose by App with no match) use `Surfaces.unavailableOpacity` plus the words "not available in <App>".
@@ -38,7 +38,7 @@ Which token to use, and when. The tokens are in `Sources/UnnamedManager/UI/`. Ap
 - **A menu change inside the Guide is instant.** Typing speed matters more than motion. Never animate the Guide's first layout.
 - **An unbound key** uses `Motion.errorFlash`, held for `Motion.errorFlashHold`. A failed action's message stays for `Motion.errorMessageHold`, then the Guide closes.
 - **Scrolling to a list that just opened** (Help's Built-In Actions) waits `Motion.layoutSettle`, then jumps with no animation.
-- **In the Bindings window,** rows added, moved or removed use `Motion.listChange`, and custom hover fills use `Motion.hover`. Hover never moves the selection.
+- **In Settings,** rows added, moved or removed use `Motion.listChange`, and custom hover fills use `Motion.hover`. Hover never moves the selection.
 
 ## Still to add
 - **`Components.swift`:** the `Keycap` view and the key recorder style, with S-005 and S-025. `.textEntry("Label")` on every Form text field people type words into: it left-aligns the text so a typed space shows at once. Number fields stay right-aligned. Style controls with `ButtonStyle` and `ToggleStyle`; never rebuild a control from shapes.

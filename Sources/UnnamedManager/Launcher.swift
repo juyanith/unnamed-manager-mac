@@ -62,7 +62,7 @@ final class Launcher {
         }
     }
 
-    /// Lets every key through while the Bindings window records a key.
+    /// Lets every key through while Settings records a key.
     func setRecording(_ recording: Bool) {
         engine.setPaused(recording)
         if recording { guide.hide() }

@@ -63,7 +63,7 @@ extension Config.Action {
         }
     }
 
-    /// How the Bindings window names a built-in action: "Place Window: Left Half" (spec v11).
+    /// How Settings names a built-in action: "Place Window: Left Half" (spec v11).
     var builtInDisplayName: String {
         builtInValueName.map { "\(displayName): \($0)" } ?? displayName
     }

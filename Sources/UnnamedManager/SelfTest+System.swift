@@ -93,38 +93,76 @@ extension SelfTest {
         check("S-081 Help marks a built-in action your config overrides",
               builtIns.flatMap(\.rows).filter(\.isOverridden).map(\.name) == ["window-fill"])
 
-        // S-053: Show Help, on Hyper+H in the starter, opens the Help page.
+        // S-053: Show Help, on Hyper+H in the starter, opens the Help window.
         let starter = model.store.loaded
         check("S-053 the starter config has Show Help on Hyper+H",
               starter?.leaders.last.map { $0.path.description == "Hyper+H" && starter?.config.action(named: $0.action ?? "") == .help } == true)
         check("S-053 Show Help is a type in the Actions page's picker",
               Config.Action.types(allowsContextAware: true).contains("help"))
         // As from a chord: the window closed, through the real performer.
-        NSApp.windows.first { $0.identifier?.rawValue.hasPrefix(WindowID.bindings) == true }?.close()
+        window(WindowID.help)?.close()
         try? await Task.sleep(for: .seconds(0.5))
-        model.sidebar = .bindings
         try? await SystemPerformer().perform(.showHelp)
         try? await Task.sleep(for: .seconds(1))
-        let bindingsWindow = NSApp.windows.first { $0.identifier?.rawValue.hasPrefix(WindowID.bindings) == true }
-        check("S-053 Show Help opens the Bindings window on the Help page",
-              model.sidebar == .help && bindingsWindow?.isVisible == true,
+        check("S-053 Show Help opens the Help window",
+              window(WindowID.help)?.isVisible == true,
               NSApp.windows.map { $0.identifier?.rawValue ?? "?" }.joined(separator: ", "))
-        model.sidebar = .bindings
+        window(WindowID.help)?.close()
     }
 
-    /// Settings… from the menu bar menu brings the app in front, even
-    /// while another app is active.
-    static func frontChecks(_ model: AppModel, openSettings: OpenSettingsAction) async {
+    /// A check that the app comes in front. NSWorkspace brings forward the
+    /// app with this bundle id, so with another copy of Unnamed Manager
+    /// running (your own), it brings that one and the check can't tell.
+    static func frontCheck(_ name: String, _ ok: Bool, _ detail: String = "") {
+        guard NSRunningApplication.runningApplications(withBundleIdentifier: Bundle.main.bundleIdentifier ?? "").count == 1 else {
+            print("SKIP \(name): another copy of Unnamed Manager is running; quit it to run this check")
+            return
+        }
+        check(name, ok, detail)
+    }
+
+    /// The window whose SwiftUI identifier starts with `prefix`.
+    static func window(_ prefix: String) -> NSWindow? {
+        NSApp.windows.first { $0.identifier?.rawValue.hasPrefix(prefix) == true }
+    }
+
+    /// S-085: one Settings window holds your bindings and the preferences,
+    /// and Settings… brings it in front, even while another app is active.
+    static func frontChecks(_ model: AppModel) async {
+        check("S-085 Settings has the General, Bindings, Actions, Contexts and Windows tabs",
+              SettingsTab.allCases.map(\.title) == ["General", "Bindings", "Actions", "Contexts", "Windows"])
+        window(WindowID.settings)?.close()
         NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.finder").first?.activate()
         try? await Task.sleep(for: .seconds(1))
         let behind = !NSApp.isActive
-        openSettings()
-        model.bringToFront(WindowID.settings)
+        model.showSettings(.windows)
         try? await Task.sleep(for: .seconds(1))
-        let settings = NSApp.windows.first { $0.identifier?.rawValue.hasPrefix(WindowID.settings) == true }
-        check("Settings… brings the app and the Settings window in front of another app",
-              behind && NSApp.isActive && settings?.isKeyWindow == true,
+        let settings = window(WindowID.settings)
+        frontCheck("S-085 Settings… brings the app and the Settings window in front of another app",
+              behind && NSApp.isActive && settings?.isKeyWindow == true && model.tab == .windows,
               "behind first: \(behind), active: \(NSApp.isActive), windows: " + NSApp.windows.map { $0.identifier?.rawValue ?? "?" }.joined(separator: ", "))
-        settings?.close()
+        // A key on the Help page shows its binding on the Bindings tab.
+        model.showHelp()
+        try? await Task.sleep(for: .seconds(1))
+        let helpInFront = window(WindowID.help)?.isKeyWindow == true
+        model.showSettings(.bindings)
+        try? await Task.sleep(for: .seconds(1))
+        frontCheck("S-085 Help is a window of its own, and its links bring Settings back on the Bindings tab",
+              helpInFront && settings?.isKeyWindow == true && model.tab == .bindings && window(WindowID.help)?.isVisible == true)
+        let frame = settings?.frame.size ?? .zero
+        check("S-085 the Bindings tab can be resized, and opens at its first size",
+              settings?.styleMask.contains(.resizable) == true
+                  && frame == Layout.editorTabDefault,
+              "\(frame), resizable: \(settings?.styleMask.contains(.resizable) == true)")
+        // As if you dragged the corner: the window keeps the size.
+        if let settings {
+            settings.setFrame(NSRect(origin: settings.frame.origin, size: CGSize(width: 1100, height: 760)), display: true)
+            try? await Task.sleep(for: .seconds(1))
+        }
+        check("S-085 the Bindings tab keeps the size you give it",
+              settings?.frame.size == CGSize(width: 1100, height: 760), "\(settings?.frame.size ?? .zero)")
+        check("S-085 there is no separate Bindings window",
+              !NSApp.windows.contains { $0.identifier?.rawValue.hasPrefix("bindings") == true })
+        window(WindowID.help)?.close()
     }
 }

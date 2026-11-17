@@ -23,7 +23,7 @@ One name per idea. Use these words in the UI, the docs, the log and VoiceOver la
 | Send Shortcut | The `send` action: press one or more key combinations in the app you were using. | send keys, keystroke, type, simulate |
 | Context Aware | The `contextual` action: run a different action depending on the app in front. | contextual, conditional, smart action, Choose by App |
 | Do Nothing | The `noop` action. | noop, placeholder, empty |
-| Show Help | The `help` action: open the Help page of the Bindings window. | help, home, open help |
+| Show Help | The `help` action: open the Help window. | help, home, open help |
 | Context | A named set of apps, such as "browser", that Context Aware actions check against. | app group, profile, scope |
 | App in front | The app that was active when you pressed the leader. Actions go to it. | focused app, frontmost, target app |
 | Guide | The small panel that shows where you are in a sequence and which keys come next (HUD in the code). | HUD, overlay, popup, palette, cheat sheet |
@@ -37,9 +37,8 @@ One name per idea. Use these words in the UI, the docs, the log and VoiceOver la
 | Reload Config | Read the config file again and use it if it's valid. | refresh, restart, re-read |
 | Enabled | Whether Unnamed Manager is capturing leaders. When it's off, no keys are captured. | active, running, paused, armed |
 | Permissions | The Accessibility and Input Monitoring access in System Settings that the app needs to capture keys. Use Apple's names for each one. | rights, access, privileges |
-| Bindings window | The window for editing bindings, actions and contexts, opened by Edit Bindings… (⌘B). | editor, config editor, settings window |
-| Help page | The Help page of the Bindings window: your leaders and direct bindings, the keys that work in every sequence, and links. | manual, documentation, cheat sheet |
-| Settings | The Settings window (Settings… ⌘,): Guide, keys, feedback, Open at Login. | Preferences, options |
+| Settings | The Settings window (Settings… ⌘,), one tab each: General (Guide, keys, feedback, Open at Login), Bindings, Actions, Contexts and Windows. Name a part as "the Bindings tab" or "Settings › Windows". | Preferences, options, Bindings window, editor |
+| Help window | The window with your leaders and direct bindings, the keys that work in every sequence, the built-in actions, and links. Opened by Help, Unnamed Manager Help, or a Show Help binding. | Help page, manual, documentation, cheat sheet |
 | Window action | An action that works on the focused window of the app in front: Arrange Windows, Fill, Focus Window, Minimize, Move Window, Place Window, Resize Window, Swap Window. | window command, tiling |
 | Arrange Windows | Lay out the window in front and the ones used before it, on its display, in a grid of columns or rows. | tile, pair, snap |
 | Cell | One part of the grid Arrange Windows makes, for one window. | slot, tile, pane |
@@ -50,7 +49,7 @@ One name per idea. Use these words in the UI, the docs, the log and VoiceOver la
 | Override | An action you define with a built-in action's name. It runs instead of the built-in one everywhere that name is used. | shadow, replace, remap |
 | Swap Window | Trade place and size with the window in a direction, the next or previous one, the first or last one, or a Window Number. The window in front keeps focus. | exchange, switch, flip |
 | Window Used Before | The window that had focus before the one in front, from the history the app keeps while it runs; it can be behind others, and for Focus Window on another Space ("recent" in the config file). Pressing again goes back. | previous window, last window, recent, toggle |
-| Apps (Settings) | The table in Settings of apps with their own window rules: Focus, Swap and Arrange, each checked when that action takes part with the app's windows ("windows.apps" in the config file). Unchecked is "left out". | excluded, ignored, blacklist, floating |
+| Apps (Settings) | The table on Settings' Windows tab of apps with their own window rules: Focus, Swap and Arrange, each checked when that action takes part with the app's windows ("windows.apps" in the config file). Unchecked is "left out". | excluded, ignored, blacklist, floating |
 | On the Same Display | Keeps Focus Window and Swap Window to the display of the window in front ("scope" in the config file). On Every Display is the default. | this screen, current monitor |
 | Minimize | Send the window in front to the Dock, as ⌘M does. | hide, dock |
 | Move Window | Move the window To a Spot (such as Center) or By Points. Its size stays the same. | position, drag, nudge |

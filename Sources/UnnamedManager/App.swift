@@ -4,7 +4,7 @@ import SwiftUI
 // UnnamedManager
 //   UnnamedManager                      the app (menu bar only until a window opens)
 //   APP_STORE=<file> UnnamedManager     use another config file (tests, experiments)
-//   APP_SNAPSHOT=<dir> UnnamedManager   save a PNG of every Bindings page and Settings in light and dark mode, then quit
+//   APP_SNAPSHOT=<dir> UnnamedManager   save a PNG of every Settings tab and Help in light and dark mode, then quit
 //   UnnamedManager --selftest           run the self-test against a /tmp config and quit with 0 or 1 (tools/selftest.sh)
 //   APP_GRID=1 UnnamedManager           draw the grid and the layout probes over the window
 
@@ -13,9 +13,9 @@ struct UnnamedManagerApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @State private var model = AppModel()
 
-    /// Snapshots and the self-test need the window open at launch. Normal
-    /// launches stay in the menu bar until you choose Edit Bindings…
-    private static var opensWindowAtLaunch: Bool {
+    /// Snapshots and the self-test need Settings open at launch. Normal
+    /// launches stay in the menu bar until you choose Settings…
+    static var opensWindowAtLaunch: Bool {
         SelfTest.requested || !(ProcessInfo.processInfo.environment["APP_SNAPSHOT"] ?? "").isEmpty
     }
 
@@ -36,24 +36,6 @@ struct UnnamedManagerApp: App {
                 .environment(model)
         }
 
-        // The main window: your bindings, actions and contexts. Its title
-        // follows the page (DESIGN.md, Information architecture).
-        Window("Bindings", id: WindowID.bindings) {
-            ContentView()
-                .environment(model)
-                .themed()
-                .countsAsOpenWindow(model)
-                .overlay { if GridOverlay.enabled { GridOverlay() } }
-                .frame(minWidth: Layout.windowMin.width, minHeight: Layout.windowMin.height)
-        }
-        .defaultSize(Layout.windowDefault)
-        .defaultLaunchBehavior(Self.opensWindowAtLaunch ? .presented : .suppressed)
-        .windowToolbarStyle(.unified)
-        .commands {
-            SidebarCommands()
-            EditorCommands(model: model)
-        }
-
         // First-run setup (S-040). Opens at launch until setup is done.
         Window("Welcome to Unnamed Manager", id: WindowID.welcome) {
             WelcomeView()
@@ -64,19 +46,37 @@ struct UnnamedManagerApp: App {
         .windowResizability(.contentSize)
         .defaultLaunchBehavior(Self.showsWelcome ? .presented : .suppressed)
 
+        // Your bindings, actions and contexts, and the preferences, a tab
+        // each (DESIGN.md, Archetype; S-085).
         Settings {
-            SettingsView()
+            SettingsWindow()
                 .environment(model)
                 .themed()
                 .countsAsOpenWindow(model)
+                .overlay { if GridOverlay.enabled { GridOverlay() } }
         }
         .windowResizability(.contentSize)
+        .commands {
+            EditorCommands(model: model)
+        }
+
+        // Help isn't a setting, so it has a window of its own (S-052).
+        Window("Unnamed Manager Help", id: WindowID.help) {
+            HelpPage()
+                .environment(model)
+                .themed()
+                .countsAsOpenWindow(model)
+                .noInitialFocus()
+                .frame(minWidth: Layout.helpMin.width, minHeight: Layout.helpMin.height)
+        }
+        .defaultSize(Layout.helpDefault)
+        .defaultLaunchBehavior(.suppressed)
     }
 }
 
 enum WindowID {
-    static let bindings = "bindings"
     static let welcome = "welcome"
+    static let help = "help"
     /// The identifier SwiftUI gives the Settings scene's window.
     static let settings = "com_apple_SwiftUI_Settings_window"
 }

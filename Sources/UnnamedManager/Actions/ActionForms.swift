@@ -45,7 +45,7 @@ extension BasicAction: EditableAction {
                 Text("This action does nothing. Use it to reserve a key.")
                     .foregroundStyle(.secondary)
             case .help:
-                Text("Opens the Help page of the Bindings window, which lists your leaders and direct bindings.")
+                Text("Opens the Help window, which lists your leaders and direct bindings.")
                     .foregroundStyle(.secondary)
             }
         }

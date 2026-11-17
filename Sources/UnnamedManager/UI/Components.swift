@@ -34,3 +34,24 @@ extension View {
         }
     }
 }
+
+/// The add and remove buttons under a list on a Settings tab, where the
+/// toolbar holds the tabs, as in Mail's Rules (DESIGN-SYSTEM.md, Components).
+/// Icon-only borderless buttons, each with a name for VoiceOver and its help.
+struct ListBar<Buttons: View>: View {
+    @ViewBuilder var buttons: Buttons
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Divider()
+            HStack(spacing: Space.xs) {
+                buttons
+                Spacer()
+            }
+            .buttonStyle(.borderless)
+            .labelStyle(.iconOnly)
+            .padding(.horizontal, Space.sm)
+            .padding(.vertical, Space.xs)
+        }
+    }
+}

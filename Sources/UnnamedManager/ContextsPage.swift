@@ -15,31 +15,40 @@ struct ContextsPage: View {
         @Bindable var model = model
         let contexts = editor.draft.config.contexts
         HStack(spacing: 0) {
-            List(selection: $model.contextSelection) {
-                ForEach(contexts, id: \.id) { context in
-                    VStack(alignment: .leading, spacing: Space.xs) {
-                        Text(context.id)
-                        HStack(spacing: Space.xs) {
-                            ForEach(context.apps.prefix(8), id: \.self) { AppIcon(bundleId: $0) }
+            VStack(spacing: 0) {
+                List(selection: $model.contextSelection) {
+                    ForEach(contexts, id: \.id) { context in
+                        VStack(alignment: .leading, spacing: Space.xs) {
+                            Text(context.id)
+                            HStack(spacing: Space.xs) {
+                                ForEach(context.apps.prefix(8), id: \.self) { AppIcon(bundleId: $0) }
+                            }
+                        }
+                        .tag(context.id)
+                    }
+                    .onMove { source, destination in
+                        editor.edit("Move Context", undo: undo) { $0.moveContexts(from: source, to: destination) }
+                    }
+                }
+                .listStyle(.inset)
+                .onDeleteCommand { if let id = model.contextSelection { delete(id) } }
+                .overlay {
+                    if contexts.isEmpty {
+                        ContentUnavailableView {
+                            Label("No Contexts", systemImage: "macwindow.on.rectangle")
+                        } description: {
+                            Text("A context is a set of apps, such as your browsers, that Context Aware actions check.")
+                        } actions: {
+                            Button("New Context") { add() }
                         }
                     }
-                    .tag(context.id)
                 }
-                .onMove { source, destination in
-                    editor.edit("Move Context", undo: undo) { $0.moveContexts(from: source, to: destination) }
-                }
-            }
-            .listStyle(.inset)
-            .onDeleteCommand { if let id = model.contextSelection { delete(id) } }
-            .overlay {
-                if contexts.isEmpty {
-                    ContentUnavailableView {
-                        Label("No Contexts", systemImage: "macwindow.on.rectangle")
-                    } description: {
-                        Text("A context is a set of apps, such as your browsers, that Context Aware actions check.")
-                    } actions: {
-                        Button("New Context") { add() }
-                    }
+                ListBar {
+                    Button("New Context", systemImage: "plus") { add() }
+                        .help("Add a context")
+                    Button("Delete Context", systemImage: "minus") { if let id = model.contextSelection { delete(id) } }
+                        .help("Delete the selected context (⌫)")
+                        .disabled(model.contextSelection == nil)
                 }
             }
             .frame(width: Layout.listPaneWidth)
@@ -50,16 +59,6 @@ struct ContextsPage: View {
                 ContentUnavailableView("No Selection", systemImage: "macwindow.on.rectangle",
                                        description: Text("Select a context to edit its apps."))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-        }
-        .navigationTitle("Contexts")
-        .toolbar {
-            ToolbarItemGroup {
-                Button("New Context", systemImage: "plus") { add() }
-                    .help("Add a context (⌘N)")
-                Button("Delete Context", systemImage: "trash") { if let id = model.contextSelection { delete(id) } }
-                    .help("Delete the selected context (⌫)")
-                    .disabled(model.contextSelection == nil)
             }
         }
     }

@@ -11,7 +11,7 @@ App name `UnnamedManager`, display name "Unnamed Manager", bundle id `net.unname
 ## Main jobs
 1. **Run a binding by key sequence or direct chord.** Unchanged from the launcher: Hyper+Space → E opens the editor; the Guide appears only if you pause; the app in front keeps focus.
 2. **Manage the window in front from the keyboard.** Focus the nearest window left, right, up or down, or the next or previous one. Place it on a half, third, quarter or corner of the screen. Move or resize it by a step or to an exact fraction. Fill the screen with it (again restores) or minimize it. Arrange the windows used last in a grid of columns or rows, or swap the window with another.
-3. **See and edit bindings in the Bindings window**, including the new window actions, each with its own editor. Every change is written back to the config file.
+3. **See and edit bindings in Settings**, including the new window actions, each with its own editor. Every change is written back to the config file.
 4. **Check status from the menu bar.** Unchanged: on or off, reload, permissions, last error, quit.
 
 ## Data
@@ -21,7 +21,7 @@ One JSON file, `~/.config/unnamed-manager/config.json`, in the shared format. On
 - **Window memory:** the frame each window had before Fill, kept in memory only, so Fill can toggle back.
 
 ## Shape
-A menu bar app with no Dock icon, as today: the Guide (a non-activating Liquid Glass panel), the menu bar menu, the Bindings window (sidebar: Bindings, Actions, Contexts, Help), and Settings. macOS 27 or later. Swift and SwiftUI. Local data, works offline, no accounts.
+A menu bar app with no Dock icon, as today: the Guide (a non-activating Liquid Glass panel), the menu bar menu, Settings (tabs: General, Bindings, Actions, Contexts, Windows), and a Help window. macOS 27 or later. Swift and SwiftUI. Local data, works offline, no accounts.
 
 ## System hooks
 - The launcher's session-level `CGEventTap`, with **Accessibility** and **Input Monitoring**. No new permission: window actions use the Accessibility API (`AXUIElement` position, size, minimized, raise), which the app already has.

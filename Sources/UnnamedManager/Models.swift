@@ -1,45 +1,44 @@
 import AppKit
 import UnnamedManagerKit
 
-/// The Bindings window's sidebar pages. Snapshot mode walks through every case.
-enum SidebarItem: String, CaseIterable, Identifiable {
-    case bindings, actions, contexts, help
+/// The Settings window's tabs, in order (DESIGN.md, Archetype). Snapshot
+/// mode walks through every case.
+enum SettingsTab: String, CaseIterable, Identifiable {
+    case general, bindings, actions, contexts, windows
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
+        case .general: "General"
         case .bindings: "Bindings"
         case .actions: "Actions"
         case .contexts: "Contexts"
-        case .help: "Help"
+        case .windows: "Windows"
         }
     }
 
     var symbol: String {
         switch self {
+        case .general: "gearshape"
         case .bindings: "keyboard"
         case .actions: "bolt"
         case .contexts: "macwindow.on.rectangle"
-        case .help: "questionmark.circle"
+        case .windows: "rectangle.split.2x1"
         }
     }
 
-    /// What the empty page says until its story is built.
-    var emptyMessage: String {
-        switch self {
-        case .bindings: "Leaders, menus and bindings from the config file appear here."
-        case .actions: "Actions that bindings run appear here."
-        case .contexts: "Sets of apps that Context Aware checks appear here."
-        case .help: "Your leaders and direct bindings, and how sequences work."
-        }
-    }
+    /// The tabs that edit a list beside a form. They fill a resizable
+    /// window; the others are a Form that fits its content.
+    var isEditor: Bool { self == .bindings || self == .actions || self == .contexts }
 }
 
 /// App-wide state that menus and views share.
 @Observable
 final class AppModel {
-    var sidebar: SidebarItem? = .bindings
+    /// The Settings tab on screen. Settings opens on Bindings, then on the
+    /// tab you used last.
+    var tab: SettingsTab = .bindings
 
     /// How many of the app's windows are open. While any is, the app is a
     /// regular app with a main menu (Edit > Undo, Window); otherwise it lives
@@ -57,7 +56,7 @@ final class AppModel {
     let launcher: Launcher
     /// Copying the old app's config, and noticing it running (S-058).
     let migration: LauncherMigration
-    /// The draft the Bindings window and Settings edit.
+    /// The draft every Settings tab edits.
     let editor: BindingsEditor
     /// The selected action and context on their pages.
     var actionSelection: String?
@@ -86,48 +85,62 @@ final class AppModel {
         Self.current = self
     }
 
-    /// Opens the Bindings window. MenuBarIcon sets it, since only a view
-    /// can open a SwiftUI window and the menu bar icon is the one view
-    /// that's always there.
-    var openBindingsWindow: (() -> Void)?
+    /// Open the Settings window and the Help window. MenuBarIcon sets them,
+    /// since only a view can open a SwiftUI window and the menu bar icon is
+    /// the one view that's always there.
+    var openSettingsWindow: (() -> Void)?
+    var openHelpWindow: (() -> Void)?
 
-    /// Help in the menu bar menu and the Show Help action: the Help page, in front (S-052, S-053).
+    /// Settings… in the menu bar menu, and links from Help: the Settings
+    /// window on `tab`, in front.
+    func showSettings(_ tab: SettingsTab? = nil) {
+        if let tab { self.tab = tab }
+        openSettingsWindow?()
+        bringToFront(WindowID.settings)
+    }
+
+    /// Help in the menu bar menu, the Help menu and the Show Help action:
+    /// the Help window, in front (S-052, S-053).
     func showHelp() {
-        sidebar = .help
-        openBindingsWindow?()
-        bringToFront(WindowID.bindings)
+        openHelpWindow?()
+        bringToFront(WindowID.help)
     }
 
     /// Brings the app and the window whose identifier starts with `prefix`
-    /// in front of other apps' windows: Edit Bindings…, Settings… and Help.
+    /// in front of other apps' windows: Settings… and Help.
     /// macOS can ignore activate() from a menu bar app, or from a chord
     /// while another app is active, so the window would open behind.
     /// NSWorkspace can bring it forward, as it does apps for Use Application.
     func bringToFront(_ prefix: String) {
+        let wasAccessory = NSApp.activationPolicy() != .regular
         NSApp.setActivationPolicy(.regular)
         NSApp.activate()
-        let configuration = NSWorkspace.OpenConfiguration()
-        configuration.activates = true
-        // (Accessibility's frontmost attribute reports success and does nothing.)
-        NSWorkspace.shared.openApplication(at: Bundle.main.bundleURL, configuration: configuration) { _, _ in
-            Task { @MainActor in
-                NSApp.windows.first { $0.identifier?.rawValue.hasPrefix(prefix) == true }?
-                    .makeKeyAndOrderFront(nil)
-            }
+        Task { @MainActor in
+            // An app that was menu bar only takes a moment to become a
+            // regular app, and can't be brought forward until it is.
+            if wasAccessory { try? await Task.sleep(for: Self.becomesRegular) }
+            let configuration = NSWorkspace.OpenConfiguration()
+            configuration.activates = true
+            // (Accessibility's frontmost attribute reports success and does nothing.)
+            _ = try? await NSWorkspace.shared.openApplication(at: Bundle.main.bundleURL, configuration: configuration)
+            NSApp.windows.first { $0.identifier?.rawValue.hasPrefix(prefix) == true }?
+                .makeKeyAndOrderFront(nil)
         }
     }
+
+    private static let becomesRegular = Duration.milliseconds(200)
 
     /// Shows one kind's built-in actions on the Help page (S-081).
     func showBuiltIns(_ kind: String) {
         openBuiltIns.insert(kind)
         revealBuiltIn = kind
-        sidebar = .help
+        showHelp()
     }
 
     /// Shows an action on the Actions page.
     func showAction(_ id: String) {
         actionSelection = id
-        sidebar = .actions
+        tab = .actions
     }
 }
 

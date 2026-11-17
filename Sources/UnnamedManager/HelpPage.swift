@@ -74,7 +74,7 @@ struct HelpContent: Equatable {
     var isEmpty: Bool { groups.isEmpty }
 }
 
-/// The Help page of the Bindings window (S-052): your leaders and direct
+/// The Help window (S-052): your leaders and direct
 /// bindings, the keys that work in every sequence, the words, and links.
 struct HelpPage: View {
     @Environment(AppModel.self) private var model
@@ -85,7 +85,7 @@ struct HelpPage: View {
 
     private var editor: BindingsEditor { model.editor }
 
-    /// The draft, so the page matches the Bindings page, even mid-edit.
+    /// The draft, so the page matches the Bindings tab, even mid-edit.
     private var content: HelpContent {
         let draft = editor.draft
         if draft.config.entries.isEmpty { return HelpContent(config: nil) }
@@ -103,7 +103,7 @@ struct HelpPage: View {
                     Text("Add a leader such as Hyper+Space with keys under it, or a direct binding such as Hyper+T. Your keys are listed here.")
                 } actions: {
                     Button("New Binding") {
-                        model.sidebar = .bindings
+                        model.showSettings(.bindings)
                         editor.addBinding(undo: undo)
                     }
                 }
@@ -122,7 +122,6 @@ struct HelpPage: View {
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width in
             sideMargin = max(Space.margin, ((width - Layout.helpMaxWidth) / 2).rounded())
         }
-        .navigationTitle("Help")
         .onChange(of: model.revealBuiltIn, initial: true) { _, kind in
             guard let kind else { return }
             Task {
@@ -141,13 +140,13 @@ struct HelpPage: View {
                 ForEach(group.rows) { row in
                     Button { show(row.path) } label: { rowLabel(row) }
                         .buttonStyle(.plain)
-                        .help("Show \(row.title) on the Bindings page")
+                        .help("Show \(row.title) on Settings' Bindings tab")
                 }
             } header: {
                 Text(group.id == content.groups.first?.id ? "Your Keys: \(group.title)" : group.title)
             } footer: {
                 if group.id == content.groups.last?.id {
-                    Text("Press a leader to start a sequence, or a direct binding to run its action at once. Click one to see it on the Bindings page.")
+                    Text("Press a leader to start a sequence, or a direct binding to run its action at once. Click one to see it on Settings' Bindings tab.")
                 }
             }
         }
@@ -181,7 +180,7 @@ struct HelpPage: View {
         } header: {
             Text("In a Sequence")
         } footer: {
-            Text("Change the Cancel and Back keys and when the Guide appears in Settings (⌘,).")
+            Text("Change the Cancel and Back keys and when the Guide appears in Settings › General (⌘,).")
         }
     }
 
@@ -266,6 +265,6 @@ struct HelpPage: View {
 
     private func show(_ path: KeySequence) {
         editor.selection = path
-        model.sidebar = .bindings
+        model.showSettings(.bindings)
     }
 }

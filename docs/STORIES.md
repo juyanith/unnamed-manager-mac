@@ -13,20 +13,22 @@ Built from [BRIEF.md](BRIEF.md), [SPEC.md](SPEC.md), the shared spec in [../spec
 | `menubar-warning` | The menu bar menu with a missing permission or a config error |
 | `welcome` | The first-run window |
 | `welcome-import` | The first-run window offering to copy the Unnamed Launcher config |
-| `bindings` | The Bindings page of the Bindings window |
-| `actions` | The Actions page |
-| `contexts` | The Contexts page |
-| `help`, `empty-help` | The Help page, with and without bindings |
-| `help-builtin` | The Help page's Built-In Actions, with Place Window open |
+| `general` | Settings' General tab |
+| `bindings` | Settings' Bindings tab (until S-085, the Bindings page of the Bindings window) |
+| `actions` | The Actions tab |
+| `contexts` | The Contexts tab |
+| `windows`, `windows-bottom` | The Windows tab, and its end when it scrolls |
+| `help`, `empty-help` | The Help window, with and without bindings |
+| `help-builtin` | The Help window's Built-In Actions, with Place Window open |
 | `bindings-builtin` | A binding with a built-in action, and its Built In menu |
 | `actions-help` | The Actions page with a Show Help action |
 | `actions-window` | The Actions page with each window action's form |
 | `hud-window` | The Guide on a Windows menu with every window action |
-| `settings` | The Settings window |
+| `settings` | The Settings window, until S-085 split it into General and Windows |
 
 **How each acceptance line is checked:** `[snap]` snapshot, `[unit]` unit test, `[self]` self-test, `[manual]` a person must try it.
 
-**Seed data:** snapshot mode loads a fixture config with two leaders, a nested menu, actions of every type, and two contexts. From S-070 it also has a Windows menu with one binding of each window action. Each of these can be created in the Bindings window or Settings (S-024 to S-032).
+**Seed data:** snapshot mode loads a fixture config with two leaders, a nested menu, actions of every type, and two contexts. From S-070 it also has a Windows menu with one binding of each window action. Each of these can be created in Settings (S-024 to S-032).
 
 ---
 
@@ -1008,6 +1010,24 @@ UX:
 - Settings: an "Apps" section, a table with App, Focus, Swap and Arrange columns, a checkbox for each, checked when that action takes part, and a Remove button; then "Add App…". A new app starts with every box unchecked, since you add an app to leave it out of something. Glossary: "Apps (Settings)".
 Status: done
 Verified: the rules, defaults, writing all three, `unknown-field`, `wrong-type` and the dropped `exclude` (unit tests, `FocusHistoryTests`, the spec-v15 fixtures, 260 in all); Focus, Swap and Arrange Windows with each rule, and saving the rules (self-test); settings-bottom in light and dark, grid checks. Not yet tried by hand on real windows.
+Later: the Apps table moved to Settings' Windows tab (S-085).
+
+### S-085 Edit my bindings in Settings, with the rest of my settings
+As the user, I find my bindings where I find every other setting: one Settings window, as in Xcode's Key Bindings and Mail's Rules, so there's one window for setup and it comes up in front of the app I'm in.
+Screens: general, bindings, actions, contexts, windows, help
+Depends: S-023, S-032, S-052
+Acceptance:
+- [self] Settings has the tabs General, Bindings, Actions, Contexts and Windows, opens on Bindings, and switches tabs; there's no Bindings window.
+- [self] Settings… brings the app and the Settings window in front of another app, from the menu bar with no window open.
+- [self] Help opens a window of its own; a key on it brings Settings back on the Bindings tab.
+- [self] On the editor tabs the window can be resized, opens at 980 × 720, and keeps the size you give it.
+- [snap] Every tab and Help in light and dark; a list's add and remove buttons in a bar under it.
+- [manual] From the menu bar while another app is in front, Settings… and Help open in front, with no other copy of the app running.
+UX:
+- The menu bar menu has Settings… (⌘,) in place of Edit Bindings… (⌘B). The View menu switches tabs with ⌘1 to ⌘5. The title names the tab. Glossary: "Settings", "Help window"; "Bindings window" and "Help page" are retired.
+- ⌘Q still quits: it's the app menu's Quit Unnamed Manager, as in every Mac app. ⌘W closes the window.
+Status: done
+Verified: tabs, no Bindings window, resizing and keeping the size, Help as its own window (self-test); every tab, empty tabs and Help in light and dark, grid checks. Bringing the app in front passed with the Bindings window open (before the merge); with no window open it couldn't be checked while another copy of the app was running, since NSWorkspace brings the copy with the same bundle id forward.
 
 ## Later
 - Pick a window from an overlay: `"target": "pick"` on Focus Window and Swap Window labels the visible windows in order and waits for one key (numbers or home-row letters), Escape cancels.

@@ -33,7 +33,7 @@ struct EntryEditor: View {
                         actionPicker(path, entry)
                         builtInMenu(path)
                     } footer: {
-                        Text("What this binding does: one of your actions, or a built-in action that needs no setup. Edit your actions on the Actions page.")
+                        Text("What this binding does: one of your actions, or a built-in action that needs no setup. Edit your actions on the Actions tab.")
                     }
                 } else {
                     Section {

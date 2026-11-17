@@ -46,7 +46,7 @@ extension ArrangeAction: EditableAction {
                 ForEach(ArrangeLayout.allCases, id: \.self) { Text($0.displayName).tag($0) }
             }
         } footer: {
-            Text("Arranges the window in front and the ones you used before it, on its display, in columns or rows of equal size, with the gap from Settings. Windows keep their order from left to right. When the windows don't fill the grid evenly, the window in front stays in the column or row it's in and takes the spare room there. Automatic groups go up to Maximum Columns and Maximum Rows in Settings, and an automatic layout is columns on a wide display and rows on a tall one.")
+            Text("Arranges the window in front and the ones you used before it, on its display, in columns or rows of equal size, with the gap from the Windows tab. Windows keep their order from left to right. When the windows don't fill the grid evenly, the window in front stays in the column or row it's in and takes the spare room there. Automatic groups go up to Maximum Columns and Maximum Rows on the Windows tab, and an automatic layout is columns on a wide display and rows on a tall one.")
         }
     }
 }

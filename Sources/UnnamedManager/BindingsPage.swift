@@ -1,7 +1,7 @@
 import SwiftUI
 import UnnamedManagerKit
 
-/// The Bindings page (S-023 to S-029, S-034): an outline of leaders, menus
+/// The Bindings tab (S-023 to S-029, S-034): an outline of leaders, menus
 /// and bindings in file order, and an editor for the selected row.
 struct BindingsPage: View {
     @Environment(AppModel.self) private var model
@@ -16,19 +16,19 @@ struct BindingsPage: View {
             VStack(spacing: 0) {
                 IssuesBanner()
                 outline
+                ListBar {
+                    Button("New Binding", systemImage: "plus") { editor.addBinding(undo: undo) }
+                        .help("Add a binding to the selected menu, or a direct binding when nothing is selected (⌘N)")
+                    Button("New Menu", systemImage: "folder.badge.plus") { editor.addMenu(undo: undo) }
+                        .help("Add a menu, or a leader when nothing is selected (⇧⌘N)")
+                    Button("Delete", systemImage: "minus") { requestDelete() }
+                        .help("Delete the selected row (⌫)")
+                        .disabled(editor.selection == nil)
+                }
             }
             Divider()
             EntryEditor()
                 .frame(width: Layout.editorPaneWidth)
-        }
-        .navigationTitle("Bindings")
-        .toolbar {
-            ToolbarItemGroup {
-                Button("New Binding", systemImage: "plus") { editor.addBinding(undo: undo) }
-                    .help("Add a binding to the selected menu, or a direct binding when nothing is selected (⌘N)")
-                Button("New Menu", systemImage: "folder.badge.plus") { editor.addMenu(undo: undo) }
-                    .help("Add a menu, or a leader when nothing is selected (⇧⌘N)")
-            }
         }
         .confirmationDialog(confirmTitle, isPresented: Binding(get: { confirmDelete != nil }, set: { if !$0 { confirmDelete = nil } })) {
             Button("Delete", role: .destructive) {

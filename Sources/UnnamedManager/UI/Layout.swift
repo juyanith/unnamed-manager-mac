@@ -3,7 +3,7 @@ import SwiftUI
 
 /// Fixed sizes. Spacing lives in Space (Grid.swift).
 enum Layout {
-    /// The Settings window's single Form.
+    /// The General and Windows tabs' Form.
     static let settingsWidth: CGFloat = 520
     /// Settings grows to this height before it scrolls, unless the screen is
     /// shorter: then it stops 80 points short of it.
@@ -14,14 +14,15 @@ enum Layout {
     static let ruleColumnWidth: CGFloat = 56
     /// The first-run welcome window.
     static let welcomeWidth: CGFloat = 520
-    /// Bindings window sidebar.
-    static let sidebarMin: CGFloat = 180
-    static let sidebarIdeal: CGFloat = 200
-    /// Bindings window minimum and first-open size.
-    static let windowMin = CGSize(width: 900, height: 480)
-    static let windowDefault = CGSize(width: 1180, height: 680)
+    /// Settings' Bindings, Actions and Contexts tabs: the smallest their
+    /// page gets, and the window's size the first time one opens.
+    static let editorTabMin = CGSize(width: 720, height: 480)
+    static let editorTabDefault = CGSize(width: 980, height: 720)
+    /// The Help window's smallest and first-open size.
+    static let helpMin = CGSize(width: 480, height: 400)
+    static let helpDefault = CGSize(width: 680, height: 720)
 
-    /// The Bindings window's editor pane beside the outline.
+    /// The Bindings tab's editor pane beside the outline.
     static let editorPaneWidth: CGFloat = 280
     /// The outline's Key column, and the key recorder.
     static let keyColumnWidth: CGFloat = 112

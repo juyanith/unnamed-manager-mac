@@ -24,7 +24,7 @@ enum Motion {
     /// How long the error flash stays before it fades back.
     static let errorFlashHold: Duration = .milliseconds(180)
 
-    /// Hover fills on custom rows and buttons in the Bindings window.
+    /// Hover fills on custom rows and buttons in Settings.
     static func hover(_ reduceMotion: Bool) -> Animation? {
         reduceMotion ? nil : .easeOut(duration: 0.1)
     }
@@ -41,6 +41,8 @@ enum Motion {
     /// A pause before scrolling to a list that just opened, so its rows are
     /// laid out first. The scroll itself jumps: nothing travels.
     static let layoutSettle: Duration = .milliseconds(100)
+    /// How long Settings takes to resize to a tab you switch to.
+    static let tabResize: Duration = .milliseconds(300)
 
     /// How long a failed action's message stays in the Guide (S-015).
     static let errorMessageHold: Duration = .seconds(2)

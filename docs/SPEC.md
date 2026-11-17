@@ -10,7 +10,7 @@ This is the source of truth for how sequences, actions and the config file behav
 - **A top-level entry with an action is a direct binding.** Its chord, such as Hyper+T, runs the action at once: no sequence starts and the HUD never appears. Leaders and direct bindings can be mixed in one config, and a config can have only direct bindings.
 - **Each key press is decided as soon as it arrives.** Which entry a key selects never depends on a timer, so there are no ambiguous prefixes.
 - **There's no depth limit.** Two or three levels below the leader is typical.
-- **Children are listed in config file order**, so you choose the order. The Bindings window has a "Sort Alphabetically" command for a menu. It rewrites that menu's children in three groups: named keys such as `Space` and `Tab` alphabetically (F-keys by number), then digits, then letters.
+- **Children are listed in config file order**, so you choose the order. Settings' Bindings tab has a "Sort Alphabetically" command for a menu. It rewrites that menu's children in three groups: named keys such as `Space` and `Tab` alphabetically (F-keys by number), then digits, then letters.
 
 ### During a sequence
 | Key | Result |
@@ -63,7 +63,7 @@ Home is the menu above the leaders. It lists every leader and direct binding, so
 | `send` | `keys` | Sends one or more chords to the app that was in front. Held leader modifiers must not leak into the chord. `Primary` means ⌘. |
 | `contextual` | `variants` (context id → action), optional `fallback` | Uses the first context, in config order, that matches the app in front and has a variant. If none matches, uses `fallback`. With no fallback, the action is unavailable. |
 | `noop` | none | Does nothing. |
-| `help` | none | Opens the Bindings window on its Help page and brings it in front with focus, through NSWorkspace as for Use Application, since a chord doesn't make the launcher the active app. The sequence ends, as for any action. |
+| `help` | none | Opens the Help window and brings it in front with focus, through NSWorkspace as for Use Application, since a chord doesn't make the launcher the active app. The sequence ends, as for any action. |
 
 When an action fails, for example because the app isn't installed or the command can't start, the sequence ends and the failure is shown in the HUD and the log.
 
@@ -75,7 +75,7 @@ When an action fails, for example because the app isn't installed or the command
 
 ## Config file
 
-`~/.config/unnamed-manager/config.json`. A dotfiles tool such as chezmoi may write this file and overwrite edits made in the app, which is fine. The app watches the file and reloads it when it changes. A reload with errors keeps the last valid config and reports the error. The Bindings window and Settings write the same file with keys in a stable order.
+`~/.config/unnamed-manager/config.json`. A dotfiles tool such as chezmoi may write this file and overwrite edits made in the app, which is fine. The app watches the file and reloads it when it changes. A reload with errors keeps the last valid config and reports the error. Settings writes the same file with keys in a stable order.
 
 ```json
 {

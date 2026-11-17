@@ -5,16 +5,20 @@ import UnnamedManagerKit
 
 /// Screenshot mode for agents.
 ///   APP_STORE=/tmp/test.json APP_SNAPSHOT=/tmp/shots build/UnnamedManager.app/Contents/MacOS/UnnamedManager
-/// writes <page>-light.png and <page>-dark.png for every Bindings page, and
-/// settings-light.png and settings-dark.png for Settings, with settings-bottom-*
-/// scrolled to its end, then quits.
+/// writes <tab>-light.png and <tab>-dark.png for every Settings tab, with
+/// windows-bottom-* scrolled to its end, and help-* for the Help window, then quits.
 /// Each PNG gets a <page>-<mode>-layout.json with the grid probes (tools/check-layout.swift).
-/// APP_SNAPSHOT_PAGES=bindings,settings,hud limits the pages. "hud" is the Guide.
+/// APP_SNAPSHOT_PAGES=bindings,windows,help,hud limits the pages. "hud" is the Guide.
 /// Add APP_ACCENT=<id> to see the pages in another accent.
 enum Snapshot {
-    static func runIfRequested(model: AppModel, openSettings: OpenSettingsAction, openWelcome: @escaping () -> Void) {
+    /// The Settings window's task starts the run, and opens again if the
+    /// window does, so the run must start only once.
+    private static var started = false
+
+    static func runIfRequested(model: AppModel, openWelcome: @escaping () -> Void) {
         let env = ProcessInfo.processInfo.environment
-        guard let dir = env["APP_SNAPSHOT"], !dir.isEmpty else { return }
+        guard let dir = env["APP_SNAPSHOT"], !dir.isEmpty, !started else { return }
+        started = true
         // Snapshots never run against the real config file.
         guard Store.isOverridden else {
             print("SNAPSHOT refused: set APP_STORE to a file in /tmp")
@@ -40,14 +44,20 @@ enum Snapshot {
                 model.editor.selection = KeySequence(parsing: "Hyper+Space A T")
                 model.actionSelection = "find"
                 model.contextSelection = "browser"
-                for page in SidebarItem.allCases where only?.contains(page.rawValue) ?? true {
-                    model.sidebar = page
+                for tab in SettingsTab.allCases where only?.contains(tab.rawValue) ?? true {
+                    model.tab = tab
                     try? await Task.sleep(for: .seconds(0.8))
-                    capture(to: "\(dir)/\(page.rawValue)-\(mode).png")
+                    capture(to: "\(dir)/\(tab.rawValue)-\(mode).png")
+                    if !tab.isEditor { await captureBottom(to: "\(dir)/\(tab.rawValue)-bottom-\(mode).png") }
+                }
+                if only?.contains("help") ?? true {
+                    model.showHelp()
+                    try? await Task.sleep(for: .seconds(1))
+                    capture(to: "\(dir)/help-\(mode).png", window: SelfTest.window(WindowID.help))
                 }
                 if only?.contains("actions") ?? true {
                     // S-046: a Use Application action, with its Mode picker.
-                    model.sidebar = .actions
+                    model.tab = .actions
                     model.actionSelection = "open-editor"
                     try? await Task.sleep(for: .seconds(0.8))
                     capture(to: "\(dir)/actions-app-\(mode).png")
@@ -58,7 +68,7 @@ enum Snapshot {
                 }
                 if only?.contains("actions") ?? true {
                     // S-070: each window action's form.
-                    model.sidebar = .actions
+                    model.tab = .actions
                     for id in ["left-half", "move-center", "wider", "half-size", "focus-right", "focus-next", "focus-recent", "window-fill", "arrange", "swap-2"] {
                         model.actionSelection = id
                         try? await Task.sleep(for: .seconds(0.8))
@@ -69,12 +79,13 @@ enum Snapshot {
                     // S-081: the Built-In Actions section, with Place Window open.
                     model.showBuiltIns("Place Window")
                     try? await Task.sleep(for: .seconds(1.2))
-                    capture(to: "\(dir)/help-builtin-\(mode).png")
+                    capture(to: "\(dir)/help-builtin-\(mode).png", window: SelfTest.window(WindowID.help))
                     model.openBuiltIns = []
+                    SelfTest.window(WindowID.help)?.close()
                 }
                 if only?.contains("bindings") ?? true {
                     // S-048: a direct binding, with its editor pane.
-                    model.sidebar = .bindings
+                    model.tab = .bindings
                     model.editor.selection = KeySequence(parsing: "CAG+T")
                     try? await Task.sleep(for: .seconds(0.8))
                     capture(to: "\(dir)/bindings-direct-\(mode).png")
@@ -95,11 +106,15 @@ enum Snapshot {
                 model.contextSelection = nil
                 for mode in ["light", "dark"] {
                     NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
-                    for page in SidebarItem.allCases {
-                        model.sidebar = page
+                    for tab in SettingsTab.allCases where tab.isEditor {
+                        model.tab = tab
                         try? await Task.sleep(for: .seconds(0.8))
-                        capture(to: "\(dir)/empty-\(page.rawValue)-\(mode).png")
+                        capture(to: "\(dir)/empty-\(tab.rawValue)-\(mode).png")
                     }
+                    model.showHelp()
+                    try? await Task.sleep(for: .seconds(1))
+                    capture(to: "\(dir)/empty-help-\(mode).png", window: SelfTest.window(WindowID.help))
+                    SelfTest.window(WindowID.help)?.close()
                 }
                 model.editor.endPreview()
             }
@@ -108,7 +123,7 @@ enum Snapshot {
                 let good = try? Data(contentsOf: model.store.url)
                 try? Data(#"{ "version": 1, "entries": [{ "keys": "Hyper+Spcae", "title": "C" }] }"#.utf8).write(to: model.store.url)
                 model.store.reload()
-                model.sidebar = .bindings
+                model.tab = .bindings
                 for mode in ["light", "dark"] {
                     NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
                     try? await Task.sleep(for: .seconds(0.8))
@@ -117,26 +132,8 @@ enum Snapshot {
                 if let good { try? good.write(to: model.store.url) }
                 model.store.reload()
             }
-            if only == nil || only?.contains("settings") == true {
-                let main = NSApp.windows.first { $0.canBecomeMain && !$0.isSheet }
-                openSettings()
-                try? await Task.sleep(for: .seconds(1))
-                for mode in ["light", "dark"] {
-                    NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
-                    try? await Task.sleep(for: .seconds(0.8))
-                    let settings = NSApp.windows.first { $0.isVisible && $0 !== main && !$0.isSheet && $0.canBecomeKey }
-                    capture(to: "\(dir)/settings-\(mode).png", window: settings)
-                    // The sections below the fold, once the form scrolls.
-                    if let scroll = settings?.contentView.flatMap(Self.scrollView), let document = scroll.documentView {
-                        document.scroll(NSPoint(x: 0, y: document.isFlipped ? document.bounds.maxY : 0))
-                        try? await Task.sleep(for: .seconds(0.3))
-                        capture(to: "\(dir)/settings-bottom-\(mode).png", window: settings)
-                        document.scroll(NSPoint(x: 0, y: document.isFlipped ? 0 : document.bounds.maxY))
-                    }
-                }
-            }
             if only == nil || only?.contains("hud") == true {
-                // The Guide right after the leader, over the Bindings window.
+                // The Guide right after the leader, over Settings.
                 let guide = model.launcher.guide
                 for mode in ["light", "dark"] {
                     NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
@@ -254,6 +251,18 @@ enum Snapshot {
     /// permission for the app that started this one (your terminal, or Claude).
     /// Without it, falls back to drawing the view hierarchy, which leaves
     /// sidebars and glass blank.
+    /// The settings window again, with its Form scrolled to the end, then
+    /// back to the top: the sections below the fold.
+    private static func captureBottom(to path: String) async {
+        let settings = SelfTest.window(WindowID.settings)
+        guard let scroll = settings?.contentView.flatMap(Self.scrollView), let document = scroll.documentView,
+              document.bounds.height > scroll.contentView.bounds.height + 1 else { return }
+        document.scroll(NSPoint(x: 0, y: document.isFlipped ? document.bounds.maxY : 0))
+        try? await Task.sleep(for: .seconds(0.3))
+        capture(to: path, window: settings)
+        document.scroll(NSPoint(x: 0, y: document.isFlipped ? 0 : document.bounds.maxY))
+    }
+
     /// The first scroll view in a view's tree, such as a Form's.
     private static func scrollView(in view: NSView) -> NSScrollView? {
         if let scroll = view as? NSScrollView { return scroll }
@@ -264,7 +273,7 @@ enum Snapshot {
         // Another app can hide this one while snapshots run (computer use hides
         // apps it does not control). Hidden windows cannot be captured.
         if NSApp.isHidden { NSApp.unhideWithoutActivation() }
-        guard let window = window ?? NSApp.windows.first(where: { $0.canBecomeMain && !$0.isSheet }) else {
+        guard let window = window ?? SelfTest.window(WindowID.settings) else {
             print("SNAPSHOT no window")
             return
         }

@@ -12,7 +12,7 @@ final class ConfigStore {
     let url: URL
     /// The config in use, or nil when no valid config has loaded yet.
     private(set) var loaded: LoadedConfig?
-    /// The last valid file as an editable document, for the Bindings window.
+    /// The last valid file as an editable document, for Settings.
     private(set) var document: ConfigDocument?
     /// Errors from the last load. Empty when it succeeded.
     private(set) var errors: [ConfigIssue] = []

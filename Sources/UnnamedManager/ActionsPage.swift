@@ -17,29 +17,38 @@ struct ActionsPage: View {
         let document = editor.draft
         let ids = document.sortedActionIDs
         HStack(spacing: 0) {
-            List(selection: $model.actionSelection) {
-                ForEach(ids, id: \.self) { id in
-                    let users = document.users(of: id).count
-                    VStack(alignment: .leading, spacing: Space.xs / 2) {
-                        Text(id).lineLimit(1)
-                        Text("\(document.config.actions[id]!.displayName)\(Config.overridesBuiltIn(id) ? " · override" : "") · \(users == 0 ? "not used" : users == 1 ? "1 binding" : "\(users) bindings")")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+            VStack(spacing: 0) {
+                List(selection: $model.actionSelection) {
+                    ForEach(ids, id: \.self) { id in
+                        let users = document.users(of: id).count
+                        VStack(alignment: .leading, spacing: Space.xs / 2) {
+                            Text(id).lineLimit(1)
+                            Text("\(document.config.actions[id]!.displayName)\(Config.overridesBuiltIn(id) ? " · override" : "") · \(users == 0 ? "not used" : users == 1 ? "1 binding" : "\(users) bindings")")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .tag(id)
                     }
-                    .tag(id)
                 }
-            }
-            .listStyle(.inset)
-            .onDeleteCommand { if let id = model.actionSelection { delete(id) } }
-            .overlay {
-                if ids.isEmpty {
-                    ContentUnavailableView {
-                        Label("No Actions", systemImage: "bolt")
-                    } description: {
-                        Text("Actions are what bindings do: open an app, run a command, send a shortcut.")
-                    } actions: {
-                        Button("New Action") { add() }
+                .listStyle(.inset)
+                .onDeleteCommand { if let id = model.actionSelection { delete(id) } }
+                .overlay {
+                    if ids.isEmpty {
+                        ContentUnavailableView {
+                            Label("No Actions", systemImage: "bolt")
+                        } description: {
+                            Text("Actions are what bindings do: open an app, run a command, send a shortcut.")
+                        } actions: {
+                            Button("New Action") { add() }
+                        }
                     }
+                }
+                ListBar {
+                    Button("New Action", systemImage: "plus") { add() }
+                        .help("Add an action")
+                    Button("Delete Action", systemImage: "minus") { if let id = model.actionSelection { delete(id) } }
+                        .help("Delete the selected action (⌫)")
+                        .disabled(model.actionSelection == nil)
                 }
             }
             .frame(width: Layout.listPaneWidth)
@@ -51,16 +60,6 @@ struct ActionsPage: View {
                 ContentUnavailableView("No Selection", systemImage: "bolt",
                                        description: Text("Select an action to edit it."))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-        }
-        .navigationTitle("Actions")
-        .toolbar {
-            ToolbarItemGroup {
-                Button("New Action", systemImage: "plus") { add() }
-                    .help("Add an action (⌘N)")
-                Button("Delete Action", systemImage: "trash") { if let id = model.actionSelection { delete(id) } }
-                    .help("Delete the selected action (⌫)")
-                    .disabled(model.actionSelection == nil)
             }
         }
         .alert("Can't Delete “\(blockedDelete?.id ?? "")”",
@@ -180,7 +179,7 @@ struct ActionEditor: View {
                     get: { fallback != nil },
                     set: { action = .contextual(variants: variants, fallback: $0 ? .send(keys: "") : nil) }))
             } footer: {
-                Text(contexts.isEmpty ? "Add contexts on the Contexts page first."
+                Text(contexts.isEmpty ? "Add contexts on the Contexts tab first."
                                       : "The first context, in Contexts order, that has the app in front wins.")
             }
             if let fallback {

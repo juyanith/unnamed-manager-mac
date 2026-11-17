@@ -72,8 +72,6 @@ enum AppVersion {
 /// (DESIGN.md, Command map).
 struct MenuBarMenu: View {
     @Environment(AppModel.self) private var model
-    @Environment(\.openWindow) private var openWindow
-    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         @Bindable var launcher = model.launcher
@@ -114,15 +112,7 @@ struct MenuBarMenu: View {
         Button("Open Config File") { model.store.openFile() }
         Button("Show Config in Finder") { model.store.showInFinder() }
         Divider()
-        Button("Edit Bindings…") {
-            openWindow(id: WindowID.bindings)
-            model.bringToFront(WindowID.bindings)
-        }
-        .keyboardShortcut("b")
-        Button("Settings…") {
-            openSettings()
-            model.bringToFront(WindowID.settings)
-        }
+        Button("Settings…") { model.showSettings() }
         .keyboardShortcut(",")
         Button("Help") { model.showHelp() }
         Divider()
@@ -142,12 +132,17 @@ struct MenuBarMenu: View {
 struct MenuBarIcon: View {
     @Environment(AppModel.self) private var model
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         let status = MenuBarStatus(launcher: model.launcher, store: model.store, otherAppRunning: model.migration.isLauncherRunning)
         Image(nsImage: Self.image(for: status.icon))
             .accessibilityLabel(status.accessibilityLabel)
-            .task { model.openBindingsWindow = { [openWindow] in openWindow(id: WindowID.bindings) } }
+            .task {
+                model.openSettingsWindow = { [openSettings] in openSettings() }
+                model.openHelpWindow = { [openWindow] in openWindow(id: WindowID.help) }
+                if UnnamedManagerApp.opensWindowAtLaunch { model.showSettings() }
+            }
     }
 
     /// A template image: dimmed when off, with a badge when something needs attention.

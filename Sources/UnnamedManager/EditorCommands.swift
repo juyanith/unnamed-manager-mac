@@ -1,14 +1,14 @@
 import SwiftUI
 import UnnamedManagerKit
 
-/// The Bindings window's menu bar commands (DESIGN.md, Command map). Each
+/// The Settings window's menu bar commands (DESIGN.md, Command map). Each
 /// one is also a toolbar button, a context menu item or a key in the outline.
 struct EditorCommands: Commands {
     let model: AppModel
 
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
-            if (model.sidebar ?? .bindings) == .bindings {
+            if model.tab == .bindings {
                 ForEach(OutlineCommand.menuBarFile) { item($0) }
             }
             Divider()
@@ -21,16 +21,16 @@ struct EditorCommands: Commands {
             ForEach(OutlineCommand.menuBarEdit) { item($0) }
         }
         CommandGroup(before: .sidebar) {
-            ForEach(Array(SidebarItem.allCases.enumerated()), id: \.element) { index, page in
-                Button(page.title) { model.sidebar = page }
+            ForEach(Array(SettingsTab.allCases.enumerated()), id: \.element) { index, tab in
+                Button(tab.title) { model.showSettings(tab) }
                     .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")))
             }
             Divider()
         }
         // No ⌘? here or in the menu bar menu: macOS takes ⌘? to open the
-        // Help menu's search. The page has ⌘4, and Show Help a chord.
+        // Help menu's search. Show Help has a chord.
         CommandGroup(replacing: .help) {
-            Button("Unnamed Manager Help") { model.sidebar = .help }
+            Button("Unnamed Manager Help") { model.showHelp() }
         }
     }
 
@@ -42,7 +42,7 @@ struct EditorCommands: Commands {
                 model.editor.delete(path, undo: undoManager)
             }
         }
-        .disabled(model.sidebar != .bindings || (command != .newBinding && command != .newMenu && model.editor.selection == nil))
+        .disabled(model.tab != .bindings || (command != .newBinding && command != .newMenu && model.editor.selection == nil))
         if let shortcut = command.shortcut { button.keyboardShortcut(shortcut) } else { button }
     }
 

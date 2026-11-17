@@ -2,11 +2,12 @@ import ServiceManagement
 import SwiftUI
 import UnnamedManagerKit
 
-/// The Settings window (Settings…, ⌘,): one grouped Form, 520 pt wide,
-/// with Guide, Keys, Feedback, Windows, Focus and Swap, the apps they leave
-/// out, and Startup (S-032, S-036, S-082, S-083). Changes are written to the config file at once,
-/// like every other edit.
-struct SettingsView: View {
+/// The General and Windows tabs of Settings: a grouped Form each, 520 pt
+/// wide. General has Guide, Keys, Feedback and Startup; Windows has
+/// Windows, Focus and Swap, and Apps (S-032, S-036, S-082, S-084, S-085).
+/// Changes are written to the config file at once, like every other edit.
+struct SettingsForm: View {
+    let tab: SettingsTab
     @Environment(AppModel.self) private var model
     @Environment(\.undoManager) private var undo
     @State private var opensAtLogin = SMAppService.mainApp.status == .enabled
@@ -17,142 +18,145 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            Section {
-                Toggle("Show Guide", isOn: runtimeBinding(\.showHud, "Show Guide"))
-                LabeledContent("Delay Before Showing") {
-                    MillisecondsField(value: runtimeBinding(\.hudDelayMs, "Change Delay"))
-                }
-                .disabled(!runtime.showHud)
-                LabeledContent("Close After") {
-                    MillisecondsField(value: runtimeBinding(\.timeoutMs, "Change Timeout"), zeroLabel: "Never")
-                }
-                .disabled(!runtime.showHud)
-                Picker("Position", selection: uiBinding(\.position, "Change Position")) {
-                    Text("Center").tag("center")
-                    Text("Top").tag("top")
-                    Text("Bottom").tag("bottom")
-                }
-                Picker("Appearance", selection: uiBinding(\.theme, "Change Appearance")) {
-                    Text("System").tag("system")
-                    Text("Light").tag("light")
-                    Text("Dark").tag("dark")
-                }
-            } header: {
-                Text("Guide")
-            } footer: {
-                Text("With a delay, a sequence you know runs with nothing on screen. The Guide appears when you pause.")
-            }
-
-            Section {
-                Picker("Cancel", selection: runtimeBinding(\.cancelKey, "Change Cancel Key")) {
-                    ForEach(Self.controlKeys, id: \.self) { Text($0).tag($0) }
-                }
-                Picker("Back", selection: runtimeBinding(\.backKey, "Change Back Key")) {
-                    Text("None").tag("")
-                    ForEach(Self.controlKeys, id: \.self) { Text($0).tag($0) }
-                }
-            } header: {
-                Text("Keys")
-            } footer: {
-                Text("Cancel ends a sequence without running anything. Back goes up one menu. Neither can be used as a key inside a menu.")
-            }
-
-            Section {
-                Toggle("Flash on a Key That Isn't Bound", isOn: uiBinding(\.errorFlash, "Change Flash"))
-                Toggle("Play Alert Sound", isOn: uiBinding(\.errorBell, "Change Alert Sound"))
-            } header: {
-                Text("Feedback")
-            } footer: {
-                Text("What happens when you press a key the current menu doesn't have. The alert sound also plays when Focus Window or Swap Window finds no window there.")
-            }
-
-            Section {
-                LabeledContent("Gap Between Windows") {
-                    PointsField(value: windowDistance(\.gap, "Change Gap"), range: 0...64, step: 2,
-                                accessibilityLabel: "Gap between windows, points")
-                }
-                Picker("Maximum Columns", selection: windowLimit(\.maxColumns, "Change Maximum Columns")) {
-                    ForEach(Array(Config.Windows.limitRange), id: \.self) { Text("\($0)").tag($0) }
-                }
-                Picker("Maximum Rows", selection: windowLimit(\.maxRows, "Change Maximum Rows")) {
-                    ForEach(Array(Config.Windows.limitRange), id: \.self) { Text("\($0)").tag($0) }
-                }
-            } header: {
-                Text("Windows")
-            } footer: {
-                Text("Place Window, Fill and Arrange Windows leave the gap between a window and the screen's edges, and between windows side by side. 0 puts them edge to edge. The maximums limit the grid Arrange Windows picks when its action leaves Groups on Automatic.")
-            }
-
-            Section {
-                LabeledContent("Smallest Visible Part") {
-                    PointsField(value: windowDistance(\.minVisible, "Change Smallest Visible Part"), range: 0...200, step: 5,
-                                accessibilityLabel: "Smallest visible part, points")
-                }
-                LabeledContent("Same Row Within") {
-                    PointsField(value: windowDistance(\.rowTolerance, "Change Same Row Within"), range: 0...200, step: 5,
-                                accessibilityLabel: "Same row within, points")
-                }
-                LabeledContent("Equally Near Within") {
-                    PointsField(value: windowDistance(\.tieTolerance, "Change Equally Near Within"), range: 0...20, step: 1,
-                                accessibilityLabel: "Equally near within, points")
-                }
-            } header: {
-                Text("Focus and Swap")
-            } footer: {
-                Text("Focus Window and Swap Window only pick windows you can see. A window counts when a square this size shows, and for Left, Right, Up and Down, it must line up with yours by as much. Windows whose tops are this close share a row in the order. Windows this close to equally near count as tied, and the one lined up more wins.")
-            }
-
-            Section {
-                let apps = editor.draft.config.windows.apps
-                if !apps.isEmpty {
-                    HStack(spacing: Space.sm) {
-                        Text("App")
-                        Spacer()
-                        ForEach(Self.rules, id: \.name) { Text($0.name).frame(width: Layout.ruleColumnWidth) }
-                        // Room for the Remove button.
-                        Image(systemName: "minus.circle").hidden()
+            switch tab {
+            case .windows:
+                Section {
+                    LabeledContent("Gap Between Windows") {
+                        PointsField(value: windowDistance(\.gap, "Change Gap"), range: 0...64, step: 2,
+                                    accessibilityLabel: "Gap between windows, points")
                     }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .accessibilityHidden(true)
-                }
-                ForEach(apps.keys.sorted { AppIcon.name($0).localizedStandardCompare(AppIcon.name($1)) == .orderedAscending }, id: \.self) { bundleId in
-                    HStack(spacing: Space.sm) {
-                        AppIcon(bundleId: bundleId)
-                        VStack(alignment: .leading) {
-                            Text(AppIcon.name(bundleId))
-                            Text(bundleId).font(.caption).foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                        ForEach(Self.rules, id: \.name) { rule in
-                            Toggle(rule.name, isOn: takesPart(bundleId, in: rule.path))
-                                .labelsHidden()
-                                .frame(width: Layout.ruleColumnWidth)
-                                .help("\(rule.help) \(AppIcon.name(bundleId))'s windows")
-                                .accessibilityLabel("\(rule.name) for \(AppIcon.name(bundleId))")
-                        }
-                        Button("Remove", systemImage: "minus.circle") {
-                            editApps { $0[bundleId] = nil }
-                        }
-                        .labelStyle(.iconOnly)
-                        .buttonStyle(.borderless)
-                        .help("Let every window action pick \(AppIcon.name(bundleId)) again")
+                    Picker("Maximum Columns", selection: windowLimit(\.maxColumns, "Change Maximum Columns")) {
+                        ForEach(Array(Config.Windows.limitRange), id: \.self) { Text("\($0)").tag($0) }
                     }
-                    .toggleStyle(.checkbox)
+                    Picker("Maximum Rows", selection: windowLimit(\.maxRows, "Change Maximum Rows")) {
+                        ForEach(Array(Config.Windows.limitRange), id: \.self) { Text("\($0)").tag($0) }
+                    }
+                } header: {
+                    Text("Windows")
+                } footer: {
+                    Text("Place Window, Fill and Arrange Windows leave the gap between a window and the screen's edges, and between windows side by side. 0 puts them edge to edge. The maximums limit the grid Arrange Windows picks when its action leaves Groups on Automatic.")
                 }
-                Button("Add App…") { addApps() }
-            } header: {
-                Text("Apps")
-            } footer: {
-                Text("Uncheck what an app's windows stay out of. Focus: Focus Window never picks them, Window Used Before too. Swap: Swap Window never moves them. Arrange: Arrange Windows never counts or moves them. Their windows still hide the ones behind them.")
-            }
 
-            Section {
-                Toggle("Open at Login", isOn: Binding(get: { opensAtLogin }, set: setOpensAtLogin))
-            } header: {
-                Text("Startup")
-            } footer: {
-                Text("You can also change this in System Settings › General › Login Items.")
+                Section {
+                    LabeledContent("Smallest Visible Part") {
+                        PointsField(value: windowDistance(\.minVisible, "Change Smallest Visible Part"), range: 0...200, step: 5,
+                                    accessibilityLabel: "Smallest visible part, points")
+                    }
+                    LabeledContent("Same Row Within") {
+                        PointsField(value: windowDistance(\.rowTolerance, "Change Same Row Within"), range: 0...200, step: 5,
+                                    accessibilityLabel: "Same row within, points")
+                    }
+                    LabeledContent("Equally Near Within") {
+                        PointsField(value: windowDistance(\.tieTolerance, "Change Equally Near Within"), range: 0...20, step: 1,
+                                    accessibilityLabel: "Equally near within, points")
+                    }
+                } header: {
+                    Text("Focus and Swap")
+                } footer: {
+                    Text("Focus Window and Swap Window only pick windows you can see. A window counts when a square this size shows, and for Left, Right, Up and Down, it must line up with yours by as much. Windows whose tops are this close share a row in the order. Windows this close to equally near count as tied, and the one lined up more wins.")
+                }
+
+                Section {
+                    let apps = editor.draft.config.windows.apps
+                    if !apps.isEmpty {
+                        HStack(spacing: Space.sm) {
+                            Text("App")
+                            Spacer()
+                            ForEach(Self.rules, id: \.name) { Text($0.name).frame(width: Layout.ruleColumnWidth) }
+                            // Room for the Remove button.
+                            Image(systemName: "minus.circle").hidden()
+                        }
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
+                    }
+                    ForEach(apps.keys.sorted { AppIcon.name($0).localizedStandardCompare(AppIcon.name($1)) == .orderedAscending }, id: \.self) { bundleId in
+                        HStack(spacing: Space.sm) {
+                            AppIcon(bundleId: bundleId)
+                            VStack(alignment: .leading) {
+                                Text(AppIcon.name(bundleId))
+                                Text(bundleId).font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            ForEach(Self.rules, id: \.name) { rule in
+                                Toggle(rule.name, isOn: takesPart(bundleId, in: rule.path))
+                                    .labelsHidden()
+                                    .frame(width: Layout.ruleColumnWidth)
+                                    .help("\(rule.help) \(AppIcon.name(bundleId))'s windows")
+                                    .accessibilityLabel("\(rule.name) for \(AppIcon.name(bundleId))")
+                            }
+                            Button("Remove", systemImage: "minus.circle") {
+                                editApps { $0[bundleId] = nil }
+                            }
+                            .labelStyle(.iconOnly)
+                            .buttonStyle(.borderless)
+                            .help("Let every window action pick \(AppIcon.name(bundleId)) again")
+                        }
+                        .toggleStyle(.checkbox)
+                    }
+                    Button("Add App…") { addApps() }
+                } header: {
+                    Text("Apps")
+                } footer: {
+                    Text("Uncheck what an app's windows stay out of. Focus: Focus Window never picks them, Window Used Before too. Swap: Swap Window never moves them. Arrange: Arrange Windows never counts or moves them. Their windows still hide the ones behind them.")
+                }
+            default:
+                Section {
+                    Toggle("Show Guide", isOn: runtimeBinding(\.showHud, "Show Guide"))
+                    LabeledContent("Delay Before Showing") {
+                        MillisecondsField(value: runtimeBinding(\.hudDelayMs, "Change Delay"))
+                    }
+                    .disabled(!runtime.showHud)
+                    LabeledContent("Close After") {
+                        MillisecondsField(value: runtimeBinding(\.timeoutMs, "Change Timeout"), zeroLabel: "Never")
+                    }
+                    .disabled(!runtime.showHud)
+                    Picker("Position", selection: uiBinding(\.position, "Change Position")) {
+                        Text("Center").tag("center")
+                        Text("Top").tag("top")
+                        Text("Bottom").tag("bottom")
+                    }
+                    Picker("Appearance", selection: uiBinding(\.theme, "Change Appearance")) {
+                        Text("System").tag("system")
+                        Text("Light").tag("light")
+                        Text("Dark").tag("dark")
+                    }
+                } header: {
+                    Text("Guide")
+                } footer: {
+                    Text("With a delay, a sequence you know runs with nothing on screen. The Guide appears when you pause.")
+                }
+
+                Section {
+                    Picker("Cancel", selection: runtimeBinding(\.cancelKey, "Change Cancel Key")) {
+                        ForEach(Self.controlKeys, id: \.self) { Text($0).tag($0) }
+                    }
+                    Picker("Back", selection: runtimeBinding(\.backKey, "Change Back Key")) {
+                        Text("None").tag("")
+                        ForEach(Self.controlKeys, id: \.self) { Text($0).tag($0) }
+                    }
+                } header: {
+                    Text("Keys")
+                } footer: {
+                    Text("Cancel ends a sequence without running anything. Back goes up one menu. Neither can be used as a key inside a menu.")
+                }
+
+                Section {
+                    Toggle("Flash on a Key That Isn't Bound", isOn: uiBinding(\.errorFlash, "Change Flash"))
+                    Toggle("Play Alert Sound", isOn: uiBinding(\.errorBell, "Change Alert Sound"))
+                } header: {
+                    Text("Feedback")
+                } footer: {
+                    Text("What happens when you press a key the current menu doesn't have. The alert sound also plays when Focus Window or Swap Window finds no window there.")
+                }
+
+                Section {
+                    Toggle("Open at Login", isOn: Binding(get: { opensAtLogin }, set: setOpensAtLogin))
+                } header: {
+                    Text("Startup")
+                } footer: {
+                    Text("You can also change this in System Settings › General › Login Items.")
+                }
             }
 
             if !editor.draftErrors.isEmpty {

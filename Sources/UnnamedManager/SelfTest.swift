@@ -1,6 +1,5 @@
 import AppKit
 import OSLog
-import SwiftUI
 import Synchronization
 import UnnamedManagerKit
 
@@ -15,11 +14,11 @@ enum SelfTest {
     static var exitCode: Int32 = 0
     private static var failures = 0
     private static var count = 0
-    /// The Bindings window's task starts the run, and S-053 closes and
+    /// The Settings window's task starts the run, and S-085 closes and
     /// reopens that window, so the run must start only once.
     private static var started = false
 
-    static func runIfRequested(model: AppModel, openSettings: OpenSettingsAction) {
+    static func runIfRequested(model: AppModel) {
         guard requested, !started else { return }
         started = true
         // Print each line at once, so a crash keeps the lines before it.
@@ -34,9 +33,10 @@ enum SelfTest {
             check("the config file is the /tmp override", model.configURL.path.hasPrefix("/tmp/"))
             check("the app is a menu bar app (LSUIElement)", Bundle.main.object(forInfoDictionaryKey: "LSUIElement") as? Bool == true)
             check("an open window gives the app a main menu", NSApp.activationPolicy() == .regular)
-            check("the Bindings window opens on Bindings", model.sidebar == .bindings)
-            model.sidebar = .contexts
-            check("the Bindings window can switch pages", model.sidebar == .contexts)
+            check("S-085 Settings opens on the Bindings tab", model.tab == .bindings)
+            model.tab = .contexts
+            check("S-085 Settings can switch tabs", model.tab == .contexts)
+            model.tab = .bindings
 
             await configChecks(model)
             await guideChecks(model)
@@ -49,7 +49,7 @@ enum SelfTest {
             await registryChecks()
             await windowChecks()
             await windowEditingChecks(model)
-            await frontChecks(model, openSettings: openSettings)
+            await frontChecks(model)
 
             print(failures == 0 ? "SELFTEST PASS \(count) checks" : "SELFTEST FAIL \(failures) of \(count) checks")
             finish(code: failures == 0 ? 0 : 1)

@@ -8,38 +8,37 @@ The mac-design plan for [BRIEF.md](BRIEF.md). It follows Apple's rules (the mac-
 
 ## Archetype
 
-A **menu bar extra, the Guide panel, a Bindings window, and a Settings window** (rule 7, and the menu bar utility archetype). The real entry point is the leader chord. The menu bar menu is for status and control. The two windows are for setup, which you rarely do.
+A **menu bar extra, the Guide panel, a Settings window, and a Help window** (rule 7, and the menu bar utility archetype). The real entry point is the leader chord. The menu bar menu is for status and control. Settings is for setup, which you rarely do.
 
 | Surface | What it is | Opened by |
 | --- | --- | --- |
 | Guide | A non-activating, borderless Liquid Glass `NSPanel`. It never becomes key or main, and it shows the path and the next keys. | Pausing during a sequence (S-005, S-016) |
 | Menu bar menu | A `MenuBarExtra` with the app icon's glyph (two keycaps and ›) drawn as a template image, and a badge for warnings | Clicking the menu bar icon |
-| Bindings window | A `Window` scene with a `NavigationSplitView` sidebar: Bindings, Actions, Contexts, Help. This is where you edit your own data, so it's the main window, not Settings (rules 37 and 54). | Edit Bindings… |
-| Settings | A `Settings` scene with one grouped Form, 520 pt wide. It's a single pane, so it has no tabs and is titled "Unnamed Manager Settings" (settings.md). | Settings… (⌘,) |
+| Settings | A `Settings` scene with toolbar tabs: General, Bindings, Actions, Contexts, Windows (S-085). The title names the tab (settings.md). | Settings… (⌘,) |
+| Help | A `Window` scene titled "Unnamed Manager Help", with the Help page (S-052). | Help, Unnamed Manager Help, and a Show Help binding |
 | Welcome | A small window shown only on first run (S-040). It isn't a tour: it lists the steps you need to finish setup. | First launch |
 
-**Why the split:** bindings, actions and contexts are your data, edited the way documents are, with an outline, reordering and Undo. Apple's Settings window holds a few preferences that apply at once. The Guide's timing, position and feedback, the cancel and back keys, and Open at Login are preferences, so they go in Settings.
+**Why one Settings window** (S-085): key bindings are settings, so they're in one place with the rest, as Xcode keeps its Key Bindings and Mail its Rules in Settings. Until S-085 they had a Bindings window of their own, beside a Settings window; that was two windows for setup, and one could open behind the other. Help isn't a setting, so it has its own window, as in other Apple apps, and the Help menu opens it.
 
 **Dock icon:** there is none (`LSUIElement`). While a window is open, the app switches to `.regular` so it gets a main menu with Edit (Undo) and a Window menu. It goes back to `.accessory` when the last window closes (rule 79, menus.md).
 
 ## Information architecture
 
-**Bindings window sidebar** (one level, each page with an SF Symbol, rule 5):
+**Settings tabs** (toolbar tabs, each with an SF Symbol, settings.md):
 
-| Page | Symbol | Content |
+| Tab | Symbol | Content |
 | --- | --- | --- |
+| General | `gearshape` | A grouped Form, 520 pt wide: Guide, Keys, Feedback, Startup (S-032, S-036) |
 | Bindings | `keyboard` | An outline of leaders › menus › bindings with Key, Title and Action columns, in file order (S-023 to S-029) |
 | Actions | `bolt` | A list of actions plus a form for the selected one, which changes with its type (S-030) |
 | Contexts | `macwindow.on.rectangle` | An ordered list of contexts with their apps (S-031) |
-| Help | `questionmark.circle` | A grouped Form, centered and at most 640 pt wide: your leaders and direct bindings grouped as in Home, the keys that work in every sequence, the words, and links (S-052) |
+| Windows | `rectangle.split.2x1` | A grouped Form, 520 pt wide: Windows, Focus and Swap, Apps (S-071, S-082, S-084) |
 
-The window title names the page ("Bindings", "Actions", "Contexts", "Help"), not the app (rule 19). Each page puts its list on the left and a form for the selection on the right, 280 pt wide on Bindings. There's no inspector.
+The window title names the tab ("General", "Bindings"), as in Apple's Settings windows. Settings opens on Bindings, then on the tab you used last. The Form tabs fit their content and can't be resized. The editor tabs (Bindings, Actions, Contexts) put their list on the left and a form for the selection on the right, 280 pt wide on Bindings. On them you can resize the window, as on Xcode's Key Bindings tab; it opens at 980 × 720 and keeps the size you give it while the app runs. There's no inspector.
 
-**Settings, one pane** (S-032, S-036), as grouped sections:
-- **Guide:** Show Guide (toggle), delay before showing, timeout, position (Center, Top, Bottom), theme (System, Light, Dark).
-- **Keys:** Cancel key, Back key.
-- **Feedback:** Flash on unbound key, Play alert sound.
-- **Startup:** Open at Login.
+The toolbar holds the tabs, so a list's add and remove buttons sit in a bar under it (`ListBar`), as in Mail's Rules: New Binding, New Menu and Delete under the outline, New and Delete under Actions and Contexts.
+
+**Help** (S-052): a grouped Form, centered and at most 640 pt wide: your leaders and direct bindings grouped as in Home, the keys that work in every sequence, the built-in actions, the words, and links. Clicking a key shows it on Settings' Bindings tab.
 
 **A note on Theme:** the config's `ui.theme` setting only changes the Guide. Rule 28 advises against an app-wide appearance setting, so the windows always follow the Mac.
 
@@ -54,23 +53,21 @@ The status item menu acts as the menu bar while no window is open (menus.md, rul
 | Relaunch to Finish Setup | Menu bar menu, only when needed | — |
 | Config Error lines and Open Config File | Menu bar menu, only on error | — |
 | Enabled | Menu bar menu, check mark | — |
-| Reload Config | Menu bar menu, and the File menu of the Bindings window | ⌘R |
+| Reload Config | Menu bar menu, and the File menu | ⌘R |
 | Open Config File / Show in Finder (⌥) | Menu bar menu, and the File menu | — |
-| Edit Bindings… | Menu bar menu | ⌘B |
 | Settings… | Menu bar menu and the app menu | ⌘, |
-| Help (menu bar menu) / Unnamed Manager Help (Help menu): open the Help page | Menu bar menu, and the Help menu of the Bindings window | None: macOS keeps ⌘? for the Help menu's search. The page is ⌘4, and a Show Help binding opens it from anywhere |
+| Help (menu bar menu) / Unnamed Manager Help (Help menu): open the Help window | Menu bar menu, and the Help menu | None: macOS keeps ⌘? for the Help menu's search. A Show Help binding opens it from anywhere |
 | Version line ("Version 0.1.3", or "Version 0.1 (main, aa45720)" for a local build) | Menu bar menu, disabled item above Quit | — |
 | Config line ("Config loaded at 14:02", or "Created config file") | Menu bar menu, disabled item under the version line | — |
 | Quit Unnamed Manager | Menu bar menu and the app menu | ⌘Q |
-| New Binding / New Menu | File menu, the toolbar over the outline, and the context menu | ⌘N / ⇧⌘N |
-| New Action / New Context | File menu on their pages | ⌘N |
+| New Binding / New Menu | File menu, the bar under the outline, and the context menu | ⌘N / ⇧⌘N |
+| New Action / New Context | The bar under their list | — |
 | Record Key | Edit menu, the context menu, and Space on a selected row | ⌘K, Space |
 | Sort Alphabetically | Edit menu and the context menu (on a menu) | — |
 | Duplicate | Edit menu and the context menu | ⌘D |
 | Delete | Edit menu and the context menu | ⌫ |
 | Undo / Redo | Edit menu | ⌘Z / ⇧⌘Z |
-| Show/Hide Sidebar | View menu (`SidebarCommands`) | ⌃⌘S |
-| Bindings / Actions / Contexts / Help | View menu, to switch pages | ⌘1 / ⌘2 / ⌘3 / ⌘4 |
+| General / Bindings / Actions / Contexts / Windows | View menu, to switch tabs (and open Settings) | ⌘1 to ⌘5 |
 
 **Inside a sequence** (the Guide, not menus): Cancel (Escape), Back (Backspace), and the step keys. The Guide's footer teaches Cancel and Back.
 
@@ -112,13 +109,13 @@ Its look and behavior, as the base for design-system tokens and story S-005:
 Snapshot pages to add as each surface lands:
 - `hud`, `hud-error` (S-005, S-015, S-018)
 - `menubar`, `menubar-warning` (S-002, S-008, S-009)
-- `bindings`, `actions`, `contexts`, `help` (the sidebar pages; they exist now)
-- `settings` (exists now)
+- `general`, `bindings`, `actions`, `contexts`, `windows` (Settings' tabs, with `windows-bottom` when the Form scrolls)
+- `help` (the Help window)
 - `welcome` (S-040)
 
 Every surface is captured as the key window, in light and dark.
 
 ## Known gotchas
 
-- **Closing and reopening a SwiftUI `Window` scene crashed AppKit on macOS 26.** It looped on constraints once state changed afterwards. Hide the Bindings window instead of closing it (patterns.md, menu bar app section), and test this on 27.
+- **Closing and reopening a SwiftUI `Window` scene crashed AppKit on macOS 26.** It looped on constraints once state changed afterwards. Hide a window instead of closing it (patterns.md, menu bar app section), and test this on 27. Settings and Help close normally on 27; the self-test closes and reopens both.
 - **`MenuBarExtra(isInserted:)` hung one launcher at launch.** There's no "hide menu bar icon" setting in version one, so this doesn't apply yet.

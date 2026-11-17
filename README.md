@@ -18,9 +18,9 @@ If you finish the sequence quickly, nothing appears on screen. If you pause, a s
   - **Send Shortcut** sends key chords to the app in front.
   - **Context Aware** picks a different action depending on which app is in front.
   - **Do Nothing.**
-  - **Show Help** opens the Help page. The starter config puts it on Hyper+H.
+  - **Show Help** opens the Help window. The starter config puts it on Hyper+H.
 - **Icons in the Guide:** menus show the app's keycaps, apps and Open targets show their own icon, and any entry can have an SF Symbol or a file's icon of its own.
-- **A Bindings window** to edit menus, bindings, actions and contexts, record chords, and reorder items. Its Help page lists your leaders and direct bindings and how sequences work (Help in the menu bar menu, or a Show Help binding).
+- **One Settings window** (Settings…, ⌘,) to edit menus, bindings, actions and contexts, record chords, and reorder items, on tabs beside the General and Windows preferences. A Help window lists your leaders and direct bindings and how sequences work (Help in the menu bar menu, or a Show Help binding).
 - **One JSON config file** at `~/.config/unnamed-manager/config.json`. The app watches it and reloads it when it changes, so you can keep it in your dotfiles. A config with errors is reported, and the last valid one stays in use.
 - **A menu bar menu** to turn the launcher on or off, reload the config, check permissions, and see the last error.
 
