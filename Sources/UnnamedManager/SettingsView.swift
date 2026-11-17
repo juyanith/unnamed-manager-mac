@@ -3,8 +3,9 @@ import SwiftUI
 import UnnamedManagerKit
 
 /// The Settings window (Settings…, ⌘,): one grouped Form, 520 pt wide,
-/// with Guide, Keys, Feedback and Startup (S-032, S-036). Changes are
-/// written to the config file at once, like every other edit.
+/// with Guide, Keys, Feedback, Windows, Focus and Swap, and Startup
+/// (S-032, S-036, S-082). Changes are written to the config file at once,
+/// like every other edit.
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.undoManager) private var undo
@@ -67,10 +68,8 @@ struct SettingsView: View {
 
             Section {
                 LabeledContent("Gap Between Windows") {
-                    GapField(value: Binding(get: { editor.draft.config.windows.gap }, set: { value in
-                        guard editor.draft.config.windows.gap != value else { return }
-                        editor.edit("Change Gap", undo: undo) { $0.config.windows.gap = value }
-                    }))
+                    PointsField(value: windowDistance(\.gap, "Change Gap"), range: 0...64, step: 2,
+                                accessibilityLabel: "Gap between windows, points")
                 }
                 Picker("Maximum Columns", selection: windowLimit(\.maxColumns, "Change Maximum Columns")) {
                     ForEach(Array(Config.Windows.limitRange), id: \.self) { Text("\($0)").tag($0) }
@@ -82,6 +81,25 @@ struct SettingsView: View {
                 Text("Windows")
             } footer: {
                 Text("Place Window, Fill and Arrange Windows leave the gap between a window and the screen's edges, and between windows side by side. 0 puts them edge to edge. The maximums limit the grid Arrange Windows picks when its action leaves Groups on Automatic.")
+            }
+
+            Section {
+                LabeledContent("Smallest Visible Part") {
+                    PointsField(value: windowDistance(\.minVisible, "Change Smallest Visible Part"), range: 0...200, step: 5,
+                                accessibilityLabel: "Smallest visible part, points")
+                }
+                LabeledContent("Same Row Within") {
+                    PointsField(value: windowDistance(\.rowTolerance, "Change Same Row Within"), range: 0...200, step: 5,
+                                accessibilityLabel: "Same row within, points")
+                }
+                LabeledContent("Equally Near Within") {
+                    PointsField(value: windowDistance(\.tieTolerance, "Change Equally Near Within"), range: 0...20, step: 1,
+                                accessibilityLabel: "Equally near within, points")
+                }
+            } header: {
+                Text("Focus and Swap")
+            } footer: {
+                Text("Focus Window and Swap Window only pick windows you can see. A window counts when a square this size shows, and for Left, Right, Up and Down, it must line up with yours by as much. Windows whose tops are this close share a row in the order. Windows this close to equally near count as tied, and the one lined up more wins.")
             }
 
             Section {
@@ -125,6 +143,14 @@ struct SettingsView: View {
         })
     }
 
+    /// The gap (S-071) or one of Focus Window's distances (S-082), in points.
+    private func windowDistance(_ key: WritableKeyPath<Config.Windows, Double>, _ name: String) -> Binding<Double> {
+        Binding(get: { editor.draft.config.windows[keyPath: key] }, set: { value in
+            guard editor.draft.config.windows[keyPath: key] != value else { return }
+            editor.edit(name, undo: undo) { $0.config.windows[keyPath: key] = value }
+        })
+    }
+
     /// One of Arrange Windows' limits (S-076).
     private func windowLimit(_ key: WritableKeyPath<Config.Windows, Int>, _ name: String) -> Binding<Int> {
         Binding(get: { editor.draft.config.windows[keyPath: key] }, set: { value in
@@ -144,11 +170,15 @@ struct SettingsView: View {
     }
 }
 
-/// The gap around placed windows, in whole points from 0 to 64 (S-071).
-struct GapField: View {
+/// A distance in whole points within a range: the gap around placed
+/// windows (S-071) and Focus Window's distances (S-082).
+struct PointsField: View {
     @Binding var value: Double
+    let range: ClosedRange<Double>
+    let step: Double
+    let accessibilityLabel: String
 
-    private func clamped(_ new: Double) -> Double { min(max(new.rounded(), 0), 64) }
+    private func clamped(_ new: Double) -> Double { min(max(new.rounded(), range.lowerBound), range.upperBound) }
 
     var body: some View {
         HStack(spacing: Space.sm) {
@@ -156,8 +186,8 @@ struct GapField: View {
                 .labelsHidden()
                 .multilineTextAlignment(.trailing)
                 .frame(width: Layout.keyColumnWidth / 2)
-                .accessibilityLabel("Gap between windows, points")
-            Stepper("Points", value: Binding(get: { value }, set: { value = clamped($0) }), in: 0...64, step: 2)
+                .accessibilityLabel(accessibilityLabel)
+            Stepper("Points", value: Binding(get: { value }, set: { value = clamped($0) }), in: range, step: step)
                 .labelsHidden()
             Text("pt").foregroundStyle(.secondary)
         }

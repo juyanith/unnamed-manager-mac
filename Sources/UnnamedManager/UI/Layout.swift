@@ -5,8 +5,8 @@ import SwiftUI
 enum Layout {
     /// The Settings window's single Form.
     static let settingsWidth: CGFloat = 520
-    /// Settings grows to this height before it scrolls, so all five sections
-    /// fit, unless the screen is shorter: then it stops 80 points short of it.
+    /// Settings grows to this height before it scrolls, unless the screen is
+    /// shorter: then it stops 80 points short of it.
     static var settingsMaxHeight: CGFloat {
         min(960, (NSScreen.main?.visibleFrame.height ?? 920) - 80)
     }

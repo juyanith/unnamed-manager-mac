@@ -6,7 +6,8 @@ import UnnamedManagerKit
 /// Screenshot mode for agents.
 ///   APP_STORE=/tmp/test.json APP_SNAPSHOT=/tmp/shots build/UnnamedManager.app/Contents/MacOS/UnnamedManager
 /// writes <page>-light.png and <page>-dark.png for every Bindings page, and
-/// settings-light.png and settings-dark.png for Settings, then quits.
+/// settings-light.png and settings-dark.png for Settings, with settings-bottom-*
+/// scrolled to its end, then quits.
 /// Each PNG gets a <page>-<mode>-layout.json with the grid probes (tools/check-layout.swift).
 /// APP_SNAPSHOT_PAGES=bindings,settings,hud limits the pages. "hud" is the Guide.
 /// Add APP_ACCENT=<id> to see the pages in another accent.
@@ -125,6 +126,13 @@ enum Snapshot {
                     try? await Task.sleep(for: .seconds(0.8))
                     let settings = NSApp.windows.first { $0.isVisible && $0 !== main && !$0.isSheet && $0.canBecomeKey }
                     capture(to: "\(dir)/settings-\(mode).png", window: settings)
+                    // The sections below the fold, once the form scrolls.
+                    if let scroll = settings?.contentView.flatMap(Self.scrollView), let document = scroll.documentView {
+                        document.scroll(NSPoint(x: 0, y: document.isFlipped ? document.bounds.maxY : 0))
+                        try? await Task.sleep(for: .seconds(0.3))
+                        capture(to: "\(dir)/settings-bottom-\(mode).png", window: settings)
+                        document.scroll(NSPoint(x: 0, y: document.isFlipped ? 0 : document.bounds.maxY))
+                    }
                 }
             }
             if only == nil || only?.contains("hud") == true {
@@ -246,6 +254,12 @@ enum Snapshot {
     /// permission for the app that started this one (your terminal, or Claude).
     /// Without it, falls back to drawing the view hierarchy, which leaves
     /// sidebars and glass blank.
+    /// The first scroll view in a view's tree, such as a Form's.
+    private static func scrollView(in view: NSView) -> NSScrollView? {
+        if let scroll = view as? NSScrollView { return scroll }
+        return view.subviews.lazy.compactMap(scrollView).first
+    }
+
     private static func capture(to path: String, window: NSWindow? = nil) {
         // Another app can hide this one while snapshots run (computer use hides
         // apps it does not control). Hidden windows cannot be captured.

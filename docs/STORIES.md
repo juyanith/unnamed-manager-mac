@@ -970,9 +970,9 @@ Acceptance:
 - [self] Focus Window and Swap Window skip a window hidden behind another, by direction, Next and number.
 - [unit] `windows.minVisible`, `rowTolerance` and `tieTolerance` default to 20, 20 and 2, are written only when changed, and a negative one is `negative-window-distance`; the spec-v12 fixtures pass.
 UX:
-- No new fields in the forms. The Focus Window and Swap Window footers say "the windows you can see", "in rows, as you read", and that hidden windows are skipped. The three settings are in the config file only.
+- No new fields in the forms. The Focus Window and Swap Window footers say "the windows you can see", "in rows, as you read", and that hidden windows are skipped. Settings has a Focus and Swap section with "Smallest Visible Part", "Same Row Within" and "Equally Near Within", in points, with a footer that says what each does.
 Status: done
-Verified: visible parts, the square across parts, every direction case, the order, the settings and the rule (unit tests, `SeenWindowTests`, the spec-v12 fixtures, 254 in all); stacked windows by direction, Next, number and swap, and a window inside a larger one against `FakeWindowSystem`, which now raises a focused window (self-test, 200 checks); actions-window-focus-right and -swap-2 in light and dark, grid checks. Not yet tried by hand on real windows.
+Verified: visible parts, the square across parts, every direction case, the order, the settings and the rule (unit tests, `SeenWindowTests`, the spec-v12 fixtures, 254 in all); stacked windows by direction, Next, number and swap, and a window inside a larger one against `FakeWindowSystem`, which now raises a focused window (self-test, 201 checks, with Smallest Visible Part saved and undone); actions-window-focus-right, -swap-2, settings and settings-bottom in light and dark, grid checks. Not yet tried by hand on real windows.
 
 ## Later
 - Pick a window from an overlay: `"target": "pick"` on Focus Window and Swap Window labels the visible windows in order and waits for one key (numbers or home-row letters), Escape cancels.

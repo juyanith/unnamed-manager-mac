@@ -480,6 +480,11 @@ extension SelfTest {
         editor.edit("Change Maximum Columns", undo: undo) { $0.config.windows.maxColumns = 3 }
         undo.endUndoGrouping()
         check("S-076 Maximum Columns is saved in the file's windows settings", file().contains(#""maxColumns": 3"#))
+        undo.beginUndoGrouping()
+        editor.edit("Change Smallest Visible Part", undo: undo) { $0.config.windows.minVisible = 40 }
+        undo.endUndoGrouping()
+        check("S-082 Smallest Visible Part is saved in the file's windows settings, and undoes",
+              file().contains(#""minVisible": 40"#) && { undo.undo(); return !file().contains("minVisible") }())
 
         // S-080: choosing a built-in action saves only its name; an override in use can be deleted.
         let builtIn = "window-place-right-half"
