@@ -68,6 +68,22 @@ extension Config.Action {
     }
 }
 
+extension BuiltInAction {
+    /// One kind's built-in actions, as the Built In menu and the Help page list them.
+    struct Group: Identifiable {
+        let name: String
+        let entries: [Entry]
+        var id: String { name }
+    }
+
+    /// Built-in actions kind by kind, in alphabetical order (S-080, S-081).
+    static var groups: [Group] {
+        Dictionary(grouping: entries(), by: \.action.displayName)
+            .map { Group(name: $0.key, entries: $0.value) }
+            .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+    }
+}
+
 extension WindowScope {
     var displayName: String {
         switch self {

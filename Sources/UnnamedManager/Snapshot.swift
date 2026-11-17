@@ -64,6 +64,13 @@ enum Snapshot {
                         capture(to: "\(dir)/actions-window-\(id)-\(mode).png")
                     }
                 }
+                if only?.contains("help") ?? true {
+                    // S-081: the Built-In Actions section, with Place Window open.
+                    model.showBuiltIns("Place Window")
+                    try? await Task.sleep(for: .seconds(1.2))
+                    capture(to: "\(dir)/help-builtin-\(mode).png")
+                    model.openBuiltIns = []
+                }
                 if only?.contains("bindings") ?? true {
                     // S-048: a direct binding, with its editor pane.
                     model.sidebar = .bindings

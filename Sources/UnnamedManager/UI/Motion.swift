@@ -38,6 +38,10 @@ enum Motion {
     /// length as guideAppear and guideDismiss. Skipped under Reduce Motion.
     static let guideFadeSeconds: TimeInterval = 0.12
 
+    /// A pause before scrolling to a list that just opened, so its rows are
+    /// laid out first. The scroll itself jumps: nothing travels.
+    static let layoutSettle: Duration = .milliseconds(100)
+
     /// How long a failed action's message stays in the Guide (S-015).
     static let errorMessageHold: Duration = .seconds(2)
 }

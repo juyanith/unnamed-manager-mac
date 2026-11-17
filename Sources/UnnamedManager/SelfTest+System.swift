@@ -79,6 +79,20 @@ extension SelfTest {
         check("S-052 a config with one leader has no Home on the Help page",
               oneLeader.map { HelpContent(config: $0).hasHome } == false)
 
+        // S-081: every built-in action on the Help page, overrides marked.
+        let overriding = try? ConfigLoader.load(Data("""
+            { "version": 1, "entries": [{ "keys": "Hyper+F", "title": "Fill", "action": "window-fill" }],
+              "actions": { "window-fill": { "type": "window.fill", "toggle": false } } }
+            """.utf8)).get()
+        let builtIns = HelpContent(config: overriding).builtIns
+        let listed = Set(builtIns.flatMap(\.rows).map(\.name))
+        check("S-081 Help lists every built-in action, kind by kind, with a row for numbered windows",
+              builtIns.count == 9 && BuiltInAction.entries().allSatisfy { listed.contains($0.name) }
+                  && builtIns.first { $0.title == "Focus Window" }?.rows.last?.title == "Window 1, 2, 3…",
+              builtIns.map(\.title).joined(separator: ", "))
+        check("S-081 Help marks a built-in action your config overrides",
+              builtIns.flatMap(\.rows).filter(\.isOverridden).map(\.name) == ["window-fill"])
+
         // S-053: Show Help, on Hyper+H in the starter, opens the Help page.
         let starter = model.store.loaded
         check("S-053 the starter config has Show Help on Hyper+H",

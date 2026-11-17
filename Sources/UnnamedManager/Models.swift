@@ -62,6 +62,10 @@ final class AppModel {
     /// The selected action and context on their pages.
     var actionSelection: String?
     var contextSelection: String?
+    /// The built-in action kinds open on the Help page (S-081).
+    var openBuiltIns: Set<String> = []
+    /// A built-in action kind for the Help page to scroll to, once.
+    var revealBuiltIn: String?
 
     /// The one model, for the app delegate.
     private(set) static weak var current: AppModel?
@@ -103,6 +107,13 @@ final class AppModel {
                     .makeKeyAndOrderFront(nil)
             }
         }
+    }
+
+    /// Shows one kind's built-in actions on the Help page (S-081).
+    func showBuiltIns(_ kind: String) {
+        openBuiltIns.insert(kind)
+        revealBuiltIn = kind
+        sidebar = .help
     }
 
     /// Shows an action on the Actions page.

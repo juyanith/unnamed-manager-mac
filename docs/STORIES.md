@@ -17,6 +17,8 @@ Built from [BRIEF.md](BRIEF.md), [SPEC.md](SPEC.md), the shared spec in [../spec
 | `actions` | The Actions page |
 | `contexts` | The Contexts page |
 | `help`, `empty-help` | The Help page, with and without bindings |
+| `help-builtin` | The Help page's Built-In Actions, with Place Window open |
+| `bindings-builtin` | A binding with a built-in action, and its Built In menu |
 | `actions-help` | The Actions page with a Show Help action |
 | `actions-window` | The Actions page with each window action's form |
 | `hud-window` | The Guide on a Windows menu with every window action |
@@ -941,6 +943,20 @@ UX:
 - Numbers (Window 1, Window 2…) aren't in the menu, since they have no end; a binding gets one by name in the file, or with a Focus Window or Swap Window action.
 Status: done
 Verified: saving a built-in name and deleting an override in use (self-test, 195 checks); the listed names and the starter (unit tests, 241); bindings-builtin, actions-window-window-fill and hud-window in light and dark, grid checks. The open Built In menu isn't in a snapshot (menus can't be captured); not yet tried by hand.
+
+### S-081 See every built-in action on the Help page
+As the user, I open Help and find the built-in actions, kind by kind, with the name to write in my config next to what each one does, and I can tell which ones my own actions override.
+Screens: help, help-builtin
+Depends: S-079, S-080
+Acceptance:
+- [self] Help lists every built-in action, in the same kinds and order as the Built In menu, with a row for Focus Window's and Swap Window's numbered windows.
+- [self] A built-in action the config overrides says "Overridden by your action".
+- [snap] Built-In Actions sits after In a Sequence: a row for Fill, Minimize, Show Help and Do Nothing, and a list to open for each other kind, with its count; names are monospaced and can be selected and copied.
+UX:
+- Words: section "Built-In Actions"; rows "Left Half … window-place-left-half"; "14 actions"; "Window 1, 2, 3…"; footer "A binding can use these with nothing to set up: choose one from its Built In menu, or write its name as the binding's action in the config file. An action of your own with the same name overrides it."
+- Which kinds are open is kept while the app runs (`AppModel.openBuiltIns`); `showBuiltIns(_:)` opens one and scrolls to it, waiting `Motion.layoutSettle`, with no animation.
+Status: done
+Verified: the list and the override mark (self-test, 197 checks); help and help-builtin in light and dark, grid checks. Not yet tried by hand: copying a name.
 
 ## Later
 - Import and export a single menu as a JSON snippet.

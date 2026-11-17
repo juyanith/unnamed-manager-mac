@@ -18,8 +18,25 @@ struct HelpContent: Equatable {
         var id: String { title }
     }
 
+    /// One built-in action (S-081): what it does and the name a binding uses.
+    struct BuiltIn: Equatable, Identifiable {
+        var title: String
+        var name: String
+        /// Your config has an action with this name, which runs instead.
+        var isOverridden: Bool
+        var id: String { name }
+    }
+
+    struct BuiltInGroup: Equatable, Identifiable {
+        var title: String
+        var rows: [BuiltIn]
+        var id: String { title }
+    }
+
     /// Every leader and direct binding, grouped as Home groups them, in file order.
     var groups: [Group]
+    /// Every built-in action, kind by kind, with a row for numbered targets.
+    var builtIns: [BuiltInGroup]
     var cancelKey: String
     /// nil when Back is turned off.
     var backKey: String?
@@ -40,6 +57,18 @@ struct HelpContent: Equatable {
         cancelKey = GuideContent.footerLabel(config?.cancelKey ?? .escape)
         backKey = config.map { $0.backKey.map(GuideContent.footerLabel) } ?? GuideContent.footerLabel(.backspace)
         hasHome = leaders.count > 1
+        let defined = Set(config?.config.actions.keys.map { $0 } ?? [])
+        builtIns = BuiltInAction.groups.map { group in
+            var rows = group.entries.map {
+                BuiltIn(title: $0.action.builtInValueName ?? group.name, name: $0.name, isOverridden: defined.contains($0.name))
+            }
+            // Focus Window and Swap Window take any number, which the list can't hold.
+            if let first = group.entries.first?.name, first.hasPrefix("window-focus-") || first.hasPrefix("window-swap-") {
+                let prefix = first.hasPrefix("window-focus-") ? "window-focus-" : "window-swap-"
+                rows.append(BuiltIn(title: "Window 1, 2, 3…", name: "\(prefix)1, \(prefix)2, …", isOverridden: false))
+            }
+            return BuiltInGroup(title: group.name, rows: rows)
+        }
     }
 
     var isEmpty: Bool { groups.isEmpty }
@@ -65,6 +94,7 @@ struct HelpPage: View {
 
     var body: some View {
         let content = content
+        ScrollViewReader { scroller in
         Form {
             if content.isEmpty {
                 ContentUnavailableView {
@@ -81,6 +111,7 @@ struct HelpPage: View {
                 yourKeys(content)
             }
             inASequence(content)
+            builtIns(content)
             words
             more
         }
@@ -92,6 +123,15 @@ struct HelpPage: View {
             sideMargin = max(Space.margin, ((width - Layout.helpMaxWidth) / 2).rounded())
         }
         .navigationTitle("Help")
+        .onChange(of: model.revealBuiltIn, initial: true) { _, kind in
+            guard let kind else { return }
+            Task {
+                try? await Task.sleep(for: Motion.layoutSettle)
+                scroller.scrollTo(kind, anchor: .top)
+                model.revealBuiltIn = nil
+            }
+        }
+        }
     }
 
     @ViewBuilder
@@ -142,6 +182,41 @@ struct HelpPage: View {
             Text("In a Sequence")
         } footer: {
             Text("Change the Cancel and Back keys and when the Guide appears in Settings (⌘,).")
+        }
+    }
+
+    /// Built-in actions (S-081): a row for a kind with one, and a list to open for a kind with several.
+    private func builtIns(_ content: HelpContent) -> some View {
+        Section {
+            ForEach(content.builtIns) { group in
+                if group.rows.count == 1 {
+                    builtInRow(group.rows[0])
+                } else {
+                    DisclosureGroup(isExpanded: Binding(
+                        get: { model.openBuiltIns.contains(group.title) },
+                        set: { if $0 { model.openBuiltIns.insert(group.title) } else { model.openBuiltIns.remove(group.title) } })) {
+                        ForEach(group.rows) { builtInRow($0) }
+                    } label: {
+                        LabeledContent(group.title, value: "\(group.rows.count) actions")
+                    }
+                    .id(group.title)
+                }
+            }
+        } header: {
+            Text("Built-In Actions")
+        } footer: {
+            Text("A binding can use these with nothing to set up: choose one from its Built In menu, or write its name as the binding's action in the config file. An action of your own with the same name overrides it.")
+        }
+    }
+
+    private func builtInRow(_ row: HelpContent.BuiltIn) -> some View {
+        LabeledContent {
+            Text(row.name)
+                .font(.body.monospaced())
+                .textSelection(.enabled)
+        } label: {
+            Text(row.title)
+            if row.isOverridden { Text("Overridden by your action") }
         }
     }
 

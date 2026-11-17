@@ -140,17 +140,15 @@ struct EntryEditor: View {
     /// Built-in actions (S-080), kind by kind in alphabetical order: a
     /// submenu of values for a kind that has them, or the action itself.
     private func builtInMenu(_ path: KeySequence) -> some View {
-        let groups = Dictionary(grouping: BuiltInAction.entries(), by: \.action.displayName)
-            .sorted { $0.key.localizedStandardCompare($1.key) == .orderedAscending }
-        return LabeledContent("Built In") {
+        LabeledContent("Built In") {
             Menu("Choose") {
-                ForEach(groups, id: \.key) { name, entries in
-                    if entries.count == 1, entries[0].action.builtInValueName == nil {
-                        Button(name) { editor.setAction(path, entries[0].name, undo: undo) }
+                ForEach(BuiltInAction.groups) { group in
+                    if group.entries.count == 1, group.entries[0].action.builtInValueName == nil {
+                        Button(group.name) { editor.setAction(path, group.entries[0].name, undo: undo) }
                     } else {
-                        Menu(name) {
-                            ForEach(entries, id: \.name) { entry in
-                                Button(entry.action.builtInValueName ?? name) { editor.setAction(path, entry.name, undo: undo) }
+                        Menu(group.name) {
+                            ForEach(group.entries, id: \.name) { entry in
+                                Button(entry.action.builtInValueName ?? group.name) { editor.setAction(path, entry.name, undo: undo) }
                             }
                         }
                     }

@@ -37,6 +37,7 @@ Which token to use, and when. The tokens are in `Sources/UnnamedManager/UI/`. Ap
 - **The Guide** fades in with `Motion.guideAppear` and out with `Motion.guideDismiss` (both 120 ms). It never scales or slides.
 - **A menu change inside the Guide is instant.** Typing speed matters more than motion. Never animate the Guide's first layout.
 - **An unbound key** uses `Motion.errorFlash`, held for `Motion.errorFlashHold`. A failed action's message stays for `Motion.errorMessageHold`, then the Guide closes.
+- **Scrolling to a list that just opened** (Help's Built-In Actions) waits `Motion.layoutSettle`, then jumps with no animation.
 - **In the Bindings window,** rows added, moved or removed use `Motion.listChange`, and custom hover fills use `Motion.hover`. Hover never moves the selection.
 
 ## Still to add
