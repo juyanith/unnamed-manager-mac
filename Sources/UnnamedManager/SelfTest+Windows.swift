@@ -360,6 +360,27 @@ extension SelfTest {
         fake.focused = "a"
         _ = await run(FocusAction(.last, scope: .display))
         check("S-078 Last on the same display is the rightmost window there", fake.focused == "b", "\(String(describing: fake.focused))")
+
+        // S-079: Focus Window by number, and built-in names run as a binding runs them.
+        fake.focused = "a"
+        _ = await run(FocusAction(.number(3)))
+        let third = fake.focused
+        let beyond = await run(FocusAction(.number(4)))
+        check("S-079 Focus Window 3 goes to the third window, and 4 says there are 3, with the alert sound",
+              third == "c" && fake.focused == "c" && beyond == PlanError("No window 4. There are 3.", alerts: true),
+              "\(String(describing: third)), \(String(describing: beyond))")
+        fake.focused = nil
+        _ = await run(FocusAction(.number(2)))
+        check("S-079 a number needs no focused window", fake.focused == "b", "\(String(describing: fake.focused))")
+
+        reset()
+        let config = Config(entries: [], actions: ["window-focus-left": .family(AnyActionValue(BasicAction.noop))])
+        if let swap = config.action(named: "window-swap-left"), let focus = config.action(named: "window-focus-left") {
+            try? await runner.run(swap, id: "window-swap-left")
+            try? await runner.run(focus, id: "window-focus-left")
+        }
+        check("S-079 a built-in name runs its action, and an action with that name overrides it",
+              frames() == [b, a, c] && fake.focused == "b", "\(frames()), \(String(describing: fake.focused))")
     }
 
     /// S-070: the window types in the Type picker, and each form's value
@@ -381,8 +402,9 @@ extension SelfTest {
         let cases: [(Config.Action, String)] = [
             (.family(AnyActionValue(ArrangeAction(count: .all, groups: 3, layout: .rows))),
              #"{ "type": "window.arrange", "count": "all", "groups": 3, "layout": "rows" }"#),
-            (.family(AnyActionValue(FocusAction(.previous))), #"{ "type": "window.focus", "direction": "previous" }"#),
-            (.family(AnyActionValue(FocusAction(.next, scope: .display))), #"{ "type": "window.focus", "direction": "next", "scope": "display" }"#),
+            (.family(AnyActionValue(FocusAction(.previous))), #"{ "type": "window.focus", "target": "previous" }"#),
+            (.family(AnyActionValue(FocusAction(.number(3)))), #"{ "type": "window.focus", "target": 3 }"#),
+            (.family(AnyActionValue(FocusAction(.next, scope: .display))), #"{ "type": "window.focus", "target": "next", "scope": "display" }"#),
             (.family(AnyActionValue(SwapAction(.number(2), scope: .display))), #"{ "type": "window.swap", "target": 2, "scope": "display" }"#),
             (.family(AnyActionValue(SwapAction(.window(.left)))), #"{ "type": "window.swap", "target": "left" }"#),
             (.family(AnyActionValue(FillAction(toggle: false))), #"{ "type": "window.fill", "toggle": false }"#),

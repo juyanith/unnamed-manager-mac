@@ -5,7 +5,7 @@
     { "keys": "Meh+End", "title": "Last window", "action": "focus-last" }
   ],
   "actions": {
-    "focus-first": { "type": "window.focus", "direction": "first" },
-    "focus-last": { "type": "window.focus", "direction": "last" }
+    "focus-first": { "type": "window.focus", "target": "first" },
+    "focus-last": { "type": "window.focus", "target": "last" }
   }
 }

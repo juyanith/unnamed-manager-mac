@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "entries": [
+    { "keys": "Meh+W", "title": "Windows" },
+    { "keys": "Meh+W A", "title": "Left", "action": "focus-left" },
+    { "keys": "Meh+W B", "title": "Window 2", "action": "focus-2" },
+    { "keys": "Meh+W C", "title": "Old name", "action": "focus-old" }
+  ],
+  "actions": {
+    "focus-left": { "type": "window.focus", "target": "left" },
+    "focus-2": { "type": "window.focus", "target": 2, "scope": "display" },
+    "focus-old": { "type": "window.focus", "direction": "next" }
+  }
+}

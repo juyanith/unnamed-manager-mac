@@ -22,7 +22,7 @@ extension LoadedConfig {
     public func iconSource(_ binding: BindingNode, home: URL = FileManager.default.homeDirectoryForCurrentUser) -> IconSource? {
         if let icon = binding.icon { return IconSource(icon, home: home) }
         guard let id = binding.action else { return .menu }
-        switch config.actions[id] {
+        switch config.action(named: id) {
         case let .family(value):
             return value.value.iconSource(home: home)
         default:

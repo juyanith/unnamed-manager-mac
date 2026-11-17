@@ -18,6 +18,13 @@ public struct MinimizeAction: ActionValue {
 
     public func write(to fields: inout ActionFieldWriter) {}
 
+    /// Built-in action (spec v11): `window-minimize`.
+    public static func builtIn(_ type: String, value: String?) -> MinimizeAction? {
+        value == nil ? MinimizeAction() : nil
+    }
+
+    public static func builtInValues(_ type: String) -> [String?] { [nil] }
+
     public static func schema(_ type: String) -> ActionSchema {
         ActionSchema()
     }

@@ -108,6 +108,15 @@ public enum PlaceAction: ActionValue {
         }
     }
 
+    /// Built-in actions (spec v11): `window-place-left-half` and a name for every preset.
+    public static func builtIn(_ type: String, value: String?) -> PlaceAction? {
+        value.flatMap(PlacePreset.init(rawValue:)).map(PlaceAction.preset)
+    }
+
+    public static func builtInValues(_ type: String) -> [String?] {
+        PlacePreset.allCases.map(\.rawValue)
+    }
+
     public static func schema(_ type: String) -> ActionSchema {
         ActionSchema([
             "preset": ["enum": PlacePreset.allCases.map(\.rawValue)],

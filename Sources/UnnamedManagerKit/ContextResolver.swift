@@ -21,7 +21,7 @@ public enum ContextResolver {
 extension LoadedConfig {
     /// False for a Context Aware binding with nothing to run for this app.
     public func isAvailable(_ binding: BindingNode, frontApp: String?) -> Bool {
-        guard let id = binding.action, let action = config.actions[id] else { return true }
+        guard let id = binding.action, let action = config.action(named: id) else { return true }
         return ContextResolver.resolve(action, frontApp: frontApp, contexts: config.contexts) != nil
     }
 }

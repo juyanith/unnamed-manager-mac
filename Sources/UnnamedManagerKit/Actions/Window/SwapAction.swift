@@ -1,21 +1,12 @@
 import Foundation
 
-/// Which window Swap Window trades places with (spec v10): a direction,
-/// the next or previous one, the first or last one, or one by number.
-public enum SwapTarget: Sendable, Hashable {
-    /// Focus Window's directions, with the same meaning.
-    case window(FocusDirection)
-    /// A place in Focus Window's order, from 1.
-    case number(Int)
-}
-
 /// Swap Window (S-077): the focused window trades place and size with
 /// another and keeps focus.
 public struct SwapAction: ActionValue {
-    public var target: SwapTarget
+    public var target: WindowTarget
     public var scope: WindowScope
 
-    public init(_ target: SwapTarget, scope: WindowScope = .all) {
+    public init(_ target: WindowTarget, scope: WindowScope = .all) {
         self.target = target
         self.scope = scope
     }
@@ -28,59 +19,35 @@ public struct SwapAction: ActionValue {
         SwapAction(.window(.right))
     }
 
-    /// `target` as the file has it: a number, or a word.
-    private enum RawTarget: Decodable {
-        case number(Int), word(String)
-
-        init(from decoder: any Decoder) throws {
-            let value = try decoder.singleValueContainer()
-            if let number = try? value.decode(Int.self) {
-                self = .number(number)
-            } else if let word = try? value.decode(String.self) {
-                self = .word(word)
-            } else {
-                throw DecodingError.typeMismatch(Int.self, .init(codingPath: decoder.codingPath,
-                                                                 debugDescription: "Expected a direction or a whole number."))
-            }
-        }
-    }
-
     public init(type: String, fields: ActionFields) throws {
         try fields.allow(["target", "scope"])
-        switch try fields.optional("target") as RawTarget? {
-        case nil:
+        guard let target = try fields.target("target") else {
             throw fields.invalid("target", "Missing “target” in \(fields.path).", rule: .missingField)
-        case let .word(word):
-            guard let direction = FocusDirection(rawValue: word) else {
-                let names = FocusDirection.allCases.map(\.rawValue)
-                throw fields.invalid("target", "Unknown target “\(word)” in \(fields.path). Use \(names.joined(separator: ", ")), or a number from 1.",
-                                     rule: .badWindowValue)
-            }
-            target = .window(direction)
-        case let .number(number):
-            guard number >= 1 else {
-                throw fields.invalid("target", "“target” in \(fields.path) must be a number from 1.", rule: .badWindowValue)
-            }
-            target = .number(number)
         }
+        self.target = target
         scope = try fields.choice("scope") ?? .all
     }
 
     /// The scope is left out when it's the default, every display.
     public func write(to fields: inout ActionFieldWriter) {
-        switch target {
-        case let .window(direction): fields.string("target", direction.rawValue)
-        case let .number(number): fields.number("target", Double(number))
-        }
+        fields.target("target", target)
         if scope != .all { fields.string("scope", scope.rawValue) }
     }
 
     public static func schema(_ type: String) -> ActionSchema {
         ActionSchema([
-            "target": ["oneOf": [["enum": FocusDirection.allCases.map(\.rawValue)], ["type": "integer", "minimum": 1]],
-                       "description": "The window to swap with: a direction, next, previous, first, last, or its number in Focus Window's order, from 1."],
+            "target": WindowTarget.schema("The window to swap with: a direction, next, previous, first, last, or its number in Focus Window's order, from 1."),
             "scope": WindowScope.schema,
         ], required: ["target"])
+    }
+
+    /// Built-in actions (spec v11): `window-swap-left`, `window-swap-3` and the others.
+    public static func builtIn(_ type: String, value: String?) -> SwapAction? {
+        value.flatMap(WindowTarget.init(builtIn:)).map { SwapAction($0) }
+    }
+
+    public static func builtInValues(_ type: String) -> [String?] {
+        WindowTarget.builtInValues
     }
 
     /// Sideways and up-and-down swaps show their arrows, and a number shows one.
@@ -113,7 +80,7 @@ extension WindowGeometry {
     /// The window Swap Window trades places with (S-077), among `windows`
     /// (Focus Window's candidates, for its scope). `current` is the focused
     /// window's index among them, nil when it isn't one; `frame` is its frame.
-    public static func swapPartner(_ target: SwapTarget, current: Int?, frame: CGRect,
+    public static func swapPartner(_ target: WindowTarget, current: Int?, frame: CGRect,
                                    windows: [CGRect], owners: [Int32], screens: [Screen]) -> SwapPick {
         let order = cycleOrder(windows, owners: owners, screens: screens)
         func pick(_ index: Int?, else failure: String) -> SwapPick {
@@ -132,8 +99,7 @@ extension WindowGeometry {
             return pick(neighbor(of: frame, direction, among: others.map { windows[$0] }).map { others[$0] }, else: direction.failure)
         case let .number(number):
             let count = order.count
-            return pick(number <= count ? order[number - 1] : nil,
-                        else: "No window \(number). There \(count == 1 ? "is" : "are") \(count).")
+            return pick(number <= count ? order[number - 1] : nil, else: WindowTarget.pastTheEnd(number, count: count))
         }
     }
 }

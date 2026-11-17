@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "entries": [
+    { "keys": "Meh+W", "title": "Windows" },
+    { "keys": "Meh+W A", "title": "window-fill", "action": "window-fill" },
+    { "keys": "Meh+W B", "title": "window-minimize", "action": "window-minimize" },
+    { "keys": "Meh+W C", "title": "window-place-left-half", "action": "window-place-left-half" },
+    { "keys": "Meh+W D", "title": "window-place-left-two-thirds", "action": "window-place-left-two-thirds" },
+    { "keys": "Meh+W E", "title": "window-place-bottom-right", "action": "window-place-bottom-right" },
+    { "keys": "Meh+W F", "title": "window-resize-grow", "action": "window-resize-grow" },
+    { "keys": "Meh+W G", "title": "window-resize-shrink", "action": "window-resize-shrink" },
+    { "keys": "Meh+W H", "title": "window-arrange", "action": "window-arrange" },
+    { "keys": "Meh+W I", "title": "window-arrange-3", "action": "window-arrange-3" },
+    { "keys": "Meh+W J", "title": "window-arrange-all", "action": "window-arrange-all" },
+    { "keys": "Meh+W K", "title": "window-focus-left", "action": "window-focus-left" },
+    { "keys": "Meh+W L", "title": "window-focus-next", "action": "window-focus-next" },
+    { "keys": "Meh+W M", "title": "window-focus-2", "action": "window-focus-2" },
+    { "keys": "Meh+W N", "title": "window-swap-first", "action": "window-swap-first" },
+    { "keys": "Meh+W O", "title": "window-swap-12", "action": "window-swap-12" },
+    { "keys": "Meh+W P", "title": "help", "action": "help" },
+    { "keys": "Meh+W Q", "title": "noop", "action": "noop" }
+  ]
+}

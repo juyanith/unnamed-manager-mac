@@ -428,15 +428,24 @@
           "additionalProperties" : false,
           "properties" : {
             "direction" : {
-              "enum" : [
-                "left",
-                "right",
-                "up",
-                "down",
-                "next",
-                "previous",
-                "first",
-                "last"
+              "description" : "The old name of target, from before spec v11. The same values.",
+              "oneOf" : [
+                {
+                  "enum" : [
+                    "left",
+                    "right",
+                    "up",
+                    "down",
+                    "next",
+                    "previous",
+                    "first",
+                    "last"
+                  ]
+                },
+                {
+                  "minimum" : 1,
+                  "type" : "integer"
+                }
               ]
             },
             "scope" : {
@@ -446,6 +455,27 @@
                 "display"
               ]
             },
+            "target" : {
+              "description" : "The window to focus: a direction, next, previous, first, last, or its number in the order, from 1.",
+              "oneOf" : [
+                {
+                  "enum" : [
+                    "left",
+                    "right",
+                    "up",
+                    "down",
+                    "next",
+                    "previous",
+                    "first",
+                    "last"
+                  ]
+                },
+                {
+                  "minimum" : 1,
+                  "type" : "integer"
+                }
+              ]
+            },
             "type" : {
               "enum" : [
                 "window.focus"
@@ -453,8 +483,7 @@
             }
           },
           "required" : [
-            "type",
-            "direction"
+            "type"
           ],
           "type" : "object"
         },
@@ -997,15 +1026,24 @@
           "additionalProperties" : false,
           "properties" : {
             "direction" : {
-              "enum" : [
-                "left",
-                "right",
-                "up",
-                "down",
-                "next",
-                "previous",
-                "first",
-                "last"
+              "description" : "The old name of target, from before spec v11. The same values.",
+              "oneOf" : [
+                {
+                  "enum" : [
+                    "left",
+                    "right",
+                    "up",
+                    "down",
+                    "next",
+                    "previous",
+                    "first",
+                    "last"
+                  ]
+                },
+                {
+                  "minimum" : 1,
+                  "type" : "integer"
+                }
               ]
             },
             "scope" : {
@@ -1015,6 +1053,27 @@
                 "display"
               ]
             },
+            "target" : {
+              "description" : "The window to focus: a direction, next, previous, first, last, or its number in the order, from 1.",
+              "oneOf" : [
+                {
+                  "enum" : [
+                    "left",
+                    "right",
+                    "up",
+                    "down",
+                    "next",
+                    "previous",
+                    "first",
+                    "last"
+                  ]
+                },
+                {
+                  "minimum" : 1,
+                  "type" : "integer"
+                }
+              ]
+            },
             "type" : {
               "enum" : [
                 "window.focus"
@@ -1022,8 +1081,7 @@
             }
           },
           "required" : [
-            "type",
-            "direction"
+            "type"
           ],
           "type" : "object"
         },

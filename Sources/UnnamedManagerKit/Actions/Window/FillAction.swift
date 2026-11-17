@@ -36,6 +36,16 @@ public struct FillAction: ActionValue {
         if !toggle { fields.bool("toggle", false) }
     }
 
+    /// Built-in action (spec v11): `window-fill`, with Press Again to Restore on.
+    /// The old name has none of its own.
+    public static func builtIn(_ type: String, value: String?) -> FillAction? {
+        type == currentType && value == nil ? FillAction() : nil
+    }
+
+    public static func builtInValues(_ type: String) -> [String?] {
+        type == currentType ? [nil] : []
+    }
+
     public static func schema(_ type: String) -> ActionSchema {
         let toggle = "true (default): a window that already fills the usable area goes back to where it was."
         return ActionSchema(["toggle": ["type": "boolean",

@@ -144,7 +144,7 @@ private struct OutlineCells: View {
     var body: some View {
         let document = model.editor.draft
         let entry = document.entry(path)
-        let action = entry?.action.flatMap { document.config.actions[$0] }
+        let action = entry?.action.flatMap { document.config.action(named: $0) }
         HStack(spacing: Space.sm) {
             Text((path.lastStep ?? path.leader).description)
                 .font(.system(.body, design: .monospaced))

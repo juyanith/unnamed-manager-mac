@@ -120,6 +120,7 @@ struct EntryEditor: View {
                 }
             })) {
             if entry.action == nil { Text("Choose an Action").tag("") }
+            if let current = entry.action, document.config.actions[current] == nil { Text(current).tag(current) }
             ForEach(ids, id: \.self) { id in
                 Text("\(id) (\(document.config.actions[id]!.displayName))").tag(id)
             }

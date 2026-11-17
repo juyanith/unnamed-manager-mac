@@ -37,6 +37,42 @@ extension ActionFields {
         return value
     }
 
+    /// Focus Window's and Swap Window's target: a word, or a number from 1
+    /// (spec v10, v11). Neither a string nor a whole number is `wrong-type`.
+    func target(_ name: String) throws -> WindowTarget? {
+        enum Raw: Decodable {
+            case number(Int), word(String)
+
+            init(from decoder: any Decoder) throws {
+                let value = try decoder.singleValueContainer()
+                if let number = try? value.decode(Int.self) {
+                    self = .number(number)
+                } else if let word = try? value.decode(String.self) {
+                    self = .word(word)
+                } else {
+                    throw DecodingError.typeMismatch(Int.self, .init(codingPath: decoder.codingPath,
+                                                                     debugDescription: "Expected a direction or a whole number."))
+                }
+            }
+        }
+        switch try optional(name) as Raw? {
+        case nil:
+            return nil
+        case let .word(word):
+            guard let direction = FocusDirection(rawValue: word) else {
+                let names = FocusDirection.allCases.map(\.rawValue)
+                throw invalid(name, "Unknown \(name) “\(word)” in \(path). Use \(names.joined(separator: ", ")), or a number from 1.",
+                              rule: .badWindowValue)
+            }
+            return .window(direction)
+        case let .number(number):
+            guard number >= 1 else {
+                throw invalid(name, "“\(name)” in \(path) must be a number from 1.", rule: .badWindowValue)
+            }
+            return .number(number)
+        }
+    }
+
     /// An object of numbers, as strict as an action: unknown keys and
     /// missing required ones are reported.
     func numbers(_ name: String, required: [String], others: [String] = []) throws -> [String: Double]? {
@@ -54,6 +90,16 @@ extension ActionFields {
     /// A fraction of the usable area out of its range.
     func badFraction(_ name: String, _ message: String) -> any Error {
         invalid(name, "\(message) in “\(name)” in \(path).", rule: .badFraction)
+    }
+}
+
+extension ActionFieldWriter {
+    /// A target as the file writes it: a word, or a number.
+    mutating func target(_ key: String, _ target: WindowTarget) {
+        switch target {
+        case let .window(direction): string(key, direction.rawValue)
+        case let .number(number): self.number(key, Double(number))
+        }
     }
 }
 

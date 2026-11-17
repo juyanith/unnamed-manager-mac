@@ -403,10 +403,10 @@ struct FocusDirectionTests {
 
     @Test("With no window that way, it says which way")
     func failures() {
-        #expect(WindowCommand.focus(.left).failure == "No window to the left.")
-        #expect(WindowCommand.focus(.right).failure == "No window to the right.")
-        #expect(WindowCommand.focus(.up).failure == "No window above.")
-        #expect(WindowCommand.focus(.down).failure == "No window below.")
+        #expect(WindowCommand.focus(.window(.left)).failure == "No window to the left.")
+        #expect(WindowCommand.focus(.window(.right)).failure == "No window to the right.")
+        #expect(WindowCommand.focus(.window(.up)).failure == "No window above.")
+        #expect(WindowCommand.focus(.window(.down)).failure == "No window below.")
     }
 
     @Test("It reads, writes and plans as the spec says")
@@ -414,7 +414,7 @@ struct FocusDirectionTests {
         let json = #"{ "type": "window.focus", "direction": "left" }"#
         let left = try ActionRegistryTests.decode(json)
         #expect(ConfigWriter.action(left, contexts: []) == json)
-        #expect(try ActionPlanner.plan(left, home: testHome) == .custom(AnyActionStep(WindowCommand.focus(.left))))
+        #expect(try ActionPlanner.plan(left, home: testHome) == .custom(AnyActionStep(WindowCommand.focus(.window(.left)))))
     }
 }
 
@@ -467,7 +467,7 @@ struct FocusCycleTests {
     @Test("With no other window there's nothing to go to")
     func alone() {
         #expect(WindowGeometry.step(from: 0, in: [0], .next) == nil)
-        #expect(WindowCommand.focus(.next).failure == "No other window to focus.")
+        #expect(WindowCommand.focus(.window(.next)).failure == "No other window to focus.")
     }
 
     @Test("First and Last read, write and plan, and have no neighbor of their own (S-073)")
@@ -475,7 +475,7 @@ struct FocusCycleTests {
         for direction in [FocusDirection.first, .last] {
             #expect(FocusDirection(rawValue: direction.rawValue) == direction)
             #expect(WindowGeometry.neighbor(of: .zero, direction, among: [CGRect(x: 10, y: 0, width: 5, height: 5)]) == nil)
-            #expect(WindowCommand.focus(direction).failure == "No window to focus.")
+            #expect(WindowCommand.focus(.window(direction)).failure == "No window to focus.")
         }
         #expect(order(Self.named).first == "1" && order(Self.named).last == "4")
     }

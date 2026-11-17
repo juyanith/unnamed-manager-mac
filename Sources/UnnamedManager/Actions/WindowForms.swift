@@ -54,49 +54,56 @@ extension ArrangeAction: EditableAction {
 extension FocusAction: EditableAction {
     @MainActor static func form(_ value: Binding<FocusAction>) -> some View {
         Section {
-            Picker("Direction", selection: value.direction) {
-                ForEach(FocusDirection.allCases, id: \.self) { Text($0.displayName).tag($0) }
-            }
+            TargetRows(label: "Focus On", target: value.target)
             scopePicker(value.scope)
         } footer: {
-            Text("Left, Right, Up and Down go to the nearest window that way. Next Window and Previous Window go through windows from left to right, display by display. First Window and Last Window go to the leftmost and the rightmost. On the Same Display keeps to the display of the window in front. With no window there, you hear the alert sound.")
+            Text("Left, Right, Up and Down go to the nearest window that way. Next Window and Previous Window go through windows from left to right, display by display. First Window, Last Window and numbers count in that order. On the Same Display keeps to the display of the window in front. With no window there, you hear the alert sound.")
         }
     }
 }
 
 extension SwapAction: EditableAction {
-    /// The Swap With picker's choices: a direction, or a number set below it.
-    private enum Choice: Hashable { case window(FocusDirection), number }
-
     @MainActor static func form(_ value: Binding<SwapAction>) -> some View {
-        let target = value.wrappedValue.target
-        return Section {
-            Picker("Swap With", selection: Binding<Choice>(
-                get: { if case let .window(direction) = target { .window(direction) } else { .number } },
-                set: { new in
-                    switch new {
-                    case let .window(direction): value.wrappedValue.target = .window(direction)
-                    case .number: if case .window = target { value.wrappedValue.target = .number(1) }
-                    }
-                })) {
-                ForEach(FocusDirection.allCases, id: \.self) { Text($0.displayName).tag(Choice.window($0)) }
-                Divider()
-                Text("Window Number").tag(Choice.number)
-            }
-            if case let .number(number) = target {
-                LabeledContent("Number") {
-                    HStack(spacing: Space.sm) {
-                        Text("\(number)").monospacedDigit()
-                        Stepper("Window number", value: Binding(get: { number }, set: { value.wrappedValue.target = .number(max(1, $0)) }),
-                                in: 1...99)
-                            .labelsHidden()
-                            .accessibilityValue("\(number)")
-                    }
-                }
-            }
+        Section {
+            TargetRows(label: "Swap With", target: value.target)
             scopePicker(value.scope)
         } footer: {
             Text("The window in front trades place and size with that window, and keeps focus. Left, Right, Up and Down pick the nearest window that way. The others, and numbers, count windows from left to right, display by display, as Focus Window does. With no window there, nothing moves and you hear the alert sound.")
+        }
+    }
+}
+
+/// Focus Window's and Swap Window's target: a picker of the words and
+/// Window Number, with a Number stepper below it for a number (spec v10, v11).
+private struct TargetRows: View {
+    /// The picker's choices: a word, or a number set below it.
+    private enum Choice: Hashable { case window(FocusDirection), number }
+
+    let label: String
+    @Binding var target: WindowTarget
+
+    var body: some View {
+        Picker(label, selection: Binding<Choice>(
+            get: { if case let .window(direction) = target { .window(direction) } else { .number } },
+            set: { new in
+                switch new {
+                case let .window(direction): target = .window(direction)
+                case .number: if case .window = target { target = .number(1) }
+                }
+            })) {
+            ForEach(FocusDirection.allCases, id: \.self) { Text($0.displayName).tag(Choice.window($0)) }
+            Divider()
+            Text("Window Number").tag(Choice.number)
+        }
+        if case let .number(number) = target {
+            LabeledContent("Number") {
+                HStack(spacing: Space.sm) {
+                    Text("\(number)").monospacedDigit()
+                    Stepper("Window number", value: Binding(get: { number }, set: { target = .number(max(1, $0)) }), in: 1...99)
+                        .labelsHidden()
+                        .accessibilityValue("\(number)")
+                }
+            }
         }
     }
 }

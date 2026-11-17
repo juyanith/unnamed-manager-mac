@@ -141,8 +141,8 @@ public enum ConfigValidator {
                     }
                 }
             }
-            if let action = entry.action, config.actions[action] == nil {
-                error(.undefinedAction, "Binding “\(path)” uses action “\(action)”, which isn't defined.", path.description)
+            if let action = entry.action, config.action(named: action) == nil {
+                error(.undefinedAction, "Binding “\(path)” uses action “\(action)”, which isn't defined or built in.", path.description)
             }
         }
         for (entry, path) in parsed where entry.action == nil && childCount[path, default: 0] == 0 {

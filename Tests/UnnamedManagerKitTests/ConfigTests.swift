@@ -229,7 +229,7 @@ struct ValidationTests {
 
     @Test("A binding that names an undefined action")
     func undefinedAction() {
-        #expect(errors(json(entries: minimalEntries)) == ["Binding “Hyper+Space E” uses action “edit”, which isn't defined."])
+        #expect(errors(json(entries: minimalEntries)) == ["Binding “Hyper+Space E” uses action “edit”, which isn't defined or built in."])
     }
 
     @Test("Actions with the wrong fields for their type")

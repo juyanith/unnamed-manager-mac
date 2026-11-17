@@ -16,7 +16,7 @@ struct SwapTests {
 
     /// The pick for the window at `current`, among windows given in reverse
     /// order so the result can't just be the input order.
-    func pick(_ target: SwapTarget, from current: Int?, _ windows: [CGRect] = [c, b, a]) -> SwapPick {
+    func pick(_ target: WindowTarget, from current: Int?, _ windows: [CGRect] = [c, b, a]) -> SwapPick {
         let frame = current.map { windows[$0] } ?? .zero
         return WindowGeometry.swapPartner(target, current: current, frame: frame, windows: windows,
                                           owners: windows.map { _ in 1 }, screens: Self.screens)
@@ -101,12 +101,12 @@ struct SwapTests {
 struct FocusScopeTests {
     @Test("scope reads, writes and plans, and every display is the default")
     func family() throws {
-        let json = #"{ "type": "window.focus", "direction": "next", "scope": "display" }"#
+        let json = #"{ "type": "window.focus", "target": "next", "scope": "display" }"#
         let here = try ActionRegistryTests.decode(json)
         #expect(here == .family(AnyActionValue(FocusAction(.next, scope: .display))))
         #expect(ConfigWriter.action(here, contexts: []) == json)
-        #expect(try ActionPlanner.plan(here, home: testHome) == .custom(AnyActionStep(WindowCommand.focus(.next, scope: .display))))
-        let plain = try ActionRegistryTests.decode(#"{ "type": "window.focus", "direction": "next" }"#)
+        #expect(try ActionPlanner.plan(here, home: testHome) == .custom(AnyActionStep(WindowCommand.focus(.window(.next), scope: .display))))
+        let plain = try ActionRegistryTests.decode(#"{ "type": "window.focus", "target": "next" }"#)
         #expect(plain == .family(AnyActionValue(FocusAction(.next, scope: .all))))
     }
 

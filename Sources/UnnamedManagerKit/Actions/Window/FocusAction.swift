@@ -29,16 +29,60 @@ public enum WindowScope: String, CaseIterable, Sendable {
     }
 }
 
+/// Which window Focus Window goes to and Swap Window trades places with:
+/// a direction, the next or previous one, the first or last one, or one
+/// by number (spec v10 for Swap Window, v11 for Focus Window).
+public enum WindowTarget: Sendable, Hashable {
+    /// A word: a direction, next, previous, first or last.
+    case window(FocusDirection)
+    /// A place in Focus Window's order, from 1.
+    case number(Int)
+
+    static func schema(_ description: String) -> [String: Any] {
+        ["oneOf": [["enum": FocusDirection.allCases.map(\.rawValue)], ["type": "integer", "minimum": 1]], "description": description]
+    }
+
+    /// What a number past the last window says.
+    public static func pastTheEnd(_ number: Int, count: Int) -> String {
+        "No window \(number). There \(count == 1 ? "is" : "are") \(count)."
+    }
+
+    /// The target in a built-in name, such as "left" or "3" (spec v11).
+    init?(builtIn value: String) {
+        if let number = BuiltInAction.number(value) {
+            self = .number(number)
+        } else if let direction = FocusDirection(rawValue: value) {
+            self = .window(direction)
+        } else {
+            return nil
+        }
+    }
+
+    /// The words, for the Action picker. Numbers are open-ended, so they aren't listed.
+    static var builtInValues: [String?] { FocusDirection.allCases.map(\.rawValue) }
+}
+
 /// Focus Window (S-068, S-069, S-073): the nearest window in a direction,
-/// the next or previous one, or the first or last one, on every display
-/// or only the focused window's (S-078).
+/// the next or previous one, the first or last one, or one by number (S-079),
+/// on every display or only the focused window's (S-078).
 public struct FocusAction: ActionValue {
-    public var direction: FocusDirection
+    /// The field the file names the target with: `target`, or `direction`,
+    /// its old name before spec v11, which saving keeps.
+    public static let currentField = "target"
+    public static let oldField = "direction"
+
+    public var target: WindowTarget
     public var scope: WindowScope
+    public var field: String
+
+    public init(_ target: WindowTarget, scope: WindowScope = .all, field: String = FocusAction.currentField) {
+        self.target = target
+        self.scope = scope
+        self.field = field
+    }
 
     public init(_ direction: FocusDirection, scope: WindowScope = .all) {
-        self.direction = direction
-        self.scope = scope
+        self.init(.window(direction), scope: scope)
     }
 
     public static let kinds = [ActionKind(type: "window.focus", displayName: "Focus Window", symbol: "macwindow.on.rectangle")]
@@ -50,41 +94,59 @@ public struct FocusAction: ActionValue {
     }
 
     public init(type: String, fields: ActionFields) throws {
-        try fields.allow(["direction", "scope"])
-        guard let direction: FocusDirection = try fields.choice("direction") else {
-            throw fields.invalid("direction", "Missing “direction” in \(fields.path).", rule: .missingField)
+        try fields.allow([Self.currentField, Self.oldField, "scope"])
+        if fields.has(Self.currentField) && fields.has(Self.oldField) {
+            throw fields.conflict(Self.oldField, with: Self.currentField)
         }
-        self.direction = direction
+        field = fields.has(Self.oldField) ? Self.oldField : Self.currentField
+        guard let target = try fields.target(field) else {
+            throw fields.invalid(Self.currentField, "Missing “target” in \(fields.path).", rule: .missingField)
+        }
+        self.target = target
         scope = try fields.choice("scope") ?? .all
     }
 
     /// The scope is left out when it's the default, every display.
     public func write(to fields: inout ActionFieldWriter) {
-        fields.string("direction", direction.rawValue)
+        fields.target(field, target)
         if scope != .all { fields.string("scope", scope.rawValue) }
     }
 
     public static func schema(_ type: String) -> ActionSchema {
-        ActionSchema(["direction": ["enum": FocusDirection.allCases.map(\.rawValue)], "scope": WindowScope.schema], required: ["direction"])
+        ActionSchema([
+            currentField: WindowTarget.schema("The window to focus: a direction, next, previous, first, last, or its number in the order, from 1."),
+            oldField: WindowTarget.schema("The old name of target, from before spec v11. The same values."),
+            "scope": WindowScope.schema,
+        ])
     }
 
-    /// Each direction shows its arrow.
+    /// Built-in actions (spec v11): `window-focus-left`, `window-focus-2` and the others.
+    public static func builtIn(_ type: String, value: String?) -> FocusAction? {
+        value.flatMap(WindowTarget.init(builtIn:)).map { FocusAction($0) }
+    }
+
+    public static func builtInValues(_ type: String) -> [String?] {
+        WindowTarget.builtInValues
+    }
+
+    /// Each direction shows its arrow, and a number shows one.
     public func iconSource(home: URL) -> IconSource? {
-        let symbol = switch direction {
-        case .left: "arrow.left.square"
-        case .right: "arrow.right.square"
-        case .up: "arrow.up.square"
-        case .down: "arrow.down.square"
-        case .next: "arrow.forward.circle"
-        case .previous: "arrow.backward.circle"
-        case .first: "arrow.left.to.line.circle"
-        case .last: "arrow.right.to.line.circle"
+        let symbol = switch target {
+        case .window(.left): "arrow.left.square"
+        case .window(.right): "arrow.right.square"
+        case .window(.up): "arrow.up.square"
+        case .window(.down): "arrow.down.square"
+        case .window(.next): "arrow.forward.circle"
+        case .window(.previous): "arrow.backward.circle"
+        case .window(.first): "arrow.left.to.line.circle"
+        case .window(.last): "arrow.right.to.line.circle"
+        case .number: "number.circle"
         }
         return .symbol(symbol)
     }
 
     public func plan(home: URL) throws(PlanError) -> ActionPlan {
-        .custom(AnyActionStep(WindowCommand.focus(direction, scope: scope)))
+        .custom(AnyActionStep(WindowCommand.focus(target, scope: scope)))
     }
 }
 

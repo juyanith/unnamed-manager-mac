@@ -166,7 +166,7 @@ final class Launcher {
             hasRunSequence = true
             if !Store.isOverridden { UserDefaults.standard.set(true, forKey: "ranSequence") }
         }
-        guard let id = binding.action, let chosen = config.config.actions[id],
+        guard let id = binding.action, let chosen = config.config.action(named: id),
               let action = ContextResolver.resolve(chosen, frontApp: frontApp, contexts: config.config.contexts)
         else { return }
         Task {

@@ -909,6 +909,22 @@ Acceptance:
 Status: done
 Verified: reading and writing (unit tests, `FocusScopeTests`, `invalid/window-focus-scope.json`); both displays against `FakeWindowSystem` (self-test); actions-window-focus-next in light and dark, grid checks. The default stays every display, as before.
 
+### S-079 Bind built-in actions without defining them, and override them
+As the user, I write `"action": "window-place-left-half"` or `"window-focus-left"` in a binding and it works with nothing in `actions`; when I use another window manager, I define an action called `window-focus-left` that runs its command, and every binding with that name runs mine instead.
+Screens: actions-window
+Depends: S-077, S-078
+Acceptance:
+- [unit] Built-in names follow spec v11's rule: the type with hyphens for its dots, then a value of its main field in lowercase words joined by hyphens, every other field at its default. Fill, Minimize, Place Window, Resize Window's grow and shrink, Arrange Windows, Focus Window, Swap Window, Show Help and Do Nothing have them; names are case-sensitive, numbers have no leading zero, and Arrange Windows stops at 8.
+- [unit] An action in `actions` with a built-in name overrides it, with no warning; any other name a binding uses that's neither is `undefined-action`.
+- [unit] Focus Window reads `target`, which also takes a number from 1; `direction`, its old name, still loads and is written back as the file had it; both is `conflicting-fields`. The spec-v11 fixtures pass.
+- [self] Focus Window 3 goes to the third window from the left, with no focused window too; 4 of 3 fails with "No window 4. There are 3." and the alert sound.
+- [self] A built-in name runs its action as a binding does, and an action with that name runs instead.
+- [snap] Focus Window's form has Focus On, with Window Number and a Number stepper as Swap Window has.
+UX:
+- Words: "built-in action", "override" (glossary). The Action picker's Built In section and the Actions page's override label come with S-080.
+Status: done
+Verified: the names, every rejected spelling, the listed names, overrides, the old field name, conflicts and numbers (unit tests, `BuiltInActionTests`, `FocusTargetTests`, the spec-v11 fixtures, 241 in all); numbers, the alert sound, a built-in name and an override against `FakeWindowSystem` (self-test, 193 checks); actions-window-focus-right and -focus-next in light and dark, grid checks. Not yet tried by hand.
+
 ## Later
 - Import and export a single menu as a JSON snippet.
 - A basic automatic tiling mode.

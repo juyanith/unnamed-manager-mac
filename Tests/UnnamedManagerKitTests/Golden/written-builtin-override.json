@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "entries": [
+    { "keys": "Meh+W", "title": "Windows" },
+    { "keys": "Meh+W A", "title": "Focus left", "action": "window-focus-left" },
+    { "keys": "Meh+W B", "title": "Focus right", "action": "window-focus-right" }
+  ],
+  "actions": {
+    "window-focus-left": { "type": "exec", "command": ["yabai", "-m", "window", "--focus", "west"] }
+  }
+}

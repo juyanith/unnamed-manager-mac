@@ -65,8 +65,8 @@ final class WindowControl {
         let focused = app.flatMap { system.focusedWindow(of: $0) }
         // Focus Window and Arrange Windows also work with no focused window.
         switch command {
-        case let .focus(direction, scope):
-            try await focus(direction, scope: scope, from: focused)
+        case let .focus(target, scope):
+            try await focus(target, scope: scope, from: focused)
             return
         case let .arrange(action):
             try arrange(action, focused: focused)
@@ -125,17 +125,26 @@ final class WindowControl {
         return windows.filter { WindowGeometry.screen(for: $0.frame, among: screens) == screen }
     }
 
-    /// Focus Window (S-068, S-069, S-072, S-073, S-078). Finding no window
-    /// plays the alert sound (spec v10).
-    private func focus(_ direction: FocusDirection, scope: WindowScope, from focused: WindowRef?) async throws(PlanError) {
+    /// Focus Window (S-068, S-069, S-072, S-073, S-078, S-079). Finding no
+    /// window plays the alert sound (spec v10).
+    private func focus(_ target: WindowTarget, scope: WindowScope, from focused: WindowRef?) async throws(PlanError) {
         let frame = focused.flatMap { system.frame(of: $0) }
         let windows = candidates(scope, around: frame)
         let order = WindowGeometry.cycleOrder(windows.map(\.frame), owners: windows.map(\.pid), screens: system.screens())
-        // First and Last don't need a focused window, and stay on a window that's already there (S-073).
-        if direction == .first || direction == .last {
-            guard let index = direction == .first ? order.first : order.last else { throw PlanError(direction.failure, alerts: true) }
-            if windows[index].ref != focused { try await system.focus(windows[index]) }
+        // First, Last and numbers don't need a focused window, and stay on a window that's already there (S-073, S-079).
+        let direction: FocusDirection
+        switch target {
+        case .window(.first), .window(.last), .number:
+            guard let place = Self.place(of: target, in: order) else {
+                if case let .number(number) = target, !order.isEmpty {
+                    throw PlanError(WindowTarget.pastTheEnd(number, count: order.count), alerts: true)
+                }
+                throw PlanError("No window to focus.", alerts: true)
+            }
+            if windows[place].ref != focused { try await system.focus(windows[place]) }
             return
+        case let .window(word):
+            direction = word
         }
         // With no focused window, any other direction goes to the window in front of the others (S-072, spec v5).
         guard let frame else {
@@ -157,10 +166,20 @@ final class WindowControl {
         try await system.focus(others[index])
     }
 
+    /// The window First, Last or a number names in the order; nil past its end.
+    private static func place(of target: WindowTarget, in order: [Int]) -> Int? {
+        switch target {
+        case .window(.first): order.first
+        case .window(.last): order.last
+        case let .number(number): number <= order.count ? order[number - 1] : nil
+        case .window: nil
+        }
+    }
+
     /// Swap Window (S-077): the focused window and the one `target` names
     /// trade frames, and focus stays. Finding no window plays the alert
     /// sound (spec v10).
-    private func swap(_ window: WindowRef, at frame: CGRect, with target: SwapTarget, scope: WindowScope) throws(PlanError) {
+    private func swap(_ window: WindowRef, at frame: CGRect, with target: WindowTarget, scope: WindowScope) throws(PlanError) {
         let windows = candidates(scope, around: frame)
         switch WindowGeometry.swapPartner(target, current: windows.firstIndex { $0.ref == window }, frame: frame,
                                           windows: windows.map(\.frame), owners: windows.map(\.pid), screens: system.screens()) {

@@ -103,6 +103,15 @@ public struct ResizeAction: ActionValue {
         if case .step = change { true } else { false }
     }
 
+    /// Built-in actions (spec v11): `window-resize-grow` and `window-resize-shrink`, through the default widths.
+    public static func builtIn(_ type: String, value: String?) -> ResizeAction? {
+        value.flatMap(ResizeStep.init(rawValue:)).map { ResizeAction(.step($0, widths: nil)) }
+    }
+
+    public static func builtInValues(_ type: String) -> [String?] {
+        ResizeStep.allCases.map(\.rawValue)
+    }
+
     public static func schema(_ type: String) -> ActionSchema {
         ActionSchema([
             "to": WindowSchema.object(["width": WindowSchema.size, "height": WindowSchema.size], required: ["width", "height"]),

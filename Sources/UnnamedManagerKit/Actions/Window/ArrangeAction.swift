@@ -96,6 +96,19 @@ public struct ArrangeAction: ActionValue {
         if layout != .auto { fields.string("layout", layout.rawValue) }
     }
 
+    /// Built-in actions (spec v11): `window-arrange`, `window-arrange-3` up to 8, and `window-arrange-all`.
+    public static func builtIn(_ type: String, value: String?) -> ArrangeAction? {
+        switch value {
+        case nil: ArrangeAction()
+        case "all": ArrangeAction(count: .all)
+        case let value?: BuiltInAction.number(value).flatMap { countRange.contains($0) ? ArrangeAction(count: .windows($0)) : nil }
+        }
+    }
+
+    public static func builtInValues(_ type: String) -> [String?] {
+        [nil] + countRange.map { String($0) } + ["all"]
+    }
+
     public static func schema(_ type: String) -> ActionSchema {
         ActionSchema([
             "count": ["oneOf": [["type": "integer", "minimum": countRange.lowerBound, "maximum": countRange.upperBound], ["enum": ["all"]]],

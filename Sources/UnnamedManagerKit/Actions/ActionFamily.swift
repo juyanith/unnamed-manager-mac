@@ -42,6 +42,14 @@ public protocol ActionValue: Sendable, Equatable {
     func plan(home: URL) throws(PlanError) -> ActionPlan
     /// The Guide's icon for this action. Defaults to its kind's symbol.
     func iconSource(home: URL) -> IconSource?
+    /// Built-in actions (spec v11): a kind's action for one value of its
+    /// main field, as the file writes it ("leftHalf"), or for no value with
+    /// nil. nil when that has no built-in name. Defaults to none.
+    static func builtIn(_ type: String, value: String?) -> Self?
+    /// The values with a built-in name, as the file writes them, in the
+    /// order the Action picker lists them; nil is the bare name. Numbers
+    /// with no upper limit aren't listed. Defaults to none.
+    static func builtInValues(_ type: String) -> [String?]
 }
 
 extension ActionValue {
@@ -54,6 +62,10 @@ extension ActionValue {
     public func iconSource(home: URL) -> IconSource? {
         kind.symbol.map(IconSource.symbol)
     }
+
+    public static func builtIn(_ type: String, value: String?) -> Self? { nil }
+
+    public static func builtInValues(_ type: String) -> [String?] { [] }
 
     func isEqual(to other: any ActionValue) -> Bool {
         (other as? Self) == self

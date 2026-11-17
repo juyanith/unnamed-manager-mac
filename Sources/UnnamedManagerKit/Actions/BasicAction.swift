@@ -24,6 +24,13 @@ public enum BasicAction: String, ActionValue {
 
     public func write(to fields: inout ActionFieldWriter) {}
 
+    /// Built-in actions (spec v11): `help` and `noop`.
+    public static func builtIn(_ type: String, value: String?) -> BasicAction? {
+        value == nil ? BasicAction(rawValue: type) : nil
+    }
+
+    public static func builtInValues(_ type: String) -> [String?] { [nil] }
+
     public static func schema(_ type: String) -> ActionSchema {
         ActionSchema()
     }
