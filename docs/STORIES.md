@@ -974,6 +974,25 @@ UX:
 Status: done
 Verified: visible parts, the square across parts, every direction case, the order, the settings and the rule (unit tests, `SeenWindowTests`, the spec-v12 fixtures, 254 in all); stacked windows by direction, Next, number and swap, and a window inside a larger one against `FakeWindowSystem`, which now raises a focused window (self-test, 201 checks, with Smallest Visible Part saved and undone); actions-window-focus-right, -swap-2, settings and settings-bottom in light and dark, grid checks. Not yet tried by hand on real windows.
 
+### S-083 Switch to the window I used before, or swap with it
+As the user, I press one key to go back to the window I used before, and again to come back, even when it's on my other display or behind the window I'm in; with another key, my window and that one trade places and I stay in mine. If I closed that window, I get the one I used before it.
+Screens: actions-window, settings
+Depends: S-077, S-079
+Acceptance:
+- [unit] `window.switch` reads, writes and plans `mode` (`focus`, the default, or `swap`), written only when it isn't `focus`; a bad mode is `bad-window-value`; `window-switch` and `window-switch-swap` are built-in actions; the spec-v13 fixtures pass.
+- [unit] The focus history puts a window first each time it gets focus, holds each window once, and keeps at most 10.
+- [unit] The window picked is the first in the history that isn't the focused one, still exists, isn't minimized, and isn't in a hidden app or an app in `windows.switchExclude`; whether you can see it, its display and `scope` don't matter. With nothing in the history yet, it's the front-most other window.
+- [self] Switch, then switch again, goes back and forth between two windows, across displays and when one is fully covered.
+- [self] After the previous window closes, Switch goes to the one before it; with no other window, nothing moves, it says "No window to switch to.", and it plays the alert sound.
+- [self] Swap mode trades frames with the previous window and the focused window keeps focus, so pressing again swaps them back.
+- [self] A window of an excluded app never enters the history.
+- [unit] `windows.switchExclude` is a list of app ids, empty by default and written only when it isn't; Settings edits it, and undo works.
+- [manual] Two real windows on two displays, and two stacked windows: Switch goes back and forth; Cmd+Tab and clicks count as focus changes.
+UX:
+- Words: type "Switch Window"; picker "Then" (Focus It, Swap With It); Settings › Focus and Swap gets "Leave Out of Switch Window" with the apps. Glossary: "the window you used before".
+- The history is kept by the app while it runs, not in the config: app switches (NSWorkspace) and each app's focused-window changes (an AX observer per app), plus what the app's own actions focus.
+Status: planned
+
 ## Later
 - Pick a window from an overlay: `"target": "pick"` on Focus Window and Swap Window labels the visible windows in order and waits for one key (numbers or home-row letters), Escape cancels.
 - Import and export a single menu as a JSON snippet.
