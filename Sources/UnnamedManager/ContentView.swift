@@ -20,7 +20,7 @@ struct ContentView: View {
         .noInitialFocus()
         .onChange(of: model.store.revision) { model.editor.reloadFromStore() }
         .task {
-            SelfTest.runIfRequested(model: model)
+            SelfTest.runIfRequested(model: model, openSettings: openSettings)
             Snapshot.runIfRequested(model: model, openSettings: openSettings,
                                     openWelcome: { openWindow(id: WindowID.welcome) })
         }

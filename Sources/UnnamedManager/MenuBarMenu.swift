@@ -116,12 +116,12 @@ struct MenuBarMenu: View {
         Divider()
         Button("Edit Bindings…") {
             openWindow(id: WindowID.bindings)
-            NSApp.activate()
+            model.bringToFront(WindowID.bindings)
         }
         .keyboardShortcut("b")
         Button("Settings…") {
             openSettings()
-            NSApp.activate()
+            model.bringToFront(WindowID.settings)
         }
         .keyboardShortcut(",")
         Button("Help") { model.showHelp() }

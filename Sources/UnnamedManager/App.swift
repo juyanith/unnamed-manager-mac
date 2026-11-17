@@ -77,6 +77,8 @@ struct UnnamedManagerApp: App {
 enum WindowID {
     static let bindings = "bindings"
     static let welcome = "welcome"
+    /// The identifier SwiftUI gives the Settings scene's window.
+    static let settings = "com_apple_SwiftUI_Settings_window"
 }
 
 extension View {

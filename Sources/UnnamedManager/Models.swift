@@ -95,15 +95,23 @@ final class AppModel {
     func showHelp() {
         sidebar = .help
         openBindingsWindow?()
-        // A chord doesn't make this app active, and macOS ignores activate()
-        // from an app in the background, so the window would open behind.
-        // NSWorkspace can bring it forward, as it does apps for Use Application.
+        bringToFront(WindowID.bindings)
+    }
+
+    /// Brings the app and the window whose identifier starts with `prefix`
+    /// in front of other apps' windows: Edit Bindings…, Settings… and Help.
+    /// macOS can ignore activate() from a menu bar app, or from a chord
+    /// while another app is active, so the window would open behind.
+    /// NSWorkspace can bring it forward, as it does apps for Use Application.
+    func bringToFront(_ prefix: String) {
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate()
         let configuration = NSWorkspace.OpenConfiguration()
         configuration.activates = true
         // (Accessibility's frontmost attribute reports success and does nothing.)
         NSWorkspace.shared.openApplication(at: Bundle.main.bundleURL, configuration: configuration) { _, _ in
             Task { @MainActor in
-                NSApp.windows.first { $0.identifier?.rawValue.hasPrefix(WindowID.bindings) == true }?
+                NSApp.windows.first { $0.identifier?.rawValue.hasPrefix(prefix) == true }?
                     .makeKeyAndOrderFront(nil)
             }
         }

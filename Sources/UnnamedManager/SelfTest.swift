@@ -1,5 +1,6 @@
 import AppKit
 import OSLog
+import SwiftUI
 import Synchronization
 import UnnamedManagerKit
 
@@ -18,7 +19,7 @@ enum SelfTest {
     /// reopens that window, so the run must start only once.
     private static var started = false
 
-    static func runIfRequested(model: AppModel) {
+    static func runIfRequested(model: AppModel, openSettings: OpenSettingsAction) {
         guard requested, !started else { return }
         started = true
         // Print each line at once, so a crash keeps the lines before it.
@@ -48,6 +49,7 @@ enum SelfTest {
             await registryChecks()
             await windowChecks()
             await windowEditingChecks(model)
+            await frontChecks(model, openSettings: openSettings)
 
             print(failures == 0 ? "SELFTEST PASS \(count) checks" : "SELFTEST FAIL \(failures) of \(count) checks")
             finish(code: failures == 0 ? 0 : 1)

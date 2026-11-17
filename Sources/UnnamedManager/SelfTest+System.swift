@@ -111,4 +111,20 @@ extension SelfTest {
               NSApp.windows.map { $0.identifier?.rawValue ?? "?" }.joined(separator: ", "))
         model.sidebar = .bindings
     }
+
+    /// Settings… from the menu bar menu brings the app in front, even
+    /// while another app is active.
+    static func frontChecks(_ model: AppModel, openSettings: OpenSettingsAction) async {
+        NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.finder").first?.activate()
+        try? await Task.sleep(for: .seconds(1))
+        let behind = !NSApp.isActive
+        openSettings()
+        model.bringToFront(WindowID.settings)
+        try? await Task.sleep(for: .seconds(1))
+        let settings = NSApp.windows.first { $0.identifier?.rawValue.hasPrefix(WindowID.settings) == true }
+        check("Settings… brings the app and the Settings window in front of another app",
+              behind && NSApp.isActive && settings?.isKeyWindow == true,
+              "behind first: \(behind), active: \(NSApp.isActive), windows: " + NSApp.windows.map { $0.identifier?.rawValue ?? "?" }.joined(separator: ", "))
+        settings?.close()
+    }
 }
