@@ -925,12 +925,28 @@ UX:
 Status: done
 Verified: the names, every rejected spelling, the listed names, overrides, the old field name, conflicts and numbers (unit tests, `BuiltInActionTests`, `FocusTargetTests`, the spec-v11 fixtures, 241 in all); numbers, the alert sound, a built-in name and an override against `FakeWindowSystem` (self-test, 193 checks); actions-window-focus-right and -focus-next in light and dark, grid checks. Not yet tried by hand.
 
+### S-080 Choose built-in actions in the Bindings window, and see overrides
+As the user, I pick Place Window › Left Half from a binding's Built In menu and the binding works with nothing to set up; on the Actions page I can tell which of my actions override a built-in one, and deleting an override gives me the built-in one back. A new config starts with a Windows menu of built-in actions.
+Screens: bindings-builtin, actions-window, hud-window
+Depends: S-079
+Acceptance:
+- [self] Choosing a built-in action saves its name in the binding and nothing in `actions`.
+- [self] An action with a built-in name runs instead of it, and deleting it while bindings use it is allowed and gives them the built-in action back.
+- [unit] The listed built-in actions each stand for their own action, none twice (`window-arrange-2` loads but isn't listed, being `window-arrange`).
+- [unit] The starter config has a Windows menu of built-in actions and Help as the built-in `help`, and loads with no warnings.
+- [snap] A binding with a built-in action shows "Swap Window: Left" in its Action picker, under Built In, with a Built In menu below it; an override's ID footer says it overrides the built-in action and how to get it back.
+UX:
+- Flow: Bindings window → select a binding → Built In → Choose → a family (Place Window, Focus Window, Swap Window, Arrange Windows, Resize Window) → a value, or Fill, Minimize, Show Help or Do Nothing directly → saved, ⌘Z undoes.
+- Words: "Built In", "Your Actions" (picker sections); "Place Window: Left Half"; "override" in the Actions list; footer "This one overrides the built-in action of the same name; delete it to use the built-in one again."
+- Numbers (Window 1, Window 2…) aren't in the menu, since they have no end; a binding gets one by name in the file, or with a Focus Window or Swap Window action.
+Status: done
+Verified: saving a built-in name and deleting an override in use (self-test, 195 checks); the listed names and the starter (unit tests, 241); bindings-builtin, actions-window-window-fill and hud-window in light and dark, grid checks. The open Built In menu isn't in a snapshot (menus can't be captured); not yet tried by hand.
+
 ## Later
 - Import and export a single menu as a JSON snippet.
 - A basic automatic tiling mode.
 - Move a window to another display or Space; save and restore window layouts.
 - New action families on the registry (S-060): volume, display resolution.
-- A Windows menu in the starter config.
 - Double-tap modifier leaders, such as tapping ⌥ twice.
 
 ## Dropped

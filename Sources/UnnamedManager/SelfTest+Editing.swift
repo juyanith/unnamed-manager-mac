@@ -83,11 +83,11 @@ extension SelfTest {
                   icons.icon(for: .symbol("no-such-symbol")) == nil && icons.icon(for: .symbol("terminal")) != nil)
 
             // S-028: reordering is saved, stays in its menu, and the Guide follows.
-            step { editor.move(in: commands, from: [2], to: 0, undo: undo) }
+            step { editor.move(in: commands, from: [3], to: 0, undo: undo) }
             let order = editor.draft.children(of: commands).map { $0.lastStep!.key.name }
             let guide = store.loaded.map { GuideContent(menu: $0.leaders[0], path: ["Commands"], config: $0, frontApp: nil) }
-            check("S-028 a new order is written and the Guide lists it", order == ["K", "F", "T"]
-                  && guide?.rows.map(\.key) == ["K", "F", "T"], "\(order)")
+            check("S-028 a new order is written and the Guide lists it", order == ["K", "F", "T", "W"]
+                  && guide?.rows.map(\.key) == ["K", "F", "T", "W"], "\(order)")
             var moved = editor.draft
             let unchanged = moved
             moved.moveEntry(renamed, before: KeySequence(parsing: "Ctrl+W 1")!)
@@ -95,9 +95,9 @@ extension SelfTest {
 
             // S-029: Sort Alphabetically, and undo.
             step { editor.sort(commands, undo: undo) }
-            check("S-029 sorting puts the menu in order", editor.draft.children(of: commands).map { $0.lastStep!.key.name } == ["F", "K", "T"])
+            check("S-029 sorting puts the menu in order", editor.draft.children(of: commands).map { $0.lastStep!.key.name } == ["F", "K", "T", "W"])
             undo.undo()
-            check("S-029 Sort Alphabetically can be undone", editor.draft.children(of: commands).map { $0.lastStep!.key.name } == ["K", "F", "T"])
+            check("S-029 Sort Alphabetically can be undone", editor.draft.children(of: commands).map { $0.lastStep!.key.name } == ["K", "F", "T", "W"])
 
             // S-027: deleting a menu with entries counts them, and undo brings them back.
             let apps = editor.draft.config.entries.count

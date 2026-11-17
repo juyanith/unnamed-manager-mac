@@ -82,7 +82,7 @@ extension SelfTest {
         // S-053: Show Help, on Hyper+H in the starter, opens the Help page.
         let starter = model.store.loaded
         check("S-053 the starter config has Show Help on Hyper+H",
-              starter?.leaders.last.map { $0.path.description == "Hyper+H" && starter?.config.actions[$0.action ?? ""] == .help } == true)
+              starter?.leaders.last.map { $0.path.description == "Hyper+H" && starter?.config.action(named: $0.action ?? "") == .help } == true)
         check("S-053 Show Help is a type in the Actions page's picker",
               Config.Action.types(allowsContextAware: true).contains("help"))
         // As from a chord: the window closed, through the real performer.

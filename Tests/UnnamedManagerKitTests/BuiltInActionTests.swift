@@ -43,7 +43,7 @@ struct BuiltInActionTests {
         #expect(entries.map(\.name).contains("window-place-bottom-right"))
         #expect(entries.map(\.name).contains("window-swap-last"))
         #expect(!entries.map(\.name).contains("window-swap-1"))
-        #expect(entries.count == 1 + 1 + 14 + 2 + 9 + 8 + 8 + 2)
+        #expect(entries.count == 1 + 1 + 14 + 2 + 8 + 8 + 8 + 2)
     }
 
     @Test("An action in actions with a built-in name overrides it, and any other name falls back to the built-in")

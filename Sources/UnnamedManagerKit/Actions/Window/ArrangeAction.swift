@@ -105,8 +105,9 @@ public struct ArrangeAction: ActionValue {
         }
     }
 
+    /// `window-arrange-2` is the same as `window-arrange`, so it isn't listed.
     public static func builtInValues(_ type: String) -> [String?] {
-        [nil] + countRange.map { String($0) } + ["all"]
+        [nil] + countRange.dropFirst().map { String($0) } + ["all"]
     }
 
     public static func schema(_ type: String) -> ActionSchema {

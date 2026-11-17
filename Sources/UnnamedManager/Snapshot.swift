@@ -58,7 +58,7 @@ enum Snapshot {
                 if only?.contains("actions") ?? true {
                     // S-070: each window action's form.
                     model.sidebar = .actions
-                    for id in ["left-half", "move-center", "wider", "half-size", "focus-right", "focus-next", "fill", "arrange", "swap-left", "swap-2"] {
+                    for id in ["left-half", "move-center", "wider", "half-size", "focus-right", "focus-next", "window-fill", "arrange", "swap-2"] {
                         model.actionSelection = id
                         try? await Task.sleep(for: .seconds(0.8))
                         capture(to: "\(dir)/actions-window-\(id)-\(mode).png")
@@ -74,6 +74,10 @@ enum Snapshot {
                     model.editor.selection = KeySequence(parsing: "Hyper+Space S")
                     try? await Task.sleep(for: .seconds(0.8))
                     capture(to: "\(dir)/bindings-icon-\(mode).png")
+                    // S-080: a binding with a built-in action, and the Built In menu.
+                    model.editor.selection = KeySequence(parsing: "Hyper+Space W Left")
+                    try? await Task.sleep(for: .seconds(0.8))
+                    capture(to: "\(dir)/bindings-builtin-\(mode).png")
                 }
             }
             if only == nil || only?.contains("empty") == true {

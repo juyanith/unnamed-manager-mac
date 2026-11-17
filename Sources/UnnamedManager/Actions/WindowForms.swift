@@ -33,9 +33,9 @@ extension ArrangeAction: EditableAction {
                 value.wrappedValue.count = new
                 if case let .windows(number) = new, let groups = action.groups, groups > number { value.wrappedValue.groups = number }
             })) {
-                ForEach(Array(ArrangeAction.countRange), id: \.self) { Text("Last \($0)").tag(ArrangeCount.windows($0)) }
+                ForEach(Array(ArrangeAction.countRange), id: \.self) { Text(ArrangeCount.windows($0).displayName).tag(ArrangeCount.windows($0)) }
                 Divider()
-                Text("All on the Display").tag(ArrangeCount.all)
+                Text(ArrangeCount.all.displayName).tag(ArrangeCount.all)
             }
             Picker("Groups", selection: value.groups) {
                 Text("Automatic").tag(Int?.none)
@@ -198,8 +198,8 @@ extension ResizeAction: EditableAction {
                 }
                 value.wrappedValue = ResizeAction(change, anchor: action.anchor)
             })) {
-                Text("Grow Through Widths").tag(Mode.grow)
-                Text("Shrink Through Widths").tag(Mode.shrink)
+                Text(ResizeStep.grow.displayName).tag(Mode.grow)
+                Text(ResizeStep.shrink.displayName).tag(Mode.shrink)
                 Text("To a Size").tag(Mode.to)
                 Text("By Points").tag(Mode.by)
             }

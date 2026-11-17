@@ -11,7 +11,7 @@ extension SelfTest {
         let launcher = model.launcher
         // tools/selftest.sh deletes the file first, so launch wrote the starter.
         check("S-001 a missing config file gets the starter config", store.createdStarter
-              && store.loaded?.leaders.first?.children.map(\.title) == ["Finder", "Terminal"])
+              && store.loaded?.leaders.first?.children.map(\.title) == ["Finder", "Terminal", "Windows"])
         check("S-002 snapshots and self-tests install no event tap", !launcher.isCapturing)
         check("S-051 a release's version line is the version alone",
               AppVersion.line(version: "0.1.3", source: "") == "Version 0.1.3")

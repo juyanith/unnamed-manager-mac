@@ -45,7 +45,8 @@ public enum ConfigLoader {
         try data.write(to: url, options: .atomic)
     }
 
-    /// One leader with two bindings, and Hyper+H for Help (S-001, S-053).
+    /// One leader with two bindings and a Windows menu of built-in actions,
+    /// and Hyper+H for Help (S-001, S-053, S-080).
     public static let starterJSON = """
     {
       "$schema": "./config.schema.json",
@@ -54,12 +55,17 @@ public enum ConfigLoader {
         { "keys": "Hyper+Space", "title": "Commands" },
         { "keys": "Hyper+Space F", "title": "Finder", "action": "open-finder" },
         { "keys": "Hyper+Space T", "title": "Terminal", "action": "open-terminal" },
-        { "keys": "Hyper+H", "title": "Help", "action": "show-help" }
+        { "keys": "Hyper+Space W", "title": "Windows" },
+        { "keys": "Hyper+Space W Left", "title": "Left Half", "action": "window-place-left-half" },
+        { "keys": "Hyper+Space W Right", "title": "Right Half", "action": "window-place-right-half" },
+        { "keys": "Hyper+Space W F", "title": "Fill", "action": "window-fill" },
+        { "keys": "Hyper+Space W A", "title": "Arrange", "action": "window-arrange" },
+        { "keys": "Hyper+Space W Tab", "title": "Next Window", "action": "window-focus-next" },
+        { "keys": "Hyper+H", "title": "Help", "action": "help" }
       ],
       "actions": {
         "open-finder": { "type": "application", "bundleId": "com.apple.finder" },
-        "open-terminal": { "type": "application", "bundleId": "com.apple.Terminal" },
-        "show-help": { "type": "help" }
+        "open-terminal": { "type": "application", "bundleId": "com.apple.Terminal" }
       }
     }
 

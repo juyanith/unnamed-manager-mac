@@ -31,8 +31,9 @@ struct EntryEditor: View {
                 if entry.action != nil || editor.needsAction.contains(path) {
                     Section {
                         actionPicker(path, entry)
+                        builtInMenu(path)
                     } footer: {
-                        Text("What this binding does. Edit actions on the Actions page.")
+                        Text("What this binding does: one of your actions, or a built-in action that needs no setup. Edit your actions on the Actions page.")
                     }
                 } else {
                     Section {
@@ -120,14 +121,44 @@ struct EntryEditor: View {
                 }
             })) {
             if entry.action == nil { Text("Choose an Action").tag("") }
-            if let current = entry.action, document.config.actions[current] == nil { Text(current).tag(current) }
-            ForEach(ids, id: \.self) { id in
-                Text("\(id) (\(document.config.actions[id]!.displayName))").tag(id)
+            if let current = entry.action, document.config.actions[current] == nil, let builtIn = BuiltInAction.action(named: current) {
+                Section("Built In") {
+                    Text(builtIn.builtInDisplayName).tag(current)
+                }
+            }
+            Section("Your Actions") {
+                ForEach(ids, id: \.self) { id in
+                    Text("\(id) (\(document.config.actions[id]!.displayName))").tag(id)
+                }
             }
             Divider()
             Text("New Action…").tag(BindingsEditor.newActionTag)
         }
         .focused($focus, equals: .action)
+    }
+
+    /// Built-in actions (S-080), kind by kind in alphabetical order: a
+    /// submenu of values for a kind that has them, or the action itself.
+    private func builtInMenu(_ path: KeySequence) -> some View {
+        let groups = Dictionary(grouping: BuiltInAction.entries(), by: \.action.displayName)
+            .sorted { $0.key.localizedStandardCompare($1.key) == .orderedAscending }
+        return LabeledContent("Built In") {
+            Menu("Choose") {
+                ForEach(groups, id: \.key) { name, entries in
+                    if entries.count == 1, entries[0].action.builtInValueName == nil {
+                        Button(name) { editor.setAction(path, entries[0].name, undo: undo) }
+                    } else {
+                        Menu(name) {
+                            ForEach(entries, id: \.name) { entry in
+                                Button(entry.action.builtInValueName ?? name) { editor.setAction(path, entry.name, undo: undo) }
+                            }
+                        }
+                    }
+                }
+            }
+            .fixedSize()
+            .accessibilityLabel("Choose a built-in action")
+        }
     }
 }
 

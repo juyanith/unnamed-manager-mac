@@ -430,6 +430,33 @@ extension SelfTest {
         editor.edit("Change Maximum Columns", undo: undo) { $0.config.windows.maxColumns = 3 }
         undo.endUndoGrouping()
         check("S-076 Maximum Columns is saved in the file's windows settings", file().contains(#""maxColumns": 3"#))
+
+        // S-080: choosing a built-in action saves only its name; an override in use can be deleted.
+        let builtIn = "window-place-right-half"
+        if let path = editor.draft.config.entries.first(where: { $0.action != nil }).flatMap({ KeySequence(parsing: $0.keys) }) {
+            undo.beginUndoGrouping()
+            editor.setAction(path, builtIn, undo: undo)
+            undo.endUndoGrouping()
+            let saved = model.store.loaded?.config
+            check("S-080 choosing a built-in action saves its name and nothing in actions",
+                  file().contains(#""action": "\#(builtIn)""#) && saved?.actions[builtIn] == nil
+                      && saved?.action(named: builtIn) == .family(AnyActionValue(PlaceAction.preset(.rightHalf))))
+            undo.beginUndoGrouping()
+            editor.edit("Change Action", undo: undo) { $0.setAction(id: builtIn, .family(AnyActionValue(PlaceAction.preset(.leftHalf)))) }
+            undo.endUndoGrouping()
+            let overridden = model.store.loaded?.config.action(named: builtIn)
+            var refused = false
+            undo.beginUndoGrouping()
+            editor.edit("Delete Action", undo: undo) { document in
+                do throws(ConfigDocument.EditError) { try document.removeAction(builtIn) } catch { refused = true }
+            }
+            undo.endUndoGrouping()
+            check("S-080 an override runs instead, and deleting it while in use gives the built-in one back",
+                  overridden == .family(AnyActionValue(PlaceAction.preset(.leftHalf))) && !refused
+                      && model.store.loaded?.config.action(named: builtIn) == .family(AnyActionValue(PlaceAction.preset(.rightHalf))))
+        } else {
+            check("S-080 the self-test config has a binding", false)
+        }
         while undo.canUndo { undo.undo() }
         check("S-070 Undo restores the file", file() == before)
     }

@@ -22,7 +22,7 @@ struct ActionsPage: View {
                     let users = document.users(of: id).count
                     VStack(alignment: .leading, spacing: Space.xs / 2) {
                         Text(id).lineLimit(1)
-                        Text("\(document.config.actions[id]!.displayName) · \(users == 0 ? "not used" : users == 1 ? "1 binding" : "\(users) bindings")")
+                        Text("\(document.config.actions[id]!.displayName)\(Config.overridesBuiltIn(id) ? " · override" : "") · \(users == 0 ? "not used" : users == 1 ? "1 binding" : "\(users) bindings")")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -108,7 +108,11 @@ private struct ActionForm: View {
                     Text(idProblem).font(.callout).foregroundStyle(.red)
                 }
             } footer: {
-                Text("Bindings refer to the action by this id. Renaming it updates them.")
+                if Config.overridesBuiltIn(id) {
+                    Text("Bindings refer to the action by this id. This one overrides the built-in action of the same name; delete it to use the built-in one again.")
+                } else {
+                    Text("Bindings refer to the action by this id. Renaming it updates them.")
+                }
             }
             ActionEditor(action: Binding(get: { action }, set: { update($0) }),
                          contexts: model.editor.draft.config.contexts)

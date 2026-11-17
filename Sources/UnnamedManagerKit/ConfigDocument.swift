@@ -268,10 +268,11 @@ public struct ConfigDocument: Sendable, Equatable {
         }
     }
 
-    /// Deletes an action no binding uses. Throws the users otherwise.
+    /// Deletes an action no binding uses. Throws the users otherwise. An
+    /// override goes even in use: its bindings get the built-in action back (S-080).
     public mutating func removeAction(_ id: String) throws(EditError) {
         let users = users(of: id)
-        guard users.isEmpty else { throw .inUse(users.map(\.description)) }
+        guard users.isEmpty || Config.overridesBuiltIn(id) else { throw .inUse(users.map(\.description)) }
         config.actions[id] = nil
         actionOrder.removeAll { $0 == id }
     }

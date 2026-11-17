@@ -20,6 +20,54 @@ extension FocusDirection {
     }
 }
 
+extension WindowTarget {
+    var displayName: String {
+        switch self {
+        case let .window(direction): direction.displayName
+        case let .number(number): "Window \(number)"
+        }
+    }
+}
+
+extension ArrangeCount {
+    var displayName: String {
+        switch self {
+        case let .windows(number): "Last \(number)"
+        case .all: "All on the Display"
+        }
+    }
+}
+
+extension ResizeStep {
+    var displayName: String {
+        switch self {
+        case .grow: "Grow Through Widths"
+        case .shrink: "Shrink Through Widths"
+        }
+    }
+}
+
+extension Config.Action {
+    /// The value a built-in action's name picks, such as "Left Half"; nil
+    /// for a kind with no value, such as Fill (S-080).
+    var builtInValueName: String? {
+        guard case let .family(any) = self else { return nil }
+        return switch any.value {
+        case let place as PlaceAction: if case let .preset(preset) = place { preset.displayName } else { nil }
+        case let resize as ResizeAction: if case let .step(step, _) = resize.change { step.displayName } else { nil }
+        case let arrange as ArrangeAction: arrange.count.displayName
+        case let focus as FocusAction: focus.target.displayName
+        case let swap as SwapAction: swap.target.displayName
+        default: nil
+        }
+    }
+
+    /// How the Bindings window names a built-in action: "Place Window: Left Half" (spec v11).
+    var builtInDisplayName: String {
+        builtInValueName.map { "\(displayName): \($0)" } ?? displayName
+    }
+}
+
 extension WindowScope {
     var displayName: String {
         switch self {
