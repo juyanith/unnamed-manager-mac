@@ -2,8 +2,8 @@
 #   brew tap juyanith/unnamed-manager https://github.com/juyanith/unnamed-manager-mac
 #   brew install --cask unnamed-manager
 cask "unnamed-manager" do
-  version "0.2.1"
-  sha256 "f145c7eccb3cd84d1dbde77b9469e635351742627a7d9836be05905532cd5633"
+  version "0.3.0"
+  sha256 "c4b4319083b0f6eda12e949edd62bc3faf40457e5e4b17a448d8bf9811e8fefb"
 
   url "https://github.com/juyanith/unnamed-manager-mac/releases/download/v#{version}/UnnamedManager-#{version}.zip"
   name "Unnamed Manager"
