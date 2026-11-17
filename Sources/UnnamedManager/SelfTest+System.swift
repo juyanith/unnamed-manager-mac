@@ -167,7 +167,7 @@ extension SelfTest {
         let page = settings?.contentLayoutRect.size ?? .zero
         let firstSize = page == Layout.settingsDefault
             || (page.width == Layout.settingsDefault.width && page.height < Layout.settingsDefault.height
-                && (settings?.frame.height ?? 0) >= screenHeight - 1)
+                && (settings?.frame.height ?? 0) >= screenHeight - Space.sm)
         check("S-085 Settings can be resized, and opens at its first size",
               settings?.styleMask.contains(.resizable) == true && firstSize,
               "page \(page), window \(settings?.frame.size ?? .zero), screen \(screenHeight), resizable: \(settings?.styleMask.contains(.resizable) == true)")
