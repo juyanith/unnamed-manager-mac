@@ -958,7 +958,22 @@ UX:
 Status: done
 Verified: the list and the override mark (self-test, 197 checks); help and help-builtin in light and dark, grid checks. Not yet tried by hand: copying a name.
 
+### S-082 Focus and swap only the windows I can see, in reading order
+As the user, I press Focus Right or Swap Down and get the window I see there, even when it's bigger or smaller than mine or partly behind it, and never one hidden behind other windows; Window 2 in a 3×2 grid is the top middle one.
+Screens: actions-window
+Depends: S-068, S-069, S-073, S-077, S-079
+Acceptance:
+- [unit] A window counts only when its visible part (its frame minus the windows in front of it) holds a 20 by 20 point square; the focused window always counts (spec v12).
+- [unit] A direction picks among visible parts past the focused window's center: windows in line first, then the smallest gap, the most shared span, the nearest center across, the one in front; with none in line, the 45° rule on the centers of those parts.
+- [unit] From the top half, Down finds a quarter-width window below; from a small window inside a large one, every direction finds the large one; with two windows stacked on the left, Right from the front one goes right and the hidden one is skipped by every target.
+- [unit] The order is row-major: by display, then rows of tops within 20 points, top to bottom, then left to right; a 3×2 grid is 1 to 3 across the top; a full-height left window and two stacked on the right read left, right top, right bottom.
+- [self] Focus Window and Swap Window skip a window hidden behind another, by direction, Next and number.
+UX:
+- No new fields or words. The Focus Window and Swap Window footers stay as they are.
+Status: planned
+
 ## Later
+- Pick a window from an overlay: `"target": "pick"` on Focus Window and Swap Window labels the visible windows in order and waits for one key (numbers or home-row letters), Escape cancels.
 - Import and export a single menu as a JSON snippet.
 - A basic automatic tiling mode.
 - Move a window to another display or Space; save and restore window layouts.
