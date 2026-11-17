@@ -986,12 +986,13 @@ Acceptance:
 - [self] Focus Recent twice goes back and forth between two windows, across displays and when one is fully covered; after the previous window closes, it goes to the one before it; with no other window, nothing moves and the alert sound plays.
 - [self] Swap Recent trades frames with the window used before, focus stays, and pressing again swaps them back; a window on another Space is skipped.
 - [manual] Focus Recent from a window on one Space goes back to a window on another, also when both are the same app's.
-- [self] Settings edits Leave Out These Apps, and undo works.
+- [self] Settings saves an app Left Out of Focus and Swap in `windows.exclude`, and undo works.
 - [manual] Two real windows on two displays, and two stacked windows: Focus Recent goes back and forth; Cmd+Tab and clicks count as focus changes.
 UX:
-- Words: target "Window Used Before" in Focus On and Swap With; the footer says Previous goes by order and Window Used Before by when you used it. Settings › Focus and Swap gets "Leave Out These Apps" (app list). Glossary: "window used before".
+- Words: target "Window Used Before" in Focus On and Swap With; the footer says Previous goes by order and Window Used Before by when you used it. Settings gets a "Left Out of Focus and Swap" section after Focus and Swap: each app with its icon, name and bundle id and a Remove button, then "Add App…" (an open panel in /Applications), as on the Contexts page. Glossary: "window used before".
 - The history is kept by the app while it runs, not in the config: app switches (NSWorkspace) and each app's focused-window changes (an AX observer per app), plus what the app's own actions focus. It keeps each window's AX element: a window on another Space isn't in its app's AX window list, but its saved element still answers, and AXRaise then activate moves to its Space (tried by hand with two Safari windows, 2026-11-17).
-Status: planned
+Status: done
+Verified: the history, the pick, the target, built-in names, the old field name and the setting (unit tests, `FocusHistoryTests`, the spec-v13 fixtures, 258 in all); back and forth across displays, a covered window, another Space, a closed window, no window, swap and swap back, swap skipping another Space, an excluded app, and saving the setting against `FakeWindowSystem`, which now has Spaces and clicks (self-test, 209 checks); actions-window-focus-recent, hud-window and settings-bottom in light and dark, grid checks. Not yet tried by hand: Accessibility's focus reports, and another Space with two different apps.
 
 ## Later
 - Pick a window from an overlay: `"target": "pick"` on Focus Window and Swap Window labels the visible windows in order and waits for one key (numbers or home-row letters), Escape cancels.

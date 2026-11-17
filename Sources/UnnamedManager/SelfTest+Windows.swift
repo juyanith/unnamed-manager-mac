@@ -563,6 +563,11 @@ extension SelfTest {
         undo.endUndoGrouping()
         check("S-082 Smallest Visible Part is saved in the file's windows settings, and undoes",
               file().contains(#""minVisible": 40"#) && { undo.undo(); return !file().contains("minVisible") }())
+        undo.beginUndoGrouping()
+        editor.edit("Change Left Out Apps", undo: undo) { $0.config.windows.exclude = ["com.apple.finder"] }
+        undo.endUndoGrouping()
+        check("S-083 an app left out of Focus and Swap is saved in the file's windows settings, and undoes",
+              file().contains(#""exclude": ["com.apple.finder"]"#) && { undo.undo(); return !file().contains("exclude") }())
 
         // S-080: choosing a built-in action saves only its name; an override in use can be deleted.
         let builtIn = "window-place-right-half"

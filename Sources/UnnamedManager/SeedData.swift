@@ -8,6 +8,7 @@ enum SeedData {
     static let fixtureJSON = """
     {
       "version": 1,
+      "windows": { "exclude": ["com.apple.finder"] },
       "entries": [
         { "keys": "Hyper+Space", "title": "Commands" },
         { "keys": "Hyper+Space Space", "title": "Spotlight", "action": "spotlight" },
@@ -31,6 +32,7 @@ enum SeedData {
         { "keys": "Hyper+Space W A", "title": "Arrange Three", "action": "arrange" },
         { "keys": "Hyper+Space W Right", "title": "Window to the Right", "action": "focus-right" },
         { "keys": "Hyper+Space W Tab", "title": "Next Window", "action": "focus-next" },
+        { "keys": "Hyper+Space W B", "title": "Window Used Before", "action": "focus-recent" },
         { "keys": "Hyper+Space W Left", "title": "Swap Left", "action": "window-swap-left" },
         { "keys": "Hyper+Space W 2", "title": "Swap With Window 2", "action": "swap-2" },
         { "keys": "Meh+W", "title": "Workspace" },
@@ -58,6 +60,7 @@ enum SeedData {
         "half-size": { "type": "window.resize", "to": { "width": 0.5, "height": 0.5 }, "anchor": "center" },
         "focus-right": { "type": "window.focus", "target": "right" },
         "focus-next": { "type": "window.focus", "target": "next", "scope": "display" },
+        "focus-recent": { "type": "window.focus", "target": "recent" },
         "swap-2": { "type": "window.swap", "target": 2, "scope": "display" },
         "address-bar": { "type": "contextual", "variants": { "browser": { "type": "send", "keys": "Cmd+L" } } },
         "find": {

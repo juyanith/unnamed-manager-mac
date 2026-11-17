@@ -3,8 +3,8 @@ import SwiftUI
 import UnnamedManagerKit
 
 /// The Settings window (Settings…, ⌘,): one grouped Form, 520 pt wide,
-/// with Guide, Keys, Feedback, Windows, Focus and Swap, and Startup
-/// (S-032, S-036, S-082). Changes are written to the config file at once,
+/// with Guide, Keys, Feedback, Windows, Focus and Swap, the apps they leave
+/// out, and Startup (S-032, S-036, S-082, S-083). Changes are written to the config file at once,
 /// like every other edit.
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
@@ -103,6 +103,30 @@ struct SettingsView: View {
             }
 
             Section {
+                ForEach(editor.draft.config.windows.exclude, id: \.self) { bundleId in
+                    HStack(spacing: Space.sm) {
+                        AppIcon(bundleId: bundleId)
+                        VStack(alignment: .leading) {
+                            Text(AppIcon.name(bundleId))
+                            Text(bundleId).font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Button("Remove", systemImage: "minus.circle") {
+                            setExcluded(editor.draft.config.windows.exclude.filter { $0 != bundleId })
+                        }
+                        .labelStyle(.iconOnly)
+                        .buttonStyle(.borderless)
+                        .help("Let Focus Window and Swap Window pick \(AppIcon.name(bundleId)) again")
+                    }
+                }
+                Button("Add App…") { addExcluded() }
+            } header: {
+                Text("Left Out of Focus and Swap")
+            } footer: {
+                Text("Focus Window and Swap Window never pick these apps' windows, with any target, Window Used Before too. Their windows still hide the ones behind them.")
+            }
+
+            Section {
                 Toggle("Open at Login", isOn: Binding(get: { opensAtLogin }, set: setOpensAtLogin))
             } header: {
                 Text("Startup")
@@ -149,6 +173,21 @@ struct SettingsView: View {
             guard editor.draft.config.windows[keyPath: key] != value else { return }
             editor.edit(name, undo: undo) { $0.config.windows[keyPath: key] = value }
         })
+    }
+
+    /// The apps Focus Window and Swap Window leave out (S-083).
+    private func setExcluded(_ apps: [String]) {
+        editor.edit("Change Left Out Apps", undo: undo) { $0.config.windows.exclude = apps }
+    }
+
+    private func addExcluded() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.application]
+        panel.allowsMultipleSelection = true
+        panel.directoryURL = URL(fileURLWithPath: "/Applications")
+        guard panel.runModal() == .OK else { return }
+        let current = editor.draft.config.windows.exclude
+        setExcluded(current + panel.urls.compactMap { Bundle(url: $0)?.bundleIdentifier }.filter { !current.contains($0) })
     }
 
     /// One of Arrange Windows' limits (S-076).

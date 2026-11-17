@@ -45,10 +45,12 @@ One name per idea. Use these words in the UI, the docs, the log and VoiceOver la
 | Cell | One part of the grid Arrange Windows makes, for one window. | slot, tile, pane |
 | Group | A column or a row of cells in that grid. | stack, split |
 | Fill | Fill the screen without the menu bar and Dock, less the gap. With Press Again to Restore, pressing it again puts the window back. Called Maximize before spec v7. | maximize, zoom, full screen |
-| Focus Window | Bring the nearest window you can see in a direction to the front, or the Next Window or Previous Window. | switch, activate, cycle |
+| Focus Window | Bring the nearest window you can see in a direction to the front, the Next Window or Previous Window, or the Window Used Before. | switch, activate, cycle |
 | Built-in action | An action every config has without defining it, such as `window-place-left-half` or `window-focus-left`. A binding names it as it names any action. | preset action, default action, standard command |
 | Override | An action you define with a built-in action's name. It runs instead of the built-in one everywhere that name is used. | shadow, replace, remap |
 | Swap Window | Trade place and size with the window in a direction, the next or previous one, the first or last one, or a Window Number. The window in front keeps focus. | exchange, switch, flip |
+| Window Used Before | The window that had focus before the one in front, from the history the app keeps while it runs; it can be behind others, and for Focus Window on another Space ("recent" in the config file). Pressing again goes back. | previous window, last window, recent, toggle |
+| Left Out of Focus and Swap | Apps whose windows Focus Window and Swap Window never pick, set in Settings ("windows.exclude" in the config file). | excluded, ignored, blacklist |
 | On the Same Display | Keeps Focus Window and Swap Window to the display of the window in front ("scope" in the config file). On Every Display is the default. | this screen, current monitor |
 | Minimize | Send the window in front to the Dock, as ⌘M does. | hide, dock |
 | Move Window | Move the window To a Spot (such as Center) or By Points. Its size stays the same. | position, drag, nudge |
