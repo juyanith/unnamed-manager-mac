@@ -975,7 +975,7 @@ Status: done
 Verified: visible parts, the square across parts, every direction case, the order, the settings and the rule (unit tests, `SeenWindowTests`, the spec-v12 fixtures, 254 in all); stacked windows by direction, Next, number and swap, and a window inside a larger one against `FakeWindowSystem`, which now raises a focused window (self-test, 201 checks, with Smallest Visible Part saved and undone); actions-window-focus-right, -swap-2, settings and settings-bottom in light and dark, grid checks. Not yet tried by hand on real windows.
 
 ### S-083 Focus or swap with the window I used before
-As the user, I press one key to go back to the window I used before, and again to come back, even when it's on my other display or behind the window I'm in; with another key, my window and that one trade places and I stay in mine. If I closed that window, I get the one I used before it. Apps I list never get picked by any Focus Window or Swap Window key.
+As the user, I press one key to go back to the window I used before, and again to come back, even when it's on my other display, on another Space, or behind the window I'm in; with another key, my window and that one trade places and I stay in mine. If I closed that window, I get the one I used before it. Apps I list never get picked by any Focus Window or Swap Window key.
 Screens: actions-window, settings
 Depends: S-077, S-079, S-082
 Acceptance:
@@ -984,12 +984,13 @@ Acceptance:
 - [unit] `recent` picks the first window in the history that's a candidate (not minimized, not an excluded app, on the scope's displays) and isn't the focused one; whether you can see it doesn't matter. With nothing in the history yet, it's the front-most other candidate. With none, "No window used before."
 - [unit] `windows.exclude` is a list of app ids, empty by default and written only when it isn't; a window of an excluded app is never picked by any target, and isn't in the order.
 - [self] Focus Recent twice goes back and forth between two windows, across displays and when one is fully covered; after the previous window closes, it goes to the one before it; with no other window, nothing moves and the alert sound plays.
-- [self] Swap Recent trades frames with the window used before, focus stays, and pressing again swaps them back.
+- [self] Swap Recent trades frames with the window used before, focus stays, and pressing again swaps them back; a window on another Space is skipped.
+- [manual] Focus Recent from a window on one Space goes back to a window on another, also when both are the same app's.
 - [self] Settings edits Leave Out These Apps, and undo works.
 - [manual] Two real windows on two displays, and two stacked windows: Focus Recent goes back and forth; Cmd+Tab and clicks count as focus changes.
 UX:
 - Words: target "Window Used Before" in Focus On and Swap With; the footer says Previous goes by order and Window Used Before by when you used it. Settings › Focus and Swap gets "Leave Out These Apps" (app list). Glossary: "window used before".
-- The history is kept by the app while it runs, not in the config: app switches (NSWorkspace) and each app's focused-window changes (an AX observer per app), plus what the app's own actions focus.
+- The history is kept by the app while it runs, not in the config: app switches (NSWorkspace) and each app's focused-window changes (an AX observer per app), plus what the app's own actions focus. It keeps each window's AX element: a window on another Space isn't in its app's AX window list, but its saved element still answers, and AXRaise then activate moves to its Space (tried by hand with two Safari windows, 2026-11-17).
 Status: planned
 
 ## Later
