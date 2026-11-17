@@ -294,5 +294,18 @@ extension SelfTest {
             .compactMap { $0 as? OSLogEntryLog }
             .contains { $0.subsystem == "net.unnamed.manager" && $0.composedMessage.contains(message) } ?? false
         check("S-015 the failure is in the log under net.unnamed.manager", logged)
+
+        // Spec v10: no window there plays the alert sound, only when Play Alert Sound is on.
+        let launcher = model.launcher, start = launcher.alertsPlayed
+        launcher.report("No window to the left.", title: "Swap Left", alerts: true)
+        launcher.report(message, title: "Editor")
+        let on = launcher.alertsPlayed - start
+        let undo = UndoManager()
+        model.editor.edit("Change Alert Sound", undo: undo) { $0.config.ui.errorBell = false }
+        launcher.report("No window to the left.", title: "Swap Left", alerts: true)
+        let off = launcher.alertsPlayed - start - on
+        undo.undo()
+        check("S-077 no window there plays the alert sound, other failures and Play Alert Sound off don't",
+              on == 1 && off == 0, "on \(on), off \(off)")
     }
 }

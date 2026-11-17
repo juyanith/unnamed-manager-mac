@@ -10,7 +10,7 @@ App name `UnnamedManager`, display name "Unnamed Manager", bundle id `net.unname
 
 ## Main jobs
 1. **Run a binding by key sequence or direct chord.** Unchanged from the launcher: Hyper+Space → E opens the editor; the Guide appears only if you pause; the app in front keeps focus.
-2. **Manage the window in front from the keyboard.** Focus the nearest window left, right, up or down, or the next or previous one. Place it on a half, third, quarter or corner of the screen. Move or resize it by a step or to an exact fraction. Fill the screen with it (again restores) or minimize it. Arrange the windows used last in a grid of columns or rows.
+2. **Manage the window in front from the keyboard.** Focus the nearest window left, right, up or down, or the next or previous one. Place it on a half, third, quarter or corner of the screen. Move or resize it by a step or to an exact fraction. Fill the screen with it (again restores) or minimize it. Arrange the windows used last in a grid of columns or rows, or swap the window with another.
 3. **See and edit bindings in the Bindings window**, including the new window actions, each with its own editor. Every change is written back to the config file.
 4. **Check status from the menu bar.** Unchanged: on or off, reload, permissions, last error, quit.
 

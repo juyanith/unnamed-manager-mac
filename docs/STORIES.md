@@ -876,6 +876,38 @@ UX:
 - Words: "Maximum Columns", "Maximum Rows"; footer "The maximums limit the grid Arrange Windows picks when its action leaves Groups on Automatic."
 Status: done
 Verified: the limit, the automatic groups and layout, and the two settings (unit tests, `ArrangeTests`, `invalid/window-limit.json`); both arrangements and the saved setting (self-test, 178 checks); settings in light and dark, grid checks. Not yet tried by hand on real windows.
+### S-077 Swap the window in front with another
+As the user, I press a key and the window I'm in trades places with the one to its left, or the next one, the first one, or window number 2, and I stay in it, so pressing again keeps moving it the same way.
+Screens: actions-window, hud-window, settings
+Depends: S-068, S-069, S-073
+Acceptance:
+- [unit] `window.swap` reads, writes and plans `target` (a direction, `next`, `previous`, `first`, `last`, or an integer from 1) and `scope` (spec v10); the schema lists it and the spec-v10 fixtures pass.
+- [unit] A direction picks the window Focus Window would focus; Next and Previous wrap; First, Last and numbers count in Focus Window's order from 1, so 1 is First.
+- [unit] A target that is the focused window does nothing and isn't a failure; past the last window it says "No window 4. There are 3."
+- [self] Swap left trades frames with the window on the left and focus stays; Swap right puts them back; a number swaps across displays.
+- [self] With no window there, nothing moves, it says so, and it plays the alert sound; with no focused window it says so without the sound.
+- [self] A window with a minimum size keeps the edge on the screen's edge.
+- [self] The alert sound plays only for no window there, and not with Play Alert Sound off.
+- [snap] The Swap Window form has Swap With, Number for Window Number, and Windows; the Guide shows its symbols; the Feedback footer in Settings mentions the sound.
+- [manual] Two real windows side by side swap and swap back, and a missing window beeps (and flashes the screen with that turned on in Accessibility settings).
+UX:
+- Words: type "Swap Window"; pickers "Swap With" (Left … Last Window, Window Number), "Number" (a stepper, 1 to 99), "Windows" (On Every Display, On the Same Display). Footer says the window keeps focus and you hear the alert sound with no window there.
+- The sound is `NSSound.beep()`: the user's alert sound, which macOS also turns into a screen flash when that's on in Accessibility.
+Status: done
+Verified: picking the window for every kind of target, staying put, the failures, reading, writing, planning and the icons (unit tests, `SwapTests`, `ActionGoldenTests`, the spec-v10 fixtures, 233 in all); the swaps, focus, the failures and their sound, a window with a minimum size, and saving the form against `FakeWindowSystem` (self-test, 190 checks); actions-window-swap-left, -swap-2, hud-window and settings in light and dark, grid checks. Not yet tried by hand on real windows.
+
+### S-078 Keep Focus Window and Swap Window to one display
+As the user, I choose On the Same Display for a Focus Window or Swap Window key, and it never jumps to my other display: Next wraps on the display I'm on, and Left stops at its edge with the alert sound.
+Screens: actions-window
+Depends: S-068, S-077
+Acceptance:
+- [unit] `window.focus` reads and writes `scope` (spec v10), written only when it isn't `all`; a bad scope is `bad-window-value`.
+- [self] Focus right on the same display fails with "No window to the right." and the alert sound; on every display it crosses over.
+- [self] Last on the same display is the rightmost window there; Next swaps within the display.
+- [self] Focus Window finding no window plays the alert sound (spec v10).
+- [snap] The Focus Window form has a Windows picker, and its footer says what On the Same Display does.
+Status: done
+Verified: reading and writing (unit tests, `FocusScopeTests`, `invalid/window-focus-scope.json`); both displays against `FakeWindowSystem` (self-test); actions-window-focus-next in light and dark, grid checks. The default stays every display, as before.
 
 ## Later
 - Import and export a single menu as a JSON snippet.

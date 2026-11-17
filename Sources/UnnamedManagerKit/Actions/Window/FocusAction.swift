@@ -5,7 +5,7 @@ public enum FocusDirection: String, CaseIterable, Sendable {
     case left, right, up, down, next, previous, first, last
 
     /// The end of "No window to the left.", for a direction.
-    var failure: String {
+    public var failure: String {
         switch self {
         case .left: "No window to the left."
         case .right: "No window to the right."
@@ -17,13 +17,28 @@ public enum FocusDirection: String, CaseIterable, Sendable {
     }
 }
 
+/// Which windows Focus Window and Swap Window look at (spec v10).
+public enum WindowScope: String, CaseIterable, Sendable {
+    /// Windows on every display.
+    case all
+    /// Only the windows on the focused window's display.
+    case display
+
+    static var schema: [String: Any] {
+        ["enum": allCases.map(\.rawValue), "description": "all (default): windows on every display. display: only the focused window's display."]
+    }
+}
+
 /// Focus Window (S-068, S-069, S-073): the nearest window in a direction,
-/// the next or previous one, or the first or last one.
+/// the next or previous one, or the first or last one, on every display
+/// or only the focused window's (S-078).
 public struct FocusAction: ActionValue {
     public var direction: FocusDirection
+    public var scope: WindowScope
 
-    public init(_ direction: FocusDirection) {
+    public init(_ direction: FocusDirection, scope: WindowScope = .all) {
         self.direction = direction
+        self.scope = scope
     }
 
     public static let kinds = [ActionKind(type: "window.focus", displayName: "Focus Window", symbol: "macwindow.on.rectangle")]
@@ -35,19 +50,22 @@ public struct FocusAction: ActionValue {
     }
 
     public init(type: String, fields: ActionFields) throws {
-        try fields.allow(["direction"])
+        try fields.allow(["direction", "scope"])
         guard let direction: FocusDirection = try fields.choice("direction") else {
             throw fields.invalid("direction", "Missing “direction” in \(fields.path).", rule: .missingField)
         }
         self.direction = direction
+        scope = try fields.choice("scope") ?? .all
     }
 
+    /// The scope is left out when it's the default, every display.
     public func write(to fields: inout ActionFieldWriter) {
         fields.string("direction", direction.rawValue)
+        if scope != .all { fields.string("scope", scope.rawValue) }
     }
 
     public static func schema(_ type: String) -> ActionSchema {
-        ActionSchema(["direction": ["enum": FocusDirection.allCases.map(\.rawValue)]], required: ["direction"])
+        ActionSchema(["direction": ["enum": FocusDirection.allCases.map(\.rawValue)], "scope": WindowScope.schema], required: ["direction"])
     }
 
     /// Each direction shows its arrow.
@@ -66,7 +84,7 @@ public struct FocusAction: ActionValue {
     }
 
     public func plan(home: URL) throws(PlanError) -> ActionPlan {
-        .custom(AnyActionStep(WindowCommand.focus(direction)))
+        .custom(AnyActionStep(WindowCommand.focus(direction, scope: scope)))
     }
 }
 

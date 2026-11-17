@@ -62,7 +62,7 @@ struct SettingsView: View {
             } header: {
                 Text("Feedback")
             } footer: {
-                Text("What happens when you press a key the current menu doesn't have.")
+                Text("What happens when you press a key the current menu doesn't have. The alert sound also plays when Focus Window or Swap Window finds no window there.")
             }
 
             Section {

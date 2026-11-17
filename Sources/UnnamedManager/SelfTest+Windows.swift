@@ -116,6 +116,7 @@ extension SelfTest {
               "\(String(describing: fake.windows["notes"]?.frame))")
 
         await focusChecks()
+        await swapChecks()
         await arrangeChecks()
 
         fake.canControlWindows = false
@@ -281,11 +282,91 @@ extension SelfTest {
         }
     }
 
+    /// S-077 and S-078: Swap Window, and both actions on one display, with
+    /// two halves of the left display and a window on the right one.
+    static func swapChecks() async {
+        let fake = FakeWindowSystem()
+        fake.displays = [
+            .init(frame: CGRect(x: 0, y: 0, width: 1440, height: 900), usable: CGRect(x: 0, y: 25, width: 1440, height: 875)),
+            .init(frame: CGRect(x: 1440, y: 0, width: 1920, height: 1080), usable: CGRect(x: 1440, y: 25, width: 1920, height: 1055)),
+        ]
+        let a = CGRect(x: 0, y: 25, width: 720, height: 875)
+        let b = CGRect(x: 720, y: 25, width: 720, height: 875)
+        let c = CGRect(x: 1440, y: 25, width: 1920, height: 1055)
+        func reset() {
+            fake.windows = ["a": .init(frame: a), "b": .init(frame: b), "c": .init(frame: c)]
+            fake.focused = "b"
+        }
+        func frames() -> [CGRect?] { ["a", "b", "c"].map { fake.windows[$0]?.frame } }
+        let runner = ActionRunner(performer: SystemPerformer(context: StepContext(windows: WindowControl(system: fake, settings: { Config.Windows(gap: 0) }))))
+        /// Runs an action and returns its failure, if any.
+        func run(_ action: some ActionValue) async -> PlanError? {
+            do throws(PlanError) {
+                try await runner.run(.family(AnyActionValue(action)), id: "swap")
+                return nil
+            } catch {
+                return error
+            }
+        }
+
+        reset()
+        _ = await run(SwapAction(.window(.left)))
+        check("S-077 Swap left trades frames with the window on the left, and focus stays",
+              frames() == [b, a, c] && fake.focused == "b", "\(frames()), \(String(describing: fake.focused))")
+        _ = await run(SwapAction(.window(.right)))
+        check("S-077 and Swap right puts them back", frames() == [a, b, c], "\(frames())")
+
+        reset()
+        _ = await run(SwapAction(.number(3)))
+        check("S-077 a number swaps across displays", frames() == [a, c, b] && fake.focused == "b", "\(frames())")
+
+        reset()
+        _ = await run(SwapAction(.window(.next), scope: .display))
+        let here = frames()
+        reset()
+        _ = await run(SwapAction(.window(.next)))
+        check("S-078 Next on the same display wraps there, and on every display goes on to the next",
+              here == [b, a, c] && frames() == [a, c, b], "\(here), \(frames())")
+
+        reset()
+        fake.focused = "a"
+        let left = await run(SwapAction(.window(.left)))
+        let past = await run(SwapAction(.number(4)))
+        check("S-077 no window there: nothing moves, it says so, and it plays the alert sound",
+              frames() == [a, b, c] && left == PlanError("No window to the left.", alerts: true)
+                && past == PlanError("No window 4. There are 3.", alerts: true),
+              "\(String(describing: left)), \(String(describing: past))")
+        let first = await run(SwapAction(.window(.first)))
+        check("S-077 First on the first window does nothing, and isn't a failure", first == nil && frames() == [a, b, c])
+        fake.focused = nil
+        let unfocused = await run(SwapAction(.window(.right)))
+        check("S-077 no focused window says so, with no alert sound",
+              unfocused == PlanError("TextEdit has no window to swap."), "\(String(describing: unfocused))")
+
+        reset()
+        fake.windows["b"]?.minSize = CGSize(width: 900, height: 300)
+        _ = await run(SwapAction(.window(.left)))
+        check("S-077 a window that won't take the size keeps the edge on the screen's edge",
+              fake.windows["b"]?.frame == CGRect(x: 0, y: 25, width: 900, height: 875) && fake.windows["a"]?.frame == b,
+              "\(frames())")
+
+        reset()
+        let blocked = await run(FocusAction(.right, scope: .display))
+        let stayed = fake.focused
+        _ = await run(FocusAction(.right))
+        check("S-078 Focus Window on the same display stays there, and on every display crosses over",
+              blocked == PlanError("No window to the right.", alerts: true) && stayed == "b" && fake.focused == "c",
+              "\(String(describing: blocked)), \(String(describing: stayed)), \(String(describing: fake.focused))")
+        fake.focused = "a"
+        _ = await run(FocusAction(.last, scope: .display))
+        check("S-078 Last on the same display is the rightmost window there", fake.focused == "b", "\(String(describing: fake.focused))")
+    }
+
     /// S-070: the window types in the Type picker, and each form's value
     /// saved as the spec writes it, then undone.
     static func windowEditingChecks(_ model: AppModel) async {
         let names = Config.Action.types(allowsContextAware: true).map { Config.Action.empty(of: $0).displayName }
-        let window = ["Arrange Windows", "Fill", "Focus Window", "Minimize", "Move Window", "Place Window", "Resize Window"]
+        let window = ["Arrange Windows", "Fill", "Focus Window", "Minimize", "Move Window", "Place Window", "Resize Window", "Swap Window"]
         check("S-070 the Type picker lists the window actions with the others, alphabetically",
               Set(window).isSubset(of: names) && names == names.sorted { $0.localizedStandardCompare($1) == .orderedAscending }, "\(names)")
         check("S-074 the Type picker offers Fill once, and not under its old name",
@@ -301,6 +382,9 @@ extension SelfTest {
             (.family(AnyActionValue(ArrangeAction(count: .all, groups: 3, layout: .rows))),
              #"{ "type": "window.arrange", "count": "all", "groups": 3, "layout": "rows" }"#),
             (.family(AnyActionValue(FocusAction(.previous))), #"{ "type": "window.focus", "direction": "previous" }"#),
+            (.family(AnyActionValue(FocusAction(.next, scope: .display))), #"{ "type": "window.focus", "direction": "next", "scope": "display" }"#),
+            (.family(AnyActionValue(SwapAction(.number(2), scope: .display))), #"{ "type": "window.swap", "target": 2, "scope": "display" }"#),
+            (.family(AnyActionValue(SwapAction(.window(.left)))), #"{ "type": "window.swap", "target": "left" }"#),
             (.family(AnyActionValue(FillAction(toggle: false))), #"{ "type": "window.fill", "toggle": false }"#),
             (.family(AnyActionValue(MinimizeAction())), #"{ "type": "window.minimize" }"#),
             (.family(AnyActionValue(MoveAction.by(dx: 40, dy: 0))), #"{ "type": "window.move", "by": { "dx": 40 } }"#),

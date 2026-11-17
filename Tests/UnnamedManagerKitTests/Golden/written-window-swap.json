@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "entries": [
+    { "keys": "Meh+W", "title": "Windows" },
+    { "keys": "Meh+W A", "title": "swap-left", "action": "swap-left" },
+    { "keys": "Meh+W B", "title": "swap-right", "action": "swap-right" },
+    { "keys": "Meh+W C", "title": "swap-up", "action": "swap-up" },
+    { "keys": "Meh+W D", "title": "swap-down", "action": "swap-down" },
+    { "keys": "Meh+W E", "title": "swap-next", "action": "swap-next" },
+    { "keys": "Meh+W F", "title": "swap-previous", "action": "swap-previous" },
+    { "keys": "Meh+W G", "title": "swap-first", "action": "swap-first" },
+    { "keys": "Meh+W H", "title": "swap-last", "action": "swap-last" },
+    { "keys": "Meh+W I", "title": "swap-2", "action": "swap-2" },
+    { "keys": "Meh+W J", "title": "swap-left-here", "action": "swap-left-here" },
+    { "keys": "Meh+W K", "title": "swap-1-everywhere", "action": "swap-1-everywhere" },
+    { "keys": "Meh+W L", "title": "focus-next-here", "action": "focus-next-here" },
+    { "keys": "Meh+W M", "title": "focus-left-everywhere", "action": "focus-left-everywhere" }
+  ],
+  "actions": {
+    "swap-left": { "type": "window.swap", "target": "left" },
+    "swap-right": { "type": "window.swap", "target": "right" },
+    "swap-up": { "type": "window.swap", "target": "up" },
+    "swap-down": { "type": "window.swap", "target": "down" },
+    "swap-next": { "type": "window.swap", "target": "next" },
+    "swap-previous": { "type": "window.swap", "target": "previous" },
+    "swap-first": { "type": "window.swap", "target": "first" },
+    "swap-last": { "type": "window.swap", "target": "last" },
+    "swap-2": { "type": "window.swap", "target": 2 },
+    "swap-left-here": { "type": "window.swap", "target": "left", "scope": "display" },
+    "swap-1-everywhere": { "type": "window.swap", "target": 1 },
+    "focus-next-here": { "type": "window.focus", "direction": "next", "scope": "display" },
+    "focus-left-everywhere": { "type": "window.focus", "direction": "left" }
+  }
+}

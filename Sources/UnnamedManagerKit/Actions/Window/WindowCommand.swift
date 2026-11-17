@@ -8,12 +8,13 @@ public enum WindowCommand: ActionStep {
     case place(FractionFrame)
     case resize(ResizeAction.Change, anchor: WindowAnchor)
     case move(MoveAction)
-    case focus(FocusDirection)
+    case focus(FocusDirection, scope: WindowScope = .all)
     case arrange(ArrangeAction)
+    case swap(SwapTarget, scope: WindowScope = .all)
 
     /// How Focus Window says there's nothing that way.
     public var failure: String? {
-        if case let .focus(direction) = self { direction.failure } else { nil }
+        if case let .focus(direction, _) = self { direction.failure } else { nil }
     }
 
     /// The verb in "<App> has no window to fill."
@@ -26,6 +27,7 @@ public enum WindowCommand: ActionStep {
         case .move: "move"
         case .focus: "focus from"
         case .arrange: "arrange"
+        case .swap: "swap"
         }
     }
 }

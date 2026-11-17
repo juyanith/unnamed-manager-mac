@@ -439,6 +439,13 @@
                 "last"
               ]
             },
+            "scope" : {
+              "description" : "all (default): windows on every display. display: only the focused window's display.",
+              "enum" : [
+                "all",
+                "display"
+              ]
+            },
             "type" : {
               "enum" : [
                 "window.focus"
@@ -491,6 +498,49 @@
           },
           "required" : [
             "type"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "scope" : {
+              "description" : "all (default): windows on every display. display: only the focused window's display.",
+              "enum" : [
+                "all",
+                "display"
+              ]
+            },
+            "target" : {
+              "description" : "The window to swap with: a direction, next, previous, first, last, or its number in Focus Window's order, from 1.",
+              "oneOf" : [
+                {
+                  "enum" : [
+                    "left",
+                    "right",
+                    "up",
+                    "down",
+                    "next",
+                    "previous",
+                    "first",
+                    "last"
+                  ]
+                },
+                {
+                  "minimum" : 1,
+                  "type" : "integer"
+                }
+              ]
+            },
+            "type" : {
+              "enum" : [
+                "window.swap"
+              ]
+            }
+          },
+          "required" : [
+            "type",
+            "target"
           ],
           "type" : "object"
         },
@@ -958,6 +1008,13 @@
                 "last"
               ]
             },
+            "scope" : {
+              "description" : "all (default): windows on every display. display: only the focused window's display.",
+              "enum" : [
+                "all",
+                "display"
+              ]
+            },
             "type" : {
               "enum" : [
                 "window.focus"
@@ -1010,6 +1067,49 @@
           },
           "required" : [
             "type"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "scope" : {
+              "description" : "all (default): windows on every display. display: only the focused window's display.",
+              "enum" : [
+                "all",
+                "display"
+              ]
+            },
+            "target" : {
+              "description" : "The window to swap with: a direction, next, previous, first, last, or its number in Focus Window's order, from 1.",
+              "oneOf" : [
+                {
+                  "enum" : [
+                    "left",
+                    "right",
+                    "up",
+                    "down",
+                    "next",
+                    "previous",
+                    "first",
+                    "last"
+                  ]
+                },
+                {
+                  "minimum" : 1,
+                  "type" : "integer"
+                }
+              ]
+            },
+            "type" : {
+              "enum" : [
+                "window.swap"
+              ]
+            }
+          },
+          "required" : [
+            "type",
+            "target"
           ],
           "type" : "object"
         }

@@ -28,7 +28,13 @@ public enum ActionPlan: Sendable, Equatable {
 /// Why an action couldn't be planned. The message is shown in the Guide.
 public struct PlanError: Error, Sendable, Equatable {
     public var message: String
-    public init(_ message: String) { self.message = message }
+    /// Plays the alert sound, when `ui.errorBell` is on: Focus Window or
+    /// Swap Window found no window there (spec v10).
+    public var alerts: Bool
+    public init(_ message: String, alerts: Bool = false) {
+        self.message = message
+        self.alerts = alerts
+    }
 }
 
 public enum ActionPlanner {

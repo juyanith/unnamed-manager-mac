@@ -19,6 +19,8 @@ final class Launcher {
 
     /// The last failed action, for the log and the Guide (S-015).
     private(set) var lastFailure: String?
+    /// How many times a failure played the alert sound, for the self-test.
+    private(set) var alertsPlayed = 0
 
     /// Enabled in the menu bar menu (S-009). Remembered across launches.
     var isEnabled: Bool = UserDefaults.standard.object(forKey: "enabled") as? Bool ?? true {
@@ -138,9 +140,16 @@ final class Launcher {
     // MARK: - Events
 
     /// Shows a failed action in the Guide and writes it to the log (S-015).
-    func report(_ message: String, title: String) {
+    /// `alerts` plays the alert sound too, when it's on: Focus Window or Swap
+    /// Window found no window there (spec v10). With the screen flash turned
+    /// on in Accessibility settings, macOS flashes the screen with it.
+    func report(_ message: String, title: String, alerts: Bool = false) {
         lastFailure = message
         log.error("Action “\(title, privacy: .public)” failed: \(message, privacy: .public)")
+        if alerts, store.loaded?.config.ui.errorBell ?? true {
+            alertsPlayed += 1
+            NSSound.beep()
+        }
         // With the Guide turned off, failures go to the log only (S-021).
         if store.loaded?.config.runtime.showHud ?? true { guide.showFailure(message, title: title) }
     }
@@ -164,7 +173,7 @@ final class Launcher {
             do throws(PlanError) {
                 try await runner.run(action, id: id)
             } catch {
-                report(error.message, title: binding.title)
+                report(error.message, title: binding.title, alerts: error.alerts)
             }
         }
     }

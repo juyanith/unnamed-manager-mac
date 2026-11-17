@@ -20,6 +20,15 @@ extension FocusDirection {
     }
 }
 
+extension WindowScope {
+    var displayName: String {
+        switch self {
+        case .all: "On Every Display"
+        case .display: "On the Same Display"
+        }
+    }
+}
+
 extension ArrangeLayout {
     var displayName: String {
         switch self {
