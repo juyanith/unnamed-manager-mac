@@ -1,9 +1,0 @@
-{
-  "version": 1,
-  "windows": { "exclude": { "focus": ["com.apple.finder", "explorer.exe"], "arrange": ["com.apple.calculator", "CalculatorApp.exe"] } },
-  "entries": [
-    { "keys": "Meh+W", "title": "Windows" },
-    { "keys": "Meh+W A", "title": "Arrange", "action": "window-arrange" },
-    { "keys": "Meh+W Tab", "title": "Focus the window used before", "action": "window-focus-recent" }
-  ]
-}

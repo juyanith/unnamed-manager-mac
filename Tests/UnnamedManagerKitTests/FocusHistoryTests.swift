@@ -34,32 +34,34 @@ struct FocusHistoryTests {
         #expect(ConfigWriter.write(loaded.config, actionOrder: []).contains(#"{ "type": "window.focus", "direction": "recent" }"#))
     }
 
-    @Test("windows.exclude is empty by default, written only when it isn't, and the v13 list loads as focus and is written back as a list")
-    func exclude() throws {
+    @Test("windows.apps is empty by default, and an app's missing rules are true (S-084, spec v15)")
+    func apps() throws {
         let plain = try ConfigLoader.load(Data((Self.minimal + " }").utf8)).get()
-        #expect(plain.config.windows.exclude.isEmpty)
+        #expect(plain.config.windows.apps.isEmpty)
         #expect(!ConfigWriter.write(plain.config, actionOrder: []).contains("windows"))
-        var list = try ConfigLoader.load(Data((Self.minimal + #", "windows": { "exclude": ["com.apple.finder"] } }"#).utf8)).get().config
-        #expect(list.windows.exclude == .init(focus: ["com.apple.finder"]))
-        #expect(ConfigWriter.write(list, actionOrder: []).contains(#""windows": { "exclude": ["com.apple.finder"] }"#))
-        // Once arrange has an app, only the object can say it.
-        list.windows.exclude.set("com.apple.calculator", in: \.arrange, true)
-        #expect(ConfigWriter.write(list, actionOrder: []).contains(#""exclude": { "focus": ["com.apple.finder"], "arrange": ["com.apple.calculator"] }"#))
-        #expect(rule(#""exclude": "com.apple.finder""#) == .wrongType)
+        let set = try ConfigLoader.load(Data((Self.minimal + #", "windows": { "apps": { "com.apple.calculator": { "arrange": false }, "com.apple.Notes": {} } } }"#).utf8)).get()
+        #expect(set.config.windows.apps == ["com.apple.calculator": .init(arrange: false), "com.apple.Notes": .init()])
+        #expect(set.config.windows.leftOut(of: \.arrange) == ["com.apple.calculator"])
+        #expect(set.config.windows.leftOut(of: \.focus).isEmpty)
     }
 
-    @Test("windows.exclude has two separate lists, focus and arrange, and no other field (S-084, spec v14)")
-    func excludeLists() throws {
-        let set = try ConfigLoader.load(Data((Self.minimal + #", "windows": { "exclude": { "arrange": ["com.apple.calculator"] } } }"#).utf8)).get()
-        #expect(set.config.windows.exclude == .init(arrange: ["com.apple.calculator"]))
-        #expect(set.config.windows.exclude.apps == ["com.apple.calculator"])
-        #expect(ConfigWriter.write(set.config, actionOrder: []).contains(#""windows": { "exclude": { "arrange": ["com.apple.calculator"] } }"#))
-        #expect(rule(#""exclude": { "arrange": "com.apple.calculator" }"#) == .wrongType)
-        #expect(rule(#""exclude": { "swap": [] }"#) == .unknownField)
-        var both = Config.Windows.Exclude(focus: ["a", "b"], arrange: ["b", "c"])
-        #expect(both.apps == ["a", "b", "c"])
-        both.set("b", in: \.focus, false)
-        #expect(both.focus == ["a"] && both.apps == ["a", "b", "c"])
+    @Test("Every listed app is written with all three rules, sorted, even with every rule true")
+    func appsWritten() throws {
+        var windows = Config.Windows(apps: ["com.apple.finder": .init(focus: false, swap: false), "com.apple.calculator": .init(arrange: false)])
+        var config = try ConfigLoader.load(Data((Self.minimal + " }").utf8)).get().config
+        config.windows = windows
+        #expect(ConfigWriter.write(config, actionOrder: []).contains(#""windows": { "apps": { "com.apple.calculator": { "focus": true, "swap": true, "arrange": false }, "com.apple.finder": { "focus": false, "swap": false, "arrange": true } } }"#))
+        windows.apps["com.apple.calculator"]?.arrange = true
+        config.windows = windows
+        #expect(ConfigWriter.write(config, actionOrder: []).contains(#""com.apple.calculator": { "focus": true, "swap": true, "arrange": true }"#))
+    }
+
+    @Test("A rule that isn't one is unknown-field, one that isn't a boolean is wrong-type, and windows.exclude is gone")
+    func appsRejected() {
+        #expect(rule(#""apps": ["com.apple.calculator"]"#) == .wrongType)
+        #expect(rule(#""apps": { "com.apple.calculator": { "arrange": "no" } }"#) == .wrongType)
+        #expect(rule(#""apps": { "com.apple.calculator": { "float": true } }"#) == .unknownField)
+        #expect(rule(#""exclude": ["com.apple.finder"]"#) == .unknownField)
     }
 
     static let minimal = #"{ "version": 1, "entries": [ { "keys": "Meh+W", "title": "W" }, { "keys": "Meh+W H", "title": "H", "action": "window-focus-recent" } ]"#

@@ -10,6 +10,8 @@ enum Layout {
     static var settingsMaxHeight: CGFloat {
         min(960, (NSScreen.main?.visibleFrame.height ?? 920) - 80)
     }
+    /// One rule's checkbox column in Settings' Apps table.
+    static let ruleColumnWidth: CGFloat = 56
     /// The first-run welcome window.
     static let welcomeWidth: CGFloat = 520
     /// Bindings window sidebar.

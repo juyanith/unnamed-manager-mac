@@ -53,49 +53,40 @@ public struct Config: Sendable, Equatable {
         public var minVisible: Double
         public var rowTolerance: Double
         public var tieTolerance: Double
-        /// Apps left out of window actions (spec v13, two lists from spec v14).
-        public var exclude: Exclude
+        /// Rules for each app's windows, by bundle id (spec v15).
+        public var apps: [String: AppRules]
 
         public init(gap: Double = 8, maxColumns: Int = 2, maxRows: Int = 2,
-                    minVisible: Double = 20, rowTolerance: Double = 20, tieTolerance: Double = 2, exclude: Exclude = Exclude()) {
+                    minVisible: Double = 20, rowTolerance: Double = 20, tieTolerance: Double = 2, apps: [String: AppRules] = [:]) {
             self.gap = gap
             self.maxColumns = maxColumns
             self.maxRows = maxRows
             self.minVisible = minVisible
             self.rowTolerance = rowTolerance
             self.tieTolerance = tieTolerance
-            self.exclude = exclude
+            self.apps = apps
         }
 
-        /// Apps left out of window actions, by bundle id: `focus` from Focus
-        /// Window and Swap Window (spec v13), `arrange` from Arrange Windows
-        /// (spec v14). The lists are separate.
-        public struct Exclude: Sendable, Equatable {
-            public var focus: [String]
-            public var arrange: [String]
-            /// The file had the spec v13 form, a plain list for `focus`, which
-            /// is written back that way while `arrange` is empty.
-            public var isList: Bool
+        /// The rules for one app's windows (spec v15): which window actions
+        /// take part with them. A missing rule is true.
+        public struct AppRules: Sendable, Equatable {
+            public var focus: Bool
+            public var swap: Bool
+            public var arrange: Bool
 
-            public init(focus: [String] = [], arrange: [String] = [], isList: Bool = false) {
+            public init(focus: Bool = true, swap: Bool = true, arrange: Bool = true) {
                 self.focus = focus
+                self.swap = swap
                 self.arrange = arrange
-                self.isList = isList
             }
 
-            public var isEmpty: Bool { focus.isEmpty && arrange.isEmpty }
+            /// Left out of everything, as a new app in Settings starts.
+            public static let leftOutOfAll = Self(focus: false, swap: false, arrange: false)
+        }
 
-            /// Every app in either list, focus first, each once.
-            public var apps: [String] { focus + arrange.filter { !focus.contains($0) } }
-
-            /// Puts an app in a list, at the end, or takes it out.
-            public mutating func set(_ app: String, in list: WritableKeyPath<Self, [String]>, _ isIn: Bool) {
-                self[keyPath: list].removeAll { $0 == app }
-                if isIn { self[keyPath: list].append(app) }
-            }
-
-            /// The form isn't part of what the setting says.
-            public static func == (a: Self, b: Self) -> Bool { a.focus == b.focus && a.arrange == b.arrange }
+        /// The apps whose rule leaves them out of an action, such as `\.arrange`.
+        public func leftOut(of rule: KeyPath<AppRules, Bool>) -> Set<String> {
+            Set(apps.filter { !$0.value[keyPath: rule] }.keys)
         }
     }
 
@@ -259,7 +250,7 @@ extension Config.Runtime: Decodable {
 extension Config.Windows: Decodable {
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: AnyKey.self)
-        try c.rejectUnknown(allowed: ["gap", "maxColumns", "maxRows", "minVisible", "rowTolerance", "tieTolerance", "exclude"], at: "windows")
+        try c.rejectUnknown(allowed: ["gap", "maxColumns", "maxRows", "minVisible", "rowTolerance", "tieTolerance", "apps"], at: "windows")
         let d = Self()
         gap = try c.value("gap", default: d.gap)
         maxColumns = try c.value("maxColumns", default: d.maxColumns)
@@ -267,20 +258,18 @@ extension Config.Windows: Decodable {
         minVisible = try c.value("minVisible", default: d.minVisible)
         rowTolerance = try c.value("rowTolerance", default: d.rowTolerance)
         tieTolerance = try c.value("tieTolerance", default: d.tieTolerance)
-        exclude = try c.value("exclude", default: d.exclude)
+        apps = try c.value("apps", default: d.apps)
     }
 }
 
-extension Config.Windows.Exclude: Decodable {
+extension Config.Windows.AppRules: Decodable {
     public init(from decoder: any Decoder) throws {
-        // The spec v13 form, a plain list, means focus.
-        if let list = try? decoder.singleValueContainer().decode([String].self) {
-            self.init(focus: list, isList: true)
-            return
-        }
         let c = try decoder.container(keyedBy: AnyKey.self)
-        try c.rejectUnknown(allowed: ["focus", "arrange"], at: "windows.exclude")
-        self.init(focus: try c.value("focus", default: []), arrange: try c.value("arrange", default: []))
+        try c.rejectUnknown(allowed: ["focus", "swap", "arrange"], at: "windows.apps")
+        let d = Self()
+        focus = try c.value("focus", default: d.focus)
+        swap = try c.value("swap", default: d.swap)
+        arrange = try c.value("arrange", default: d.arrange)
     }
 }
 

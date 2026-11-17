@@ -103,7 +103,20 @@ struct SettingsView: View {
             }
 
             Section {
-                ForEach(editor.draft.config.windows.exclude.apps, id: \.self) { bundleId in
+                let apps = editor.draft.config.windows.apps
+                if !apps.isEmpty {
+                    HStack(spacing: Space.sm) {
+                        Text("App")
+                        Spacer()
+                        ForEach(Self.rules, id: \.name) { Text($0.name).frame(width: Layout.ruleColumnWidth) }
+                        // Room for the Remove button.
+                        Image(systemName: "minus.circle").hidden()
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+                }
+                ForEach(apps.keys.sorted { AppIcon.name($0).localizedStandardCompare(AppIcon.name($1)) == .orderedAscending }, id: \.self) { bundleId in
                     HStack(spacing: Space.sm) {
                         AppIcon(bundleId: bundleId)
                         VStack(alignment: .leading) {
@@ -111,14 +124,15 @@ struct SettingsView: View {
                             Text(bundleId).font(.caption).foregroundStyle(.secondary)
                         }
                         Spacer()
-                        Toggle("Focus and Swap", isOn: leftOut(bundleId, from: \.focus))
-                            .disabled(isOnly(bundleId, in: \.focus))
-                            .help("Focus Window and Swap Window never pick \(AppIcon.name(bundleId))")
-                        Toggle("Arrange", isOn: leftOut(bundleId, from: \.arrange))
-                            .disabled(isOnly(bundleId, in: \.arrange))
-                            .help("Arrange Windows never counts or moves \(AppIcon.name(bundleId))")
+                        ForEach(Self.rules, id: \.name) { rule in
+                            Toggle(rule.name, isOn: takesPart(bundleId, in: rule.path))
+                                .labelsHidden()
+                                .frame(width: Layout.ruleColumnWidth)
+                                .help("\(rule.help) \(AppIcon.name(bundleId))'s windows")
+                                .accessibilityLabel("\(rule.name) for \(AppIcon.name(bundleId))")
+                        }
                         Button("Remove", systemImage: "minus.circle") {
-                            setExcluded { $0.focus.removeAll { $0 == bundleId }; $0.arrange.removeAll { $0 == bundleId } }
+                            editApps { $0[bundleId] = nil }
                         }
                         .labelStyle(.iconOnly)
                         .buttonStyle(.borderless)
@@ -126,11 +140,11 @@ struct SettingsView: View {
                     }
                     .toggleStyle(.checkbox)
                 }
-                Button("Add App…") { addExcluded() }
+                Button("Add App…") { addApps() }
             } header: {
-                Text("Left Out")
+                Text("Apps")
             } footer: {
-                Text("Focus and Swap: Focus Window and Swap Window never pick these apps' windows, Window Used Before too. Arrange: Arrange Windows never counts or moves them. Their windows still hide the ones behind them.")
+                Text("Uncheck what an app's windows stay out of. Focus: Focus Window never picks them, Window Used Before too. Swap: Swap Window never moves them. Arrange: Arrange Windows never counts or moves them. Their windows still hide the ones behind them.")
             }
 
             Section {
@@ -182,35 +196,35 @@ struct SettingsView: View {
         })
     }
 
-    /// The apps Focus Window and Swap Window leave out (S-083), and Arrange Windows (S-084).
-    private func setExcluded(_ change: (inout Config.Windows.Exclude) -> Void) {
-        editor.edit("Change Left Out Apps", undo: undo) { change(&$0.config.windows.exclude) }
+    /// The columns of the Apps table: each rule in `windows.apps` (S-084, spec v15).
+    static let rules: [(name: String, path: WritableKeyPath<Config.Windows.AppRules, Bool>, help: String)] = [
+        ("Focus", \.focus, "Focus Window picks"),
+        ("Swap", \.swap, "Swap Window moves"),
+        ("Arrange", \.arrange, "Arrange Windows moves"),
+    ]
+
+    private func editApps(_ change: (inout [String: Config.Windows.AppRules]) -> Void) {
+        editor.edit("Change App Rules", undo: undo) { change(&$0.config.windows.apps) }
     }
 
-    /// Whether one list leaves an app out.
-    private func leftOut(_ app: String, from list: WritableKeyPath<Config.Windows.Exclude, [String]>) -> Binding<Bool> {
-        Binding(get: { editor.draft.config.windows.exclude[keyPath: list].contains(app) }, set: { isIn in
-            setExcluded { $0.set(app, in: list, isIn) }
+    /// Whether a window action takes part with an app's windows.
+    private func takesPart(_ app: String, in rule: WritableKeyPath<Config.Windows.AppRules, Bool>) -> Binding<Bool> {
+        Binding(get: { editor.draft.config.windows.apps[app]?[keyPath: rule] ?? true }, set: { isOn in
+            editApps { $0[app, default: Config.Windows.AppRules()][keyPath: rule] = isOn }
         })
     }
 
-    /// An app's only list can't be unchecked, so it stays in the section until Remove.
-    private func isOnly(_ app: String, in list: WritableKeyPath<Config.Windows.Exclude, [String]>) -> Bool {
-        let exclude = editor.draft.config.windows.exclude
-        return exclude[keyPath: list].contains(app) && !(exclude.focus.contains(app) && exclude.arrange.contains(app))
-    }
-
-    private func addExcluded() {
+    private func addApps() {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.application]
         panel.allowsMultipleSelection = true
         panel.directoryURL = URL(fileURLWithPath: "/Applications")
         guard panel.runModal() == .OK else { return }
         let added = panel.urls.compactMap { Bundle(url: $0)?.bundleIdentifier }
-            .filter { !editor.draft.config.windows.exclude.apps.contains($0) }
-        // A new app starts left out of both.
-        setExcluded { exclude in
-            for app in added { exclude.set(app, in: \.focus, true); exclude.set(app, in: \.arrange, true) }
+            .filter { editor.draft.config.windows.apps[$0] == nil }
+        // A new app starts left out of everything, since that's why it's added.
+        editApps { apps in
+            for app in added { apps[app] = .leftOutOfAll }
         }
     }
 

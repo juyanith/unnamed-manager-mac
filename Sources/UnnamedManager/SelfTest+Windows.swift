@@ -501,27 +501,27 @@ extension SelfTest {
         check("S-083 Swap Window's recent skips a window on another Space",
               fake.windows["d"]?.frame == other && fake.windows["b"]?.frame == left && fake.windows["a"]?.frame == left)
 
-        settings.exclude = .init(focus: ["com.example.skip"])
+        settings.apps = ["com.example.skip": .init(focus: false)]
         start(["a": .init(frame: left), "x": .init(frame: CGRect(x: 960, y: 0, width: 960, height: 1080), app: "com.example.skip"),
                "b": .init(frame: other)], clicks: ["a", "x", "b"])
         _ = await run(recent)
         let skipped = fake.focused
         _ = await run(FocusAction(.right))
-        check("S-083 an app in windows.exclude is never picked, by recent or a direction",
+        check("S-083 an app with focus false is never picked by Focus Window, by recent or a direction",
               skipped == "a" && fake.focused == "b", "\(String(describing: skipped)), \(String(describing: fake.focused))")
 
-        // S-084: apps left out of Arrange Windows, apart from Focus and Swap.
+        // S-084: each app's rules, apart from each other.
         let calc = "com.example.calc", small = CGRect(x: 100, y: 100, width: 300, height: 300)
         let leftHalf = CGRect(x: 0, y: 0, width: 960, height: 1080), rightHalf = CGRect(x: 960, y: 0, width: 960, height: 1080)
-        settings.exclude = .init(arrange: [calc])
+        settings.apps = [calc: .init(arrange: false)]
         start(["a": .init(frame: CGRect(x: 0, y: 0, width: 800, height: 600)), "b": .init(frame: CGRect(x: 1000, y: 0, width: 800, height: 600)),
                "c": .init(frame: small, app: calc)], clicks: ["b", "c", "a"])
         _ = await run(ArrangeAction())
-        check("S-084 Arrange Windows never counts or moves a window of an app in exclude.arrange",
+        check("S-084 Arrange Windows never counts or moves a window of an app with arrange false",
               fake.windows["a"]?.frame == leftHalf && fake.windows["b"]?.frame == rightHalf && fake.windows["c"]?.frame == small,
               "\(fake.windows.mapValues(\.frame))")
         _ = await run(recent)
-        check("S-084 Focus Window still picks a window of an app in exclude.arrange", fake.focused == "c", "\(String(describing: fake.focused))")
+        check("S-084 Focus Window still picks a window of an app with arrange false", fake.focused == "c", "\(String(describing: fake.focused))")
 
         let d = CGRect(x: 1920, y: 0, width: 800, height: 600), e = CGRect(x: 2920, y: 0, width: 800, height: 600)
         start(["a": .init(frame: CGRect(x: 0, y: 0, width: 800, height: 600)), "d": .init(frame: d), "e": .init(frame: e),
@@ -534,12 +534,26 @@ extension SelfTest {
                   && fake.windows["c"]?.frame == other.insetBy(dx: 400, dy: 300),
               "\(fake.windows.mapValues(\.frame))")
 
-        settings.exclude = .init(focus: [calc])
+        settings.apps = [calc: .init(focus: false, swap: false)]
         start(["a": .init(frame: CGRect(x: 0, y: 0, width: 800, height: 600)), "c": .init(frame: CGRect(x: 1000, y: 0, width: 800, height: 600), app: calc)],
               clicks: ["c", "a"])
         _ = await run(ArrangeAction())
-        check("S-084 Arrange Windows still arranges an app in exclude.focus",
+        check("S-084 Arrange Windows still arranges an app with focus and swap false",
               fake.windows["a"]?.frame == leftHalf && fake.windows["c"]?.frame == rightHalf, "\(fake.windows.mapValues(\.frame))")
+
+        _ = await run(SwapAction(.window(.right)))
+        let kept = fake.windows["a"]?.frame == leftHalf && fake.windows["c"]?.frame == rightHalf
+        fake.click("c")
+        let fromLeftOut = await run(SwapAction(.window(.left)))
+        check("S-084 Swap Window never moves a window of an app with swap false, as the one swapped with or the focused one",
+              kept && fake.windows["a"]?.frame == leftHalf && fromLeftOut?.message.hasSuffix("is left out of Swap Window.") == true,
+              "\(String(describing: fromLeftOut?.message))")
+
+        settings.apps = [calc: .init(focus: false)]
+        start(["a": .init(frame: leftHalf), "c": .init(frame: rightHalf, app: calc)], clicks: ["c", "a"])
+        _ = await run(SwapAction(.window(.right)))
+        check("S-084 Swap Window still swaps with an app with only focus false",
+              fake.windows["a"]?.frame == rightHalf && fake.windows["c"]?.frame == leftHalf, "\(fake.windows.mapValues(\.frame))")
     }
 
     /// S-070: the window types in the Type picker, and each form's value
@@ -595,15 +609,11 @@ extension SelfTest {
         check("S-082 Smallest Visible Part is saved in the file's windows settings, and undoes",
               file().contains(#""minVisible": 40"#) && { undo.undo(); return !file().contains("minVisible") }())
         undo.beginUndoGrouping()
-        editor.edit("Change Left Out Apps", undo: undo) { $0.config.windows.exclude = .init(focus: ["com.apple.finder"]) }
+        editor.edit("Change App Rules", undo: undo) { $0.config.windows.apps = ["com.apple.calculator": .init(arrange: false)] }
         undo.endUndoGrouping()
-        check("S-083 an app left out of Focus and Swap is saved in the file's windows settings, and undoes",
-              file().contains(#""exclude": { "focus": ["com.apple.finder"] }"#) && { undo.undo(); return !file().contains("exclude") }())
-        undo.beginUndoGrouping()
-        editor.edit("Change Left Out Apps", undo: undo) { $0.config.windows.exclude = .init(arrange: ["com.apple.calculator"]) }
-        undo.endUndoGrouping()
-        check("S-084 an app left out of Arrange is saved apart from Focus and Swap, and undoes",
-              file().contains(#""exclude": { "arrange": ["com.apple.calculator"] }"#) && { undo.undo(); return !file().contains("exclude") }())
+        check("S-084 an app's rules are saved in the file's windows settings, all three, and undo",
+              file().contains(#""apps": { "com.apple.calculator": { "focus": true, "swap": true, "arrange": false } }"#)
+                  && { undo.undo(); return !file().contains("com.apple.calculator") }())
 
         // S-080: choosing a built-in action saves only its name; an override in use can be deleted.
         let builtIn = "window-place-right-half"

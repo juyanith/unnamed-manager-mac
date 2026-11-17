@@ -993,20 +993,21 @@ UX:
 - The history is kept by the app while it runs, not in the config: app switches (NSWorkspace) and each app's focused-window changes (an AX observer per app), plus what the app's own actions focus. It keeps each window's AX element: a window on another Space isn't in its app's AX window list, but its saved element still answers, and AXRaise then activate moves to its Space (tried by hand with two Safari windows, 2026-11-17).
 Status: done
 Verified: the history, the pick, the target, built-in names, the old field name and the setting (unit tests, `FocusHistoryTests`, the spec-v13 fixtures, 258 in all); back and forth across displays, a covered window, another Space, a closed window, no window, swap and swap back, swap skipping another Space, an excluded app, and saving the setting against `FakeWindowSystem`, which now has Spaces and clicks (self-test, 209 checks); actions-window-focus-recent, hud-window and settings-bottom in light and dark, grid checks. Not yet tried by hand: Accessibility's focus reports, and another Space with two different apps.
+Later: `windows.exclude` and its Settings section gave way to `windows.apps` and the Apps table (S-084, spec v15).
 
-### S-084 Leave apps out of Arrange Windows, apart from Focus and Swap
-As the user, I keep Calculator out of Arrange Windows, so it floats where I put it, while Focus Window and Swap Window still go to it; or the other way round, for an app I never want to focus by key but do want arranged.
+### S-084 Choose for each app which window actions take part
+As the user, I keep Calculator out of Arrange Windows, so it floats where I put it, while Focus Window and Swap Window still go to it; or the other way round, for an app I never want to focus by key but do want arranged. One table shows each app's choices.
 Screens: settings
 Depends: S-075, S-083
 Acceptance:
-- [unit] `windows.exclude` is an object with `focus` and `arrange`, both lists of app ids; the spec-v13 list still loads as `focus` and is written back as a list while `arrange` is empty; another field is `unknown-field`; the spec-v14 fixtures pass.
-- [self] Arrange Windows never counts or moves a window of an app in `exclude.arrange`, and still arranges one in `exclude.focus`; with the focused window left out, its display is arranged and the window in front there takes the focused one's cell.
-- [self] Focus Window still picks a window of an app in `exclude.arrange`.
-- [self] Settings saves each app's two choices, and undo works.
+- [unit] `windows.apps` maps app ids to `focus`, `swap` and `arrange`, each true when missing; every listed app is written with all three; a rule that isn't one is `unknown-field`, one that isn't a boolean `wrong-type`; `windows.exclude` (spec v13 and v14, never released) is `unknown-field`; the spec-v15 fixtures pass.
+- [self] Focus Window never picks an app with `focus` false; Arrange Windows never counts or moves one with `arrange` false and still arranges one with only `focus` and `swap` false; with the focused window left out, its display is arranged and the window in front there takes the focused one's cell.
+- [self] Swap Window never moves an app with `swap` false, as the one swapped with or the focused one ("Calculator is left out of Swap Window."), and still swaps with one with only `focus` false.
+- [self] Settings saves an app's three rules, and undo works.
 UX:
-- Settings: the section becomes "Left Out", one list of apps, each with its icon, name and bundle id, two checkboxes, "Focus and Swap" and "Arrange", and a Remove button, then "Add App…". A new app starts with both checked. An app's only checked box can't be unchecked; Remove takes it out. Glossary: "Left Out".
+- Settings: an "Apps" section, a table with App, Focus, Swap and Arrange columns, a checkbox for each, checked when that action takes part, and a Remove button; then "Add App…". A new app starts with every box unchecked, since you add an app to leave it out of something. Glossary: "Apps (Settings)".
 Status: done
-Verified: both forms, the two lists, writing back, `unknown-field` and `wrong-type` (unit tests, `FocusHistoryTests`, the spec-v14 fixtures, 259 in all); Arrange Windows skipping an app in `exclude.arrange`, arranging the left-out focused window's display, still arranging an app in `exclude.focus`, Focus Window still picking an app in `exclude.arrange`, and saving each list (self-test, 214 checks); settings-bottom in light and dark, grid checks. Not yet tried by hand on real windows.
+Verified: the rules, defaults, writing all three, `unknown-field`, `wrong-type` and the dropped `exclude` (unit tests, `FocusHistoryTests`, the spec-v15 fixtures, 260 in all); Focus, Swap and Arrange Windows with each rule, and saving the rules (self-test); settings-bottom in light and dark, grid checks. Not yet tried by hand on real windows.
 
 ## Later
 - Pick a window from an overlay: `"target": "pick"` on Focus Window and Swap Window labels the visible windows in order and waits for one key (numbers or home-row letters), Escape cancels.

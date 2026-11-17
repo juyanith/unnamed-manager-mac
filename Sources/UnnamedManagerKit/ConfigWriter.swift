@@ -19,14 +19,17 @@ public enum ConfigWriter {
             if config.windows.minVisible != standard.minVisible { fields.number("minVisible", config.windows.minVisible) }
             if config.windows.rowTolerance != standard.rowTolerance { fields.number("rowTolerance", config.windows.rowTolerance) }
             if config.windows.tieTolerance != standard.tieTolerance { fields.number("tieTolerance", config.windows.tieTolerance) }
-            let exclude = config.windows.exclude
-            if exclude.isList && exclude.arrange.isEmpty {
-                if !exclude.focus.isEmpty { fields.strings("exclude", exclude.focus) }
-            } else if !exclude.isEmpty {
-                var lists = ActionFieldWriter()
-                if !exclude.focus.isEmpty { lists.strings("focus", exclude.focus) }
-                if !exclude.arrange.isEmpty { lists.strings("arrange", exclude.arrange) }
-                fields.object("exclude", lists)
+            if !config.windows.apps.isEmpty {
+                // Every rule of every app listed, so the file reads like the table in Settings.
+                var apps = ActionFieldWriter()
+                for (app, rules) in config.windows.apps.sorted(by: { $0.key < $1.key }) {
+                    var each = ActionFieldWriter()
+                    each.bool("focus", rules.focus)
+                    each.bool("swap", rules.swap)
+                    each.bool("arrange", rules.arrange)
+                    apps.object(app, each)
+                }
+                fields.object("apps", apps)
             }
             sections.append("  \"windows\": \(object(fields.fields))")
         }

@@ -1307,37 +1307,27 @@
     "windows" : {
       "additionalProperties" : false,
       "properties" : {
-        "exclude" : {
-          "description" : "Apps left out of window actions, in two lists. An array is the spec v13 form and means focus.",
-          "oneOf" : [
-            {
-              "description" : "Spec v13 form: apps whose windows Focus Window and Swap Window never pick. Mac: bundle ids. Windows: an exe (ends in .exe) or an AppUserModelID.",
-              "items" : {
-                "type" : "string"
+        "apps" : {
+          "additionalProperties" : {
+            "additionalProperties" : false,
+            "properties" : {
+              "arrange" : {
+                "description" : "false: Arrange Windows never counts or moves this app's windows. Default true.",
+                "type" : "boolean"
               },
-              "type" : "array"
+              "focus" : {
+                "description" : "false: Focus Window never picks this app's windows. Default true.",
+                "type" : "boolean"
+              },
+              "swap" : {
+                "description" : "false: Swap Window never moves this app's windows. Default true.",
+                "type" : "boolean"
+              }
             },
-            {
-              "additionalProperties" : false,
-              "properties" : {
-                "arrange" : {
-                  "description" : "Apps whose windows Arrange Windows never counts or moves. Mac: bundle ids. Windows: an exe (ends in .exe) or an AppUserModelID. Default none.",
-                  "items" : {
-                    "type" : "string"
-                  },
-                  "type" : "array"
-                },
-                "focus" : {
-                  "description" : "Apps whose windows Focus Window and Swap Window never pick. Mac: bundle ids. Windows: an exe (ends in .exe) or an AppUserModelID. Default none.",
-                  "items" : {
-                    "type" : "string"
-                  },
-                  "type" : "array"
-                }
-              },
-              "type" : "object"
-            }
-          ]
+            "type" : "object"
+          },
+          "description" : "Rules for each app's windows, keyed by app id. Mac: bundle ids. Windows: an exe (ends in .exe) or an AppUserModelID. An app that isn't listed takes part in every window action.",
+          "type" : "object"
         },
         "gap" : {
           "description" : "Points Place Window and Fill leave around windows and between them. Default 8.",
