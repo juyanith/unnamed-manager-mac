@@ -16,6 +16,26 @@ extension View {
     func fitsContent(max: CGFloat = 640) -> some View {
         modifier(FitsContent(max: max))
     }
+
+    /// Keeps a Form's rows at most `width` wide, centered in a wider window.
+    /// It's centered by margins, not a narrower frame, so the scroll view
+    /// and its background still fill the page.
+    func readableWidth(_ width: CGFloat) -> some View {
+        modifier(ReadableWidth(width: width))
+    }
+}
+
+private struct ReadableWidth: ViewModifier {
+    var width: CGFloat
+    @State private var sideMargin = Space.margin
+
+    func body(content: Content) -> some View {
+        content
+            .contentMargins(.horizontal, sideMargin, for: .scrollContent)
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { pageWidth in
+                sideMargin = max(Space.margin, ((pageWidth - width) / 2).rounded())
+            }
+    }
 }
 
 private struct FitsContent: ViewModifier {

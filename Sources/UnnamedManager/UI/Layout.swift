@@ -3,21 +3,16 @@ import SwiftUI
 
 /// Fixed sizes. Spacing lives in Space (Grid.swift).
 enum Layout {
-    /// The General and Windows tabs' Form.
-    static let settingsWidth: CGFloat = 520
-    /// Settings grows to this height before it scrolls, unless the screen is
-    /// shorter: then it stops 80 points short of it.
-    static var settingsMaxHeight: CGFloat {
-        min(960, (NSScreen.main?.visibleFrame.height ?? 920) - 80)
-    }
+    /// The General and Windows tabs' Form, centered in a wider window.
+    static let settingsFormMaxWidth: CGFloat = 600
+    /// The Settings window below its toolbar: the smallest it gets, and its
+    /// size the first time it opens. Every tab has the same size.
+    static let settingsMin = CGSize(width: 720, height: 480)
+    static let settingsDefault = CGSize(width: 980, height: 640)
     /// One rule's checkbox column in Settings' Apps table.
     static let ruleColumnWidth: CGFloat = 56
     /// The first-run welcome window.
     static let welcomeWidth: CGFloat = 520
-    /// Settings' Bindings, Actions and Contexts tabs: the smallest their
-    /// page gets, and the window's size the first time one opens.
-    static let editorTabMin = CGSize(width: 720, height: 480)
-    static let editorTabDefault = CGSize(width: 980, height: 720)
     /// The Help window's smallest and first-open size.
     static let helpMin = CGSize(width: 480, height: 400)
     static let helpDefault = CGSize(width: 680, height: 720)

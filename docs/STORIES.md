@@ -1020,14 +1020,14 @@ Acceptance:
 - [self] Settings has the tabs General, Bindings, Actions, Contexts and Windows, opens on Bindings, and switches tabs; there's no Bindings window.
 - [self] Settings… brings the app and the Settings window in front of another app, from the menu bar with no window open.
 - [self] Help opens a window of its own; a key on it brings Settings back on the Bindings tab.
-- [self] On the editor tabs the window can be resized, opens at 980 × 720, and keeps the size you give it.
+- [self] The window can be resized, opens with a 980 × 640 page, and switching tabs never resizes it, before or after you resize it.
 - [snap] Every tab and Help in light and dark; a list's add and remove buttons in a bar under it.
 - [manual] From the menu bar while another app is in front, Settings… and Help open in front, with no other copy of the app running.
 UX:
 - The menu bar menu has Settings… (⌘,) in place of Edit Bindings… (⌘B). The View menu switches tabs with ⌘1 to ⌘5. The title names the tab. Glossary: "Settings", "Help window"; "Bindings window" and "Help page" are retired.
 - ⌘Q still quits: it's the app menu's Quit Unnamed Manager, as in every Mac app. ⌘W closes the window.
 Status: done
-Verified: tabs, no Bindings window, resizing and keeping the size, Help as its own window (self-test); every tab, empty tabs and Help in light and dark, grid checks. Bringing the app in front passed with the Bindings window open (before the merge); with no window open it couldn't be checked while another copy of the app was running, since NSWorkspace brings the copy with the same bundle id forward.
+Verified: tabs, no Bindings window, one size on every tab, resizing and keeping the size, Help as its own window, and Settings… and Help in front of another app with no window open (self-test, 222 checks); every tab, empty tabs and Help in light and dark, grid checks. The front checks are skipped while another copy of the app runs, since NSWorkspace brings the copy with the same bundle id forward.
 
 ## Later
 - Pick a window from an overlay: `"target": "pick"` on Focus Window and Swap Window labels the visible windows in order and waits for one key (numbers or home-row letters), Escape cancels.

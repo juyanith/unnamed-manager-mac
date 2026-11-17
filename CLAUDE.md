@@ -41,7 +41,7 @@ does and how: `docs/BRIEF.md`, `docs/SPEC.md`, `docs/STORIES.md`,
 - Compare accents: add `APP_ACCENT=<id>` to the snapshot command.
 - Spacing comes from `Space` in `UI/Grid.swift`, on a 4 pt grid. Mark custom pages and cards with `.gridArea` and `.gridProbe`.
 - Windows open calm: `.noInitialFocus()` on every window and sheet (no focus ring or selected text on open), `.fitsContent()` on sheets and Settings tabs (no scroll bar with nothing to scroll). System scroll bars. Both in `UI/WindowBehavior.swift`.
-- Settings is one window with toolbar tabs (`SettingsWindow.swift`, the tabs in `SettingsTab`): General and Windows are grouped Forms, 520 pt wide (`SettingsView.swift`); Bindings, Actions and Contexts are editors you can resize. Help is a window of its own (`HelpPage.swift`). A list's add and remove buttons go in a `ListBar` under it, since the toolbar holds the tabs.
+- Settings is one window with toolbar tabs (`SettingsWindow.swift`, the tabs in `SettingsTab`): every tab has the same size, so switching never resizes the window. General and Windows are grouped Forms centered at a readable width (`SettingsView.swift`); Bindings, Actions and Contexts are editors. Help is a window of its own (`HelpPage.swift`). A list's add and remove buttons go in a `ListBar` under it, since the toolbar holds the tabs.
 - Window chrome (title bar, toolbar, sidebar, menus, sheets) stays system. Buttons use system styles, like `.borderedProminent`.
 - Colors: `.primary`, `.secondary`, `.tint`, and system colors. Never fixed grays or white for text.
 - Every action has a menu bar item and a keyboard shortcut.

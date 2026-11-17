@@ -2,8 +2,8 @@ import ServiceManagement
 import SwiftUI
 import UnnamedManagerKit
 
-/// The General and Windows tabs of Settings: a grouped Form each, 520 pt
-/// wide. General has Guide, Keys, Feedback and Startup; Windows has
+/// The General and Windows tabs of Settings: a grouped Form each, at most
+/// 600 pt wide in the window every tab shares. General has Guide, Keys, Feedback and Startup; Windows has
 /// Windows, Focus and Swap, and Apps (S-032, S-036, S-082, S-084, S-085).
 /// Changes are written to the config file at once, like every other edit.
 struct SettingsForm: View {
@@ -169,8 +169,7 @@ struct SettingsForm: View {
             }
         }
         .formStyle(.grouped)
-        .fitsContent(max: Layout.settingsMaxHeight)
-        .frame(width: Layout.settingsWidth)
+        .readableWidth(Layout.settingsFormMaxWidth)
         .noInitialFocus()
         .onAppear { opensAtLogin = SMAppService.mainApp.status == .enabled }
     }

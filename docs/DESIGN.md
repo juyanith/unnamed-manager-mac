@@ -28,13 +28,13 @@ A **menu bar extra, the Guide panel, a Settings window, and a Help window** (rul
 
 | Tab | Symbol | Content |
 | --- | --- | --- |
-| General | `gearshape` | A grouped Form, 520 pt wide: Guide, Keys, Feedback, Startup (S-032, S-036) |
+| General | `gearshape` | A grouped Form, at most 600 pt wide and centered: Guide, Keys, Feedback, Startup (S-032, S-036) |
 | Bindings | `keyboard` | An outline of leaders › menus › bindings with Key, Title and Action columns, in file order (S-023 to S-029) |
 | Actions | `bolt` | A list of actions plus a form for the selected one, which changes with its type (S-030) |
 | Contexts | `macwindow.on.rectangle` | An ordered list of contexts with their apps (S-031) |
-| Windows | `rectangle.split.2x1` | A grouped Form, 520 pt wide: Windows, Focus and Swap, Apps (S-071, S-082, S-084) |
+| Windows | `rectangle.split.2x1` | A grouped Form, at most 600 pt wide and centered: Windows, Focus and Swap, Apps (S-071, S-082, S-084) |
 
-The window title names the tab ("General", "Bindings"), as in Apple's Settings windows. Settings opens on Bindings, then on the tab you used last. The Form tabs fit their content and can't be resized. The editor tabs (Bindings, Actions, Contexts) put their list on the left and a form for the selection on the right, 280 pt wide on Bindings. On them you can resize the window, as on Xcode's Key Bindings tab; it opens at 980 × 720 and keeps the size you give it while the app runs. There's no inspector.
+The window title names the tab ("General", "Bindings"), as in Apple's Settings windows. Settings opens on Bindings, then on the tab you used last. **Every tab has the same size, so switching tabs never resizes the window** (a window that jumps between a narrow form and a wide editor is distracting). You can resize it on any tab; it opens with a 980 × 640 page and keeps the size you give it while the app runs. The Form tabs center their rows at a readable width and scroll when they're taller than the window. The editor tabs (Bindings, Actions, Contexts) put their list on the left and a form for the selection on the right, 280 pt wide on Bindings. There's no inspector.
 
 The toolbar holds the tabs, so a list's add and remove buttons sit in a bar under it (`ListBar`), as in Mail's Rules: New Binding, New Menu and Delete under the outline, New and Delete under Actions and Contexts.
 

@@ -41,8 +41,6 @@ enum Motion {
     /// A pause before scrolling to a list that just opened, so its rows are
     /// laid out first. The scroll itself jumps: nothing travels.
     static let layoutSettle: Duration = .milliseconds(100)
-    /// How long Settings takes to resize to a tab you switch to.
-    static let tabResize: Duration = .milliseconds(300)
 
     /// How long a failed action's message stays in the Guide (S-015).
     static let errorMessageHold: Duration = .seconds(2)

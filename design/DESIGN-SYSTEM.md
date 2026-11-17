@@ -21,7 +21,7 @@ Which token to use, and when. The tokens are in `Sources/UnnamedManager/UI/`. Ap
 - **Inner corners are always concentric:** inner = outer − inset. Use `ConcentricRectangle` for a part that can appear both nested and alone.
 
 ## Layout.swift: sizes
-- **Window sizes:** Settings' editor tabs use `Layout.editorTabMin` and `Layout.editorTabDefault`, its Form tabs `Layout.settingsWidth` (520), and Help `Layout.helpMin` and `Layout.helpDefault`.
+- **Window sizes:** Settings uses `Layout.settingsMin` and `Layout.settingsDefault` on every tab, and its Form tabs keep their rows within `Layout.settingsFormMaxWidth` with `.readableWidth`. Help uses `Layout.helpMin` and `Layout.helpDefault`.
 - **The Guide** has `Layout.guideRowsPerColumn` (12) rows per column, up to `Layout.guideMaxColumns` (3) columns of `Layout.guideColumnWidth`. Titles beyond the column width truncate at the end, and VoiceOver reads the full title.
 - **Keycaps** are at least `Layout.keycapMinWidth` (28) wide, so a column of keys lines up.
 

@@ -80,9 +80,6 @@ struct HelpPage: View {
     @Environment(AppModel.self) private var model
     @Environment(\.undoManager) private var undo
 
-    /// The form's side margins, which keep its rows readable in a wide window.
-    @State private var sideMargin = Space.margin
-
     private var editor: BindingsEditor { model.editor }
 
     /// The draft, so the page matches the Bindings tab, even mid-edit.
@@ -116,12 +113,7 @@ struct HelpPage: View {
             more
         }
         .formStyle(.grouped)
-        // Centered by margins, not a narrower frame, so the scroll view and
-        // its background still fill the page.
-        .contentMargins(.horizontal, sideMargin, for: .scrollContent)
-        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width in
-            sideMargin = max(Space.margin, ((width - Layout.helpMaxWidth) / 2).rounded())
-        }
+        .readableWidth(Layout.helpMaxWidth)
         .onChange(of: model.revealBuiltIn, initial: true) { _, kind in
             guard let kind else { return }
             Task {

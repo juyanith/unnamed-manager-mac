@@ -28,8 +28,7 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         }
     }
 
-    /// The tabs that edit a list beside a form. They fill a resizable
-    /// window; the others are a Form that fits its content.
+    /// The tabs that edit a list beside a form; the others are a Form.
     var isEditor: Bool { self == .bindings || self == .actions || self == .contexts }
 }
 
@@ -39,6 +38,9 @@ final class AppModel {
     /// The Settings tab on screen. Settings opens on Bindings, then on the
     /// tab you used last.
     var tab: SettingsTab = .bindings
+    /// The Settings window's size below the toolbar, the same on every tab.
+    /// It keeps the size you give it while the app runs.
+    var settingsSize = Layout.settingsDefault
 
     /// How many of the app's windows are open. While any is, the app is a
     /// regular app with a main menu (Edit > Undo, Window); otherwise it lives

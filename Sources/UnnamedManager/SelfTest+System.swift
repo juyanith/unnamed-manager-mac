@@ -121,6 +121,18 @@ extension SelfTest {
         check(name, ok, detail)
     }
 
+    /// The Settings window's different sizes as you go through every tab.
+    static func tabSizes(_ model: AppModel, _ settings: NSWindow?) async -> [CGSize] {
+        var sizes: [CGSize] = []
+        for tab in SettingsTab.allCases + [.bindings] {
+            model.tab = tab
+            try? await Task.sleep(for: .seconds(0.6))
+            let size = settings?.frame.size ?? .zero
+            if !sizes.contains(size) { sizes.append(size) }
+        }
+        return sizes
+    }
+
     /// The window whose SwiftUI identifier starts with `prefix`.
     static func window(_ prefix: String) -> NSWindow? {
         NSApp.windows.first { $0.identifier?.rawValue.hasPrefix(prefix) == true }
@@ -149,18 +161,20 @@ extension SelfTest {
         try? await Task.sleep(for: .seconds(1))
         frontCheck("S-085 Help is a window of its own, and its links bring Settings back on the Bindings tab",
               helpInFront && settings?.isKeyWindow == true && model.tab == .bindings && window(WindowID.help)?.isVisible == true)
-        let frame = settings?.frame.size ?? .zero
-        check("S-085 the Bindings tab can be resized, and opens at its first size",
-              settings?.styleMask.contains(.resizable) == true
-                  && frame == Layout.editorTabDefault,
-              "\(frame), resizable: \(settings?.styleMask.contains(.resizable) == true)")
-        // As if you dragged the corner: the window keeps the size.
+        check("S-085 Settings can be resized, and opens at its first size",
+              settings?.styleMask.contains(.resizable) == true && settings?.contentLayoutRect.size == Layout.settingsDefault,
+              "\(settings?.contentLayoutRect.size ?? .zero), resizable: \(settings?.styleMask.contains(.resizable) == true)")
+        check("S-085 switching tabs never resizes Settings",
+              await tabSizes(model, settings) == [settings?.frame.size ?? .zero], "\(await tabSizes(model, settings))")
+        // As if you dragged the corner: the window keeps the size, on every tab.
         if let settings {
             settings.setFrame(NSRect(origin: settings.frame.origin, size: CGSize(width: 1100, height: 760)), display: true)
+            NotificationCenter.default.post(name: NSWindow.didEndLiveResizeNotification, object: settings)
             try? await Task.sleep(for: .seconds(1))
         }
-        check("S-085 the Bindings tab keeps the size you give it",
-              settings?.frame.size == CGSize(width: 1100, height: 760), "\(settings?.frame.size ?? .zero)")
+        let sizes = await tabSizes(model, settings)
+        check("S-085 Settings keeps the size you give it, on every tab",
+              sizes == [CGSize(width: 1100, height: 760)], "\(sizes)")
         check("S-085 there is no separate Bindings window",
               !NSApp.windows.contains { $0.identifier?.rawValue.hasPrefix("bindings") == true })
         window(WindowID.help)?.close()

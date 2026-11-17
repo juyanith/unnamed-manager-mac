@@ -12,10 +12,12 @@ struct SettingsWindow: View {
         TabView(selection: $model.tab) {
             ForEach(SettingsTab.allCases) { tab in
                 page(tab)
+                    .modifier(SameSize())
                     .tabItem { Label(tab.title, systemImage: tab.symbol) }
                     .tag(tab)
             }
         }
+        .background(ResizableWindow(model: model))
         .noInitialFocus()
         .onChange(of: model.store.revision) { model.editor.reloadFromStore() }
         .task {
@@ -24,64 +26,78 @@ struct SettingsWindow: View {
         }
     }
 
-    /// A tab's page. The editor tabs fill a window you can resize; the
-    /// others are a Form that fits its content.
     @ViewBuilder
     private func page(_ tab: SettingsTab) -> some View {
         switch tab {
-        case .general, .windows:
-            SettingsForm(tab: tab)
-        case .bindings:
-            BindingsPage().editorTab()
-        case .actions:
-            ActionsPage().editorTab()
-        case .contexts:
-            ContextsPage().editorTab()
+        case .general, .windows: SettingsForm(tab: tab)
+        case .bindings: BindingsPage()
+        case .actions: ActionsPage()
+        case .contexts: ContextsPage()
         }
     }
 }
 
-private extension View {
-    func editorTab() -> some View {
-        frame(minWidth: Layout.editorTabMin.width, maxWidth: .infinity,
-              minHeight: Layout.editorTabMin.height, maxHeight: .infinity)
-            .background(EditorTabWindow())
+/// Every tab has the window's size, so switching tabs never resizes it.
+/// A Settings window sizes itself to each tab; with each tab's ideal size
+/// the window's own, there's nothing to change.
+private struct SameSize: ViewModifier {
+    @Environment(AppModel.self) private var model
+
+    func body(content: Content) -> some View {
+        content.frame(minWidth: Layout.settingsMin.width, idealWidth: model.settingsSize.width, maxWidth: .infinity,
+                      minHeight: Layout.settingsMin.height, idealHeight: model.settingsSize.height, maxHeight: .infinity)
     }
 }
 
-/// Makes the Settings window resizable while an editor tab shows, at the
-/// size you left it, as Xcode's Key Bindings tab does. A Settings window
-/// fits each tab and can't be resized on its own; the Form tabs keep that.
-private struct EditorTabWindow: NSViewRepresentable {
-    /// The window's size on the editor tabs when you left them last,
-    /// shared by all three.
-    @MainActor static var size = Layout.editorTabDefault
+/// Makes the Settings window resizable, which a Settings window isn't on
+/// its own, and keeps the size you give it in the model for every tab.
+private struct ResizableWindow: NSViewRepresentable {
+    let model: AppModel
 
-    func makeNSView(context: Context) -> Probe { Probe() }
+    func makeNSView(context: Context) -> Probe { Probe(model: model) }
     func updateNSView(_ probe: Probe, context: Context) {}
 
     final class Probe: NSView {
-        private weak var resized: NSWindow?
+        let model: AppModel
+
+        init(model: AppModel) {
+            self.model = model
+            super.init(frame: .zero)
+        }
+
+        required init?(coder: NSCoder) { nil }
 
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
-            if let window {
-                resized = window
-                // After SwiftUI has sized the window to the tab, which it
-                // animates when you switch tabs.
-                Task { @MainActor in
-                    try? await Task.sleep(for: Motion.tabResize)
-                    window.styleMask.insert(.resizable)
-                    let size = EditorTabWindow.size
-                    let origin = NSPoint(x: window.frame.minX, y: window.frame.maxY - size.height)
-                    window.setFrame(NSRect(origin: origin, size: size), display: true, animate: false)
-                }
-            } else if let resized {
-                // Leaving for a Form tab.
-                EditorTabWindow.size = resized.frame.size
-                resized.styleMask.remove(.resizable)
-                self.resized = nil
+            NotificationCenter.default.removeObserver(self)
+            guard let window else { return }
+            // SwiftUI opens it at the smallest width; give it the size you left it at.
+            DispatchQueue.main.async { [model] in
+                // The page sits below the toolbar, which the frame includes.
+                let toolbar = window.frame.height - window.contentLayoutRect.height
+                let size = CGSize(width: model.settingsSize.width, height: model.settingsSize.height + toolbar)
+                window.setFrame(NSRect(origin: NSPoint(x: window.frame.minX, y: window.frame.maxY - size.height), size: size),
+                                display: true)
+                Self.makeResizable(window)
             }
+            NotificationCenter.default.addObserver(self, selector: #selector(didResize),
+                                                   name: NSWindow.didEndLiveResizeNotification, object: window)
+            // SwiftUI takes the resizable flag away again as it lays out.
+            NotificationCenter.default.addObserver(self, selector: #selector(didUpdate),
+                                                   name: NSWindow.didUpdateNotification, object: window)
+        }
+
+        private static func makeResizable(_ window: NSWindow) {
+            if !window.styleMask.contains(.resizable) { window.styleMask.insert(.resizable) }
+        }
+
+        @objc private func didUpdate(_ note: Notification) {
+            if let window { Self.makeResizable(window) }
+        }
+
+        @objc private func didResize(_ note: Notification) {
+            guard let window else { return }
+            model.settingsSize = window.contentLayoutRect.size
         }
     }
 }
