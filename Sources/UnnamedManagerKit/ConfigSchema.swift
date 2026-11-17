@@ -78,8 +78,19 @@ public enum ConfigSchema {
                         "minVisible": ["type": "number", "minimum": 0, "description": "Points on a side of the square a window must show for Focus Window and Swap Window to count it, and points it must share with the focused window to be in line. Default 20."],
                         "rowTolerance": ["type": "number", "minimum": 0, "description": "Windows whose tops are within this many points share a row in Focus Window's order. Default 20."],
                         "tieTolerance": ["type": "number", "minimum": 0, "description": "Gaps within this many points count as the same when Focus Window picks a window in a direction. Default 2."],
-                        "exclude": ["type": "array", "items": ["type": "string"],
-                                    "description": "Apps whose windows Focus Window and Swap Window never pick. Mac: bundle ids. Windows: an exe (ends in .exe) or an AppUserModelID. Default none."],
+                        "exclude": [
+                            "description": "Apps left out of window actions, in two lists. An array is the spec v13 form and means focus.",
+                            "oneOf": [
+                                ["type": "array", "items": ["type": "string"],
+                                 "description": "Spec v13 form: apps whose windows Focus Window and Swap Window never pick. Mac: bundle ids. Windows: an exe (ends in .exe) or an AppUserModelID."],
+                                ["type": "object", "additionalProperties": false, "properties": [
+                                    "focus": ["type": "array", "items": ["type": "string"],
+                                              "description": "Apps whose windows Focus Window and Swap Window never pick. Mac: bundle ids. Windows: an exe (ends in .exe) or an AppUserModelID. Default none."],
+                                    "arrange": ["type": "array", "items": ["type": "string"],
+                                                "description": "Apps whose windows Arrange Windows never counts or moves. Mac: bundle ids. Windows: an exe (ends in .exe) or an AppUserModelID. Default none."],
+                                ]],
+                            ],
+                        ],
                     ],
                 ],
                 "entries": [

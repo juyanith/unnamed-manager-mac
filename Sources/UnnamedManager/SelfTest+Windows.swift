@@ -501,7 +501,7 @@ extension SelfTest {
         check("S-083 Swap Window's recent skips a window on another Space",
               fake.windows["d"]?.frame == other && fake.windows["b"]?.frame == left && fake.windows["a"]?.frame == left)
 
-        settings.exclude = ["com.example.skip"]
+        settings.exclude = .init(focus: ["com.example.skip"])
         start(["a": .init(frame: left), "x": .init(frame: CGRect(x: 960, y: 0, width: 960, height: 1080), app: "com.example.skip"),
                "b": .init(frame: other)], clicks: ["a", "x", "b"])
         _ = await run(recent)
@@ -509,6 +509,37 @@ extension SelfTest {
         _ = await run(FocusAction(.right))
         check("S-083 an app in windows.exclude is never picked, by recent or a direction",
               skipped == "a" && fake.focused == "b", "\(String(describing: skipped)), \(String(describing: fake.focused))")
+
+        // S-084: apps left out of Arrange Windows, apart from Focus and Swap.
+        let calc = "com.example.calc", small = CGRect(x: 100, y: 100, width: 300, height: 300)
+        let leftHalf = CGRect(x: 0, y: 0, width: 960, height: 1080), rightHalf = CGRect(x: 960, y: 0, width: 960, height: 1080)
+        settings.exclude = .init(arrange: [calc])
+        start(["a": .init(frame: CGRect(x: 0, y: 0, width: 800, height: 600)), "b": .init(frame: CGRect(x: 1000, y: 0, width: 800, height: 600)),
+               "c": .init(frame: small, app: calc)], clicks: ["b", "c", "a"])
+        _ = await run(ArrangeAction())
+        check("S-084 Arrange Windows never counts or moves a window of an app in exclude.arrange",
+              fake.windows["a"]?.frame == leftHalf && fake.windows["b"]?.frame == rightHalf && fake.windows["c"]?.frame == small,
+              "\(fake.windows.mapValues(\.frame))")
+        _ = await run(recent)
+        check("S-084 Focus Window still picks a window of an app in exclude.arrange", fake.focused == "c", "\(String(describing: fake.focused))")
+
+        let d = CGRect(x: 1920, y: 0, width: 800, height: 600), e = CGRect(x: 2920, y: 0, width: 800, height: 600)
+        start(["a": .init(frame: CGRect(x: 0, y: 0, width: 800, height: 600)), "d": .init(frame: d), "e": .init(frame: e),
+               "c": .init(frame: other.insetBy(dx: 400, dy: 300), app: calc)], clicks: ["a", "e", "d", "c"])
+        _ = await run(ArrangeAction())
+        check("S-084 with the focused window left out, its display is arranged, the window in front there first",
+              fake.windows["d"]?.frame == CGRect(x: 1920, y: 0, width: 960, height: 1080)
+                  && fake.windows["e"]?.frame == CGRect(x: 2880, y: 0, width: 960, height: 1080)
+                  && fake.windows["a"]?.frame == CGRect(x: 0, y: 0, width: 800, height: 600)
+                  && fake.windows["c"]?.frame == other.insetBy(dx: 400, dy: 300),
+              "\(fake.windows.mapValues(\.frame))")
+
+        settings.exclude = .init(focus: [calc])
+        start(["a": .init(frame: CGRect(x: 0, y: 0, width: 800, height: 600)), "c": .init(frame: CGRect(x: 1000, y: 0, width: 800, height: 600), app: calc)],
+              clicks: ["c", "a"])
+        _ = await run(ArrangeAction())
+        check("S-084 Arrange Windows still arranges an app in exclude.focus",
+              fake.windows["a"]?.frame == leftHalf && fake.windows["c"]?.frame == rightHalf, "\(fake.windows.mapValues(\.frame))")
     }
 
     /// S-070: the window types in the Type picker, and each form's value
@@ -564,10 +595,15 @@ extension SelfTest {
         check("S-082 Smallest Visible Part is saved in the file's windows settings, and undoes",
               file().contains(#""minVisible": 40"#) && { undo.undo(); return !file().contains("minVisible") }())
         undo.beginUndoGrouping()
-        editor.edit("Change Left Out Apps", undo: undo) { $0.config.windows.exclude = ["com.apple.finder"] }
+        editor.edit("Change Left Out Apps", undo: undo) { $0.config.windows.exclude = .init(focus: ["com.apple.finder"]) }
         undo.endUndoGrouping()
         check("S-083 an app left out of Focus and Swap is saved in the file's windows settings, and undoes",
-              file().contains(#""exclude": ["com.apple.finder"]"#) && { undo.undo(); return !file().contains("exclude") }())
+              file().contains(#""exclude": { "focus": ["com.apple.finder"] }"#) && { undo.undo(); return !file().contains("exclude") }())
+        undo.beginUndoGrouping()
+        editor.edit("Change Left Out Apps", undo: undo) { $0.config.windows.exclude = .init(arrange: ["com.apple.calculator"]) }
+        undo.endUndoGrouping()
+        check("S-084 an app left out of Arrange is saved apart from Focus and Swap, and undoes",
+              file().contains(#""exclude": { "arrange": ["com.apple.calculator"] }"#) && { undo.undo(); return !file().contains("exclude") }())
 
         // S-080: choosing a built-in action saves only its name; an override in use can be deleted.
         let builtIn = "window-place-right-half"

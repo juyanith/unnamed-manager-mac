@@ -53,11 +53,11 @@ public struct Config: Sendable, Equatable {
         public var minVisible: Double
         public var rowTolerance: Double
         public var tieTolerance: Double
-        /// Apps whose windows Focus Window and Swap Window never pick (spec v13), by bundle id.
-        public var exclude: [String]
+        /// Apps left out of window actions (spec v13, two lists from spec v14).
+        public var exclude: Exclude
 
         public init(gap: Double = 8, maxColumns: Int = 2, maxRows: Int = 2,
-                    minVisible: Double = 20, rowTolerance: Double = 20, tieTolerance: Double = 2, exclude: [String] = []) {
+                    minVisible: Double = 20, rowTolerance: Double = 20, tieTolerance: Double = 2, exclude: Exclude = Exclude()) {
             self.gap = gap
             self.maxColumns = maxColumns
             self.maxRows = maxRows
@@ -65,6 +65,37 @@ public struct Config: Sendable, Equatable {
             self.rowTolerance = rowTolerance
             self.tieTolerance = tieTolerance
             self.exclude = exclude
+        }
+
+        /// Apps left out of window actions, by bundle id: `focus` from Focus
+        /// Window and Swap Window (spec v13), `arrange` from Arrange Windows
+        /// (spec v14). The lists are separate.
+        public struct Exclude: Sendable, Equatable {
+            public var focus: [String]
+            public var arrange: [String]
+            /// The file had the spec v13 form, a plain list for `focus`, which
+            /// is written back that way while `arrange` is empty.
+            public var isList: Bool
+
+            public init(focus: [String] = [], arrange: [String] = [], isList: Bool = false) {
+                self.focus = focus
+                self.arrange = arrange
+                self.isList = isList
+            }
+
+            public var isEmpty: Bool { focus.isEmpty && arrange.isEmpty }
+
+            /// Every app in either list, focus first, each once.
+            public var apps: [String] { focus + arrange.filter { !focus.contains($0) } }
+
+            /// Puts an app in a list, at the end, or takes it out.
+            public mutating func set(_ app: String, in list: WritableKeyPath<Self, [String]>, _ isIn: Bool) {
+                self[keyPath: list].removeAll { $0 == app }
+                if isIn { self[keyPath: list].append(app) }
+            }
+
+            /// The form isn't part of what the setting says.
+            public static func == (a: Self, b: Self) -> Bool { a.focus == b.focus && a.arrange == b.arrange }
         }
     }
 
@@ -237,6 +268,19 @@ extension Config.Windows: Decodable {
         rowTolerance = try c.value("rowTolerance", default: d.rowTolerance)
         tieTolerance = try c.value("tieTolerance", default: d.tieTolerance)
         exclude = try c.value("exclude", default: d.exclude)
+    }
+}
+
+extension Config.Windows.Exclude: Decodable {
+    public init(from decoder: any Decoder) throws {
+        // The spec v13 form, a plain list, means focus.
+        if let list = try? decoder.singleValueContainer().decode([String].self) {
+            self.init(focus: list, isList: true)
+            return
+        }
+        let c = try decoder.container(keyedBy: AnyKey.self)
+        try c.rejectUnknown(allowed: ["focus", "arrange"], at: "windows.exclude")
+        self.init(focus: try c.value("focus", default: []), arrange: try c.value("arrange", default: []))
     }
 }
 

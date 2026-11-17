@@ -103,7 +103,7 @@ struct SettingsView: View {
             }
 
             Section {
-                ForEach(editor.draft.config.windows.exclude, id: \.self) { bundleId in
+                ForEach(editor.draft.config.windows.exclude.apps, id: \.self) { bundleId in
                     HStack(spacing: Space.sm) {
                         AppIcon(bundleId: bundleId)
                         VStack(alignment: .leading) {
@@ -111,19 +111,26 @@ struct SettingsView: View {
                             Text(bundleId).font(.caption).foregroundStyle(.secondary)
                         }
                         Spacer()
+                        Toggle("Focus and Swap", isOn: leftOut(bundleId, from: \.focus))
+                            .disabled(isOnly(bundleId, in: \.focus))
+                            .help("Focus Window and Swap Window never pick \(AppIcon.name(bundleId))")
+                        Toggle("Arrange", isOn: leftOut(bundleId, from: \.arrange))
+                            .disabled(isOnly(bundleId, in: \.arrange))
+                            .help("Arrange Windows never counts or moves \(AppIcon.name(bundleId))")
                         Button("Remove", systemImage: "minus.circle") {
-                            setExcluded(editor.draft.config.windows.exclude.filter { $0 != bundleId })
+                            setExcluded { $0.focus.removeAll { $0 == bundleId }; $0.arrange.removeAll { $0 == bundleId } }
                         }
                         .labelStyle(.iconOnly)
                         .buttonStyle(.borderless)
-                        .help("Let Focus Window and Swap Window pick \(AppIcon.name(bundleId)) again")
+                        .help("Let every window action pick \(AppIcon.name(bundleId)) again")
                     }
+                    .toggleStyle(.checkbox)
                 }
                 Button("Add App…") { addExcluded() }
             } header: {
-                Text("Left Out of Focus and Swap")
+                Text("Left Out")
             } footer: {
-                Text("Focus Window and Swap Window never pick these apps' windows, with any target, Window Used Before too. Their windows still hide the ones behind them.")
+                Text("Focus and Swap: Focus Window and Swap Window never pick these apps' windows, Window Used Before too. Arrange: Arrange Windows never counts or moves them. Their windows still hide the ones behind them.")
             }
 
             Section {
@@ -175,9 +182,22 @@ struct SettingsView: View {
         })
     }
 
-    /// The apps Focus Window and Swap Window leave out (S-083).
-    private func setExcluded(_ apps: [String]) {
-        editor.edit("Change Left Out Apps", undo: undo) { $0.config.windows.exclude = apps }
+    /// The apps Focus Window and Swap Window leave out (S-083), and Arrange Windows (S-084).
+    private func setExcluded(_ change: (inout Config.Windows.Exclude) -> Void) {
+        editor.edit("Change Left Out Apps", undo: undo) { change(&$0.config.windows.exclude) }
+    }
+
+    /// Whether one list leaves an app out.
+    private func leftOut(_ app: String, from list: WritableKeyPath<Config.Windows.Exclude, [String]>) -> Binding<Bool> {
+        Binding(get: { editor.draft.config.windows.exclude[keyPath: list].contains(app) }, set: { isIn in
+            setExcluded { $0.set(app, in: list, isIn) }
+        })
+    }
+
+    /// An app's only list can't be unchecked, so it stays in the section until Remove.
+    private func isOnly(_ app: String, in list: WritableKeyPath<Config.Windows.Exclude, [String]>) -> Bool {
+        let exclude = editor.draft.config.windows.exclude
+        return exclude[keyPath: list].contains(app) && !(exclude.focus.contains(app) && exclude.arrange.contains(app))
     }
 
     private func addExcluded() {
@@ -186,8 +206,12 @@ struct SettingsView: View {
         panel.allowsMultipleSelection = true
         panel.directoryURL = URL(fileURLWithPath: "/Applications")
         guard panel.runModal() == .OK else { return }
-        let current = editor.draft.config.windows.exclude
-        setExcluded(current + panel.urls.compactMap { Bundle(url: $0)?.bundleIdentifier }.filter { !current.contains($0) })
+        let added = panel.urls.compactMap { Bundle(url: $0)?.bundleIdentifier }
+            .filter { !editor.draft.config.windows.exclude.apps.contains($0) }
+        // A new app starts left out of both.
+        setExcluded { exclude in
+            for app in added { exclude.set(app, in: \.focus, true); exclude.set(app, in: \.arrange, true) }
+        }
     }
 
     /// One of Arrange Windows' limits (S-076).

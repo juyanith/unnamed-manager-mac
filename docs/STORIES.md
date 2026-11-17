@@ -994,6 +994,20 @@ UX:
 Status: done
 Verified: the history, the pick, the target, built-in names, the old field name and the setting (unit tests, `FocusHistoryTests`, the spec-v13 fixtures, 258 in all); back and forth across displays, a covered window, another Space, a closed window, no window, swap and swap back, swap skipping another Space, an excluded app, and saving the setting against `FakeWindowSystem`, which now has Spaces and clicks (self-test, 209 checks); actions-window-focus-recent, hud-window and settings-bottom in light and dark, grid checks. Not yet tried by hand: Accessibility's focus reports, and another Space with two different apps.
 
+### S-084 Leave apps out of Arrange Windows, apart from Focus and Swap
+As the user, I keep Calculator out of Arrange Windows, so it floats where I put it, while Focus Window and Swap Window still go to it; or the other way round, for an app I never want to focus by key but do want arranged.
+Screens: settings
+Depends: S-075, S-083
+Acceptance:
+- [unit] `windows.exclude` is an object with `focus` and `arrange`, both lists of app ids; the spec-v13 list still loads as `focus` and is written back as a list while `arrange` is empty; another field is `unknown-field`; the spec-v14 fixtures pass.
+- [self] Arrange Windows never counts or moves a window of an app in `exclude.arrange`, and still arranges one in `exclude.focus`; with the focused window left out, its display is arranged and the window in front there takes the focused one's cell.
+- [self] Focus Window still picks a window of an app in `exclude.arrange`.
+- [self] Settings saves each app's two choices, and undo works.
+UX:
+- Settings: the section becomes "Left Out", one list of apps, each with its icon, name and bundle id, two checkboxes, "Focus and Swap" and "Arrange", and a Remove button, then "Add App…". A new app starts with both checked. An app's only checked box can't be unchecked; Remove takes it out. Glossary: "Left Out".
+Status: done
+Verified: both forms, the two lists, writing back, `unknown-field` and `wrong-type` (unit tests, `FocusHistoryTests`, the spec-v14 fixtures, 259 in all); Arrange Windows skipping an app in `exclude.arrange`, arranging the left-out focused window's display, still arranging an app in `exclude.focus`, Focus Window still picking an app in `exclude.arrange`, and saving each list (self-test, 214 checks); settings-bottom in light and dark, grid checks. Not yet tried by hand on real windows.
+
 ## Later
 - Pick a window from an overlay: `"target": "pick"` on Focus Window and Swap Window labels the visible windows in order and waits for one key (numbers or home-row letters), Escape cancels.
 - Import and export a single menu as a JSON snippet.

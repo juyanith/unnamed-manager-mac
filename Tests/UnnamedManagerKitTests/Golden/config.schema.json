@@ -1308,11 +1308,36 @@
       "additionalProperties" : false,
       "properties" : {
         "exclude" : {
-          "description" : "Apps whose windows Focus Window and Swap Window never pick. Mac: bundle ids. Windows: an exe (ends in .exe) or an AppUserModelID. Default none.",
-          "items" : {
-            "type" : "string"
-          },
-          "type" : "array"
+          "description" : "Apps left out of window actions, in two lists. An array is the spec v13 form and means focus.",
+          "oneOf" : [
+            {
+              "description" : "Spec v13 form: apps whose windows Focus Window and Swap Window never pick. Mac: bundle ids. Windows: an exe (ends in .exe) or an AppUserModelID.",
+              "items" : {
+                "type" : "string"
+              },
+              "type" : "array"
+            },
+            {
+              "additionalProperties" : false,
+              "properties" : {
+                "arrange" : {
+                  "description" : "Apps whose windows Arrange Windows never counts or moves. Mac: bundle ids. Windows: an exe (ends in .exe) or an AppUserModelID. Default none.",
+                  "items" : {
+                    "type" : "string"
+                  },
+                  "type" : "array"
+                },
+                "focus" : {
+                  "description" : "Apps whose windows Focus Window and Swap Window never pick. Mac: bundle ids. Windows: an exe (ends in .exe) or an AppUserModelID. Default none.",
+                  "items" : {
+                    "type" : "string"
+                  },
+                  "type" : "array"
+                }
+              },
+              "type" : "object"
+            }
+          ]
         },
         "gap" : {
           "description" : "Points Place Window and Fill leave around windows and between them. Default 8.",

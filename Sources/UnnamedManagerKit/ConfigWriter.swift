@@ -19,7 +19,15 @@ public enum ConfigWriter {
             if config.windows.minVisible != standard.minVisible { fields.number("minVisible", config.windows.minVisible) }
             if config.windows.rowTolerance != standard.rowTolerance { fields.number("rowTolerance", config.windows.rowTolerance) }
             if config.windows.tieTolerance != standard.tieTolerance { fields.number("tieTolerance", config.windows.tieTolerance) }
-            if !config.windows.exclude.isEmpty { fields.strings("exclude", config.windows.exclude) }
+            let exclude = config.windows.exclude
+            if exclude.isList && exclude.arrange.isEmpty {
+                if !exclude.focus.isEmpty { fields.strings("exclude", exclude.focus) }
+            } else if !exclude.isEmpty {
+                var lists = ActionFieldWriter()
+                if !exclude.focus.isEmpty { lists.strings("focus", exclude.focus) }
+                if !exclude.arrange.isEmpty { lists.strings("arrange", exclude.arrange) }
+                fields.object("exclude", lists)
+            }
             sections.append("  \"windows\": \(object(fields.fields))")
         }
         sections.append(list("entries", config.entries.map(entry)))

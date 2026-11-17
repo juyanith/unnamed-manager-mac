@@ -12,7 +12,7 @@ struct WindowInfo {
     let ref: WindowRef
     let frame: CGRect
     let pid: pid_t
-    /// Its app's bundle id, which `windows.exclude` names (spec v13).
+    /// Its app's bundle id, which `windows.exclude` names (spec v13, v14).
     var app: String?
 
     func isExcluded(by apps: Set<String>) -> Bool { app.map(apps.contains) ?? false }
@@ -135,14 +135,14 @@ final class WindowControl {
 
     /// Focus Window's candidates (S-068), front to back: the windows you can
     /// see, and the focused one (S-082, spec v12), but none of an app in
-    /// `windows.exclude` (S-083, spec v13). Windows on every display hide
+    /// `windows.exclude.focus` (S-083, spec v13). Windows on every display hide
     /// the ones behind them, excluded ones too. With `"scope": "display"`,
     /// only those on the display of `anchor`, or of the window in front
     /// without one (S-078).
     private func candidates(_ scope: WindowScope, around anchor: CGRect?, focused: WindowRef?) -> [Candidate] {
         let windows = system.focusableWindows()
         let parts = WindowGeometry.visibleParts(windows.map(\.frame))
-        let square = CGFloat(settings().minVisible), excluded = Set(settings().exclude)
+        let square = CGFloat(settings().minVisible), excluded = Set(settings().exclude.focus)
         let seen = windows.indices.compactMap { index -> Candidate? in
             let window = windows[index]
             guard !window.isExcluded(by: excluded),
@@ -160,7 +160,7 @@ final class WindowControl {
     /// the scope's display. Focus Window's can be on another Space, Swap
     /// Window's can't. With none, the front-most other window.
     private func recent(_ scope: WindowScope, around anchor: CGRect?, focused: WindowRef?, anySpace: Bool) -> WindowInfo? {
-        let here = system.focusableWindows(), screens = system.screens(), excluded = Set(settings().exclude)
+        let here = system.focusableWindows(), screens = system.screens(), excluded = Set(settings().exclude.focus)
         let display = scope == .display ? (anchor ?? here.first?.frame).flatMap { WindowGeometry.screen(for: $0, among: screens) } : nil
         func counts(_ window: WindowInfo) -> Bool {
             window.ref != focused && !window.isExcluded(by: excluded)
@@ -289,8 +289,12 @@ final class WindowControl {
     /// display, the focused one first and then front to back, each in the
     /// cell `ArrangeGrid` gives it. With no focused window, the one in front
     /// counts as focused.
+    /// Apps in `windows.exclude.arrange` are never counted or moved (S-084,
+    /// spec v14); when the focused window is one of theirs, its display is
+    /// still the one arranged, and the window in front there counts as focused.
     private func arrange(_ action: ArrangeAction, focused: WindowRef?) throws(PlanError) {
-        let screens = system.screens(), candidates = system.focusableWindows()
+        let excluded = Set(settings().exclude.arrange)
+        let screens = system.screens(), candidates = system.focusableWindows().filter { !$0.isExcluded(by: excluded) }
         guard let anchor = focused.flatMap({ system.frame(of: $0) }) ?? candidates.first?.frame,
               let screen = WindowGeometry.screen(for: anchor, among: screens) else {
             throw PlanError("No window to arrange.")

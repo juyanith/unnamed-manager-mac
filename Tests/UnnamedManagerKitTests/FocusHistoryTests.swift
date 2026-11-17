@@ -34,18 +34,39 @@ struct FocusHistoryTests {
         #expect(ConfigWriter.write(loaded.config, actionOrder: []).contains(#"{ "type": "window.focus", "direction": "recent" }"#))
     }
 
-    @Test("windows.exclude is empty by default, written only when it isn't, and must be a list of text")
+    @Test("windows.exclude is empty by default, written only when it isn't, and the v13 list loads as focus and is written back as a list")
     func exclude() throws {
-        let minimal = #"{ "version": 1, "entries": [ { "keys": "Meh+W", "title": "W" }, { "keys": "Meh+W H", "title": "H", "action": "window-focus-recent" } ]"#
-        let plain = try ConfigLoader.load(Data((minimal + " }").utf8)).get()
+        let plain = try ConfigLoader.load(Data((Self.minimal + " }").utf8)).get()
         #expect(plain.config.windows.exclude.isEmpty)
         #expect(!ConfigWriter.write(plain.config, actionOrder: []).contains("windows"))
-        let set = try ConfigLoader.load(Data((minimal + #", "windows": { "exclude": ["com.apple.finder"] } }"#).utf8)).get()
-        #expect(set.config.windows.exclude == ["com.apple.finder"])
-        #expect(ConfigWriter.write(set.config, actionOrder: []).contains(#""windows": { "exclude": ["com.apple.finder"] }"#))
-        guard case let .failure(errors) = ConfigLoader.load(Data((minimal + #", "windows": { "exclude": "com.apple.finder" } }"#).utf8)) else {
-            Issue.record("loaded an exclude that isn't a list"); return
-        }
-        #expect(errors.issues.first?.rule == .wrongType)
+        var list = try ConfigLoader.load(Data((Self.minimal + #", "windows": { "exclude": ["com.apple.finder"] } }"#).utf8)).get().config
+        #expect(list.windows.exclude == .init(focus: ["com.apple.finder"]))
+        #expect(ConfigWriter.write(list, actionOrder: []).contains(#""windows": { "exclude": ["com.apple.finder"] }"#))
+        // Once arrange has an app, only the object can say it.
+        list.windows.exclude.set("com.apple.calculator", in: \.arrange, true)
+        #expect(ConfigWriter.write(list, actionOrder: []).contains(#""exclude": { "focus": ["com.apple.finder"], "arrange": ["com.apple.calculator"] }"#))
+        #expect(rule(#""exclude": "com.apple.finder""#) == .wrongType)
+    }
+
+    @Test("windows.exclude has two separate lists, focus and arrange, and no other field (S-084, spec v14)")
+    func excludeLists() throws {
+        let set = try ConfigLoader.load(Data((Self.minimal + #", "windows": { "exclude": { "arrange": ["com.apple.calculator"] } } }"#).utf8)).get()
+        #expect(set.config.windows.exclude == .init(arrange: ["com.apple.calculator"]))
+        #expect(set.config.windows.exclude.apps == ["com.apple.calculator"])
+        #expect(ConfigWriter.write(set.config, actionOrder: []).contains(#""windows": { "exclude": { "arrange": ["com.apple.calculator"] } }"#))
+        #expect(rule(#""exclude": { "arrange": "com.apple.calculator" }"#) == .wrongType)
+        #expect(rule(#""exclude": { "swap": [] }"#) == .unknownField)
+        var both = Config.Windows.Exclude(focus: ["a", "b"], arrange: ["b", "c"])
+        #expect(both.apps == ["a", "b", "c"])
+        both.set("b", in: \.focus, false)
+        #expect(both.focus == ["a"] && both.apps == ["a", "b", "c"])
+    }
+
+    static let minimal = #"{ "version": 1, "entries": [ { "keys": "Meh+W", "title": "W" }, { "keys": "Meh+W H", "title": "H", "action": "window-focus-recent" } ]"#
+
+    /// The rule a windows setting breaks.
+    func rule(_ setting: String) -> ConfigRule? {
+        guard case let .failure(errors) = ConfigLoader.load(Data((Self.minimal + #", "windows": { "# + setting + " } }").utf8)) else { return nil }
+        return errors.issues.first?.rule
     }
 }

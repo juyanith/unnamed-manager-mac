@@ -212,6 +212,11 @@ public struct ActionFieldWriter {
         fields.append((key, value ? "true" : "false"))
     }
 
+    /// An object of the fields another writer wrote.
+    public mutating func object(_ key: String, _ inner: ActionFieldWriter) {
+        fields.append((key, ConfigWriter.object(inner.fields)))
+    }
+
     /// An object of numbers, in the order given.
     public mutating func numbers(_ key: String, _ values: [(String, Double)]) {
         var inner = ActionFieldWriter()
