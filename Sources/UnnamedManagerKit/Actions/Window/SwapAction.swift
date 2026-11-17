@@ -36,7 +36,7 @@ public struct SwapAction: ActionValue {
 
     public static func schema(_ type: String) -> ActionSchema {
         ActionSchema([
-            "target": WindowTarget.schema("The window to swap with: a direction, next, previous, first, last, or its number in Focus Window's order, from 1."),
+            "target": WindowTarget.schema("The window to swap with: a direction, next, previous, first, last, recent (the window used before), or its number in Focus Window's order, from 1."),
             "scope": WindowScope.schema,
         ], required: ["target"])
     }

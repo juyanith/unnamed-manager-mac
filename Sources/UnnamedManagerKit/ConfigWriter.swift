@@ -19,6 +19,7 @@ public enum ConfigWriter {
             if config.windows.minVisible != standard.minVisible { fields.number("minVisible", config.windows.minVisible) }
             if config.windows.rowTolerance != standard.rowTolerance { fields.number("rowTolerance", config.windows.rowTolerance) }
             if config.windows.tieTolerance != standard.tieTolerance { fields.number("tieTolerance", config.windows.tieTolerance) }
+            if !config.windows.exclude.isEmpty { fields.strings("exclude", config.windows.exclude) }
             sections.append("  \"windows\": \(object(fields.fields))")
         }
         sections.append(list("entries", config.entries.map(entry)))

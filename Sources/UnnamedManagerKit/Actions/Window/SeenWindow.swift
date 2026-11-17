@@ -73,7 +73,7 @@ extension WindowGeometry {
         case .left: CGRect(x: -rect.maxX, y: rect.minY, width: rect.width, height: rect.height)
         case .down: CGRect(x: rect.minY, y: rect.minX, width: rect.height, height: rect.width)
         case .up: CGRect(x: -rect.maxY, y: rect.minX, width: rect.height, height: rect.width)
-        case .next, .previous, .first, .last: nil
+        case .next, .previous, .first, .last, .recent: nil
         }
     }
 

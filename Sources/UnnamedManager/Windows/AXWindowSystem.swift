@@ -5,16 +5,18 @@ import UnnamedManagerKit
 /// Windows through Accessibility (S-062).
 final class AXWindowSystem: WindowSystem {
     /// How long one Accessibility call may wait on an app that's busy.
-    private static let timeout: Float = 0.25
+    fileprivate static let timeout: Float = 0.25
 
     /// An AXUIElement as a dictionary key: the same window compares equal
     /// across calls.
-    private struct Element: Hashable {
+    fileprivate struct Element: Hashable {
         let element: AXUIElement
         let pid: pid_t
         static func == (a: Element, b: Element) -> Bool { CFEqual(a.element, b.element) }
         func hash(into hasher: inout Hasher) { hasher.combine(CFHash(element)) }
     }
+
+    private var watcher: FocusWatcher?
 
     var canControlWindows: Bool { AXIsProcessTrusted() }
 
@@ -96,13 +98,31 @@ final class AXWindowSystem: WindowSystem {
         let app = AXUIElementCreateApplication(pid)
         AXUIElementSetMessagingTimeout(app, Self.timeout)
         let windows: [AXUIElement] = value(app, kAXWindowsAttribute) ?? []
+        let bundle = NSRunningApplication(processIdentifier: pid)?.bundleIdentifier
         return windows.compactMap { element in
             let subrole: String? = value(element, kAXSubroleAttribute)
             let minimized: Bool = value(element, kAXMinimizedAttribute) ?? false
             guard subrole == kAXStandardWindowSubrole, !minimized else { return nil }
             let ref = WindowRef(id: Element(element: element, pid: pid))
-            return frame(of: ref).map { WindowInfo(ref: ref, frame: $0, pid: pid) }
+            return frame(of: ref).map { WindowInfo(ref: ref, frame: $0, pid: pid, app: bundle) }
         }
+    }
+
+    /// A window on another Space isn't in its app's window list, but the
+    /// element saved while it had focus still answers (S-083). A closed
+    /// window's doesn't.
+    func window(_ ref: WindowRef) -> WindowInfo? {
+        guard let window = ref.id.base as? Element,
+              let app = NSRunningApplication(processIdentifier: window.pid), !app.isHidden, !app.isTerminated else { return nil }
+        AXUIElementSetMessagingTimeout(window.element, Self.timeout)
+        let subrole: String? = value(window.element, kAXSubroleAttribute)
+        let minimized: Bool = value(window.element, kAXMinimizedAttribute) ?? false
+        guard subrole == kAXStandardWindowSubrole, !minimized, let frame = frame(of: ref) else { return nil }
+        return WindowInfo(ref: ref, frame: frame, pid: window.pid, app: app.bundleIdentifier)
+    }
+
+    func watchFocus(_ changed: @escaping (WindowRef) -> Void) {
+        watcher = FocusWatcher { element, pid in changed(WindowRef(id: Element(element: element, pid: pid))) }
     }
 
     /// Raises the window, makes it its app's focused window, then brings
@@ -132,7 +152,7 @@ final class AXWindowSystem: WindowSystem {
         Self.read(element, attribute)
     }
 
-    private static func read<T>(_ element: AXUIElement, _ attribute: String) -> T? {
+    fileprivate static func read<T>(_ element: AXUIElement, _ attribute: String) -> T? {
         var result: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, attribute as CFString, &result) == .success else { return nil }
         return result as? T
@@ -183,5 +203,77 @@ extension AXWindowSystem {
         }
         AXUIElementSetAttributeValue(window, kAXMainAttribute as CFString, kCFBooleanTrue)
         return AXUIElementPerformAction(window, kAXRaiseAction as CFString) == .success
+    }
+}
+
+/// Reports each window that gets focus, in any app (S-083): an app's
+/// focused window as the app comes forward, from NSWorkspace, and the app's
+/// own changes of focused window after that, from an Accessibility observer
+/// added the first time it comes forward and kept until it quits. Only the
+/// app in front counts, so a window opening behind doesn't.
+private final class FocusWatcher {
+    private let changed: (AXUIElement, pid_t) -> Void
+    private var observers: [pid_t: AXObserver] = [:]
+    private var tokens: [any NSObjectProtocol] = []
+
+    init(changed: @escaping (AXUIElement, pid_t) -> Void) {
+        self.changed = changed
+        let center = NSWorkspace.shared.notificationCenter
+        tokens.append(center.addObserver(forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { [weak self] note in
+            let pid = (note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication)?.processIdentifier
+            MainActor.assumeIsolated { if let pid { self?.activated(pid) } }
+        })
+        tokens.append(center.addObserver(forName: NSWorkspace.didTerminateApplicationNotification, object: nil, queue: .main) { [weak self] note in
+            let pid = (note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication)?.processIdentifier
+            MainActor.assumeIsolated { if let pid { self?.stopObserving(pid) } }
+        })
+        if let front = NSWorkspace.shared.frontmostApplication { activated(front.processIdentifier) }
+    }
+
+    isolated deinit {
+        tokens.forEach(NSWorkspace.shared.notificationCenter.removeObserver)
+        observers.keys.forEach(stopObserving)
+    }
+
+    /// Records the app's focused window. Without Accessibility access the
+    /// observer isn't kept, so it's added once access is granted.
+    private func activated(_ pid: pid_t) {
+        guard pid != ProcessInfo.processInfo.processIdentifier, AXIsProcessTrusted() else { return }
+        let app = AXUIElementCreateApplication(pid)
+        AXUIElementSetMessagingTimeout(app, AXWindowSystem.timeout)
+        if observers[pid] == nil { observe(pid, app) }
+        if let window: AXUIElement = AXWindowSystem.read(app, kAXFocusedWindowAttribute) { changed(window, pid) }
+    }
+
+    private func observe(_ pid: pid_t, _ app: AXUIElement) {
+        var observer: AXObserver?
+        guard AXObserverCreate(pid, focusedWindowChanged, &observer) == .success, let observer,
+              AXObserverAddNotification(observer, app, kAXFocusedWindowChangedNotification as CFString,
+                                        Unmanaged.passUnretained(self).toOpaque()) == .success else { return }
+        CFRunLoopAddSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(observer), .defaultMode)
+        observers[pid] = observer
+    }
+
+    private func stopObserving(_ pid: pid_t) {
+        guard let observer = observers.removeValue(forKey: pid) else { return }
+        CFRunLoopRemoveSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(observer), .defaultMode)
+    }
+
+    fileprivate func focusChanged(_ window: AXUIElement) {
+        var pid: pid_t = 0
+        guard AXUIElementGetPid(window, &pid) == .success,
+              pid == NSWorkspace.shared.frontmostApplication?.processIdentifier else { return }
+        changed(window, pid)
+    }
+}
+
+/// The observers' callback. Their sources are on the main run loop, so it
+/// runs on the main thread, and what it's given never leaves it.
+private nonisolated func focusedWindowChanged(_ observer: AXObserver, _ element: AXUIElement, _ notification: CFString,
+                                              _ refcon: UnsafeMutableRawPointer?) {
+    guard let refcon else { return }
+    nonisolated(unsafe) let window = element, watcher = refcon
+    MainActor.assumeIsolated {
+        Unmanaged<FocusWatcher>.fromOpaque(watcher).takeUnretainedValue().focusChanged(window)
     }
 }

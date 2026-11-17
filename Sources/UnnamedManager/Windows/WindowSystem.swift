@@ -12,6 +12,10 @@ struct WindowInfo {
     let ref: WindowRef
     let frame: CGRect
     let pid: pid_t
+    /// Its app's bundle id, which `windows.exclude` names (spec v13).
+    var app: String?
+
+    func isExcluded(by apps: Set<String>) -> Bool { app.map(apps.contains) ?? false }
 }
 
 /// The app in front, which window actions work on.
@@ -38,15 +42,21 @@ protocol WindowSystem: AnyObject {
     /// The standard, visible windows that aren't minimized, on the current
     /// Space of every display, without this app's own (S-068), front to back.
     func focusableWindows() -> [WindowInfo]
-    /// Brings a window and its app to the front with focus.
+    /// Brings a window and its app to the front with focus, moving to its Space.
     func focus(_ window: WindowInfo) async throws(PlanError)
+    /// A window seen before, when it still exists, isn't minimized and its
+    /// app isn't hidden, on any Space (S-083).
+    func window(_ ref: WindowRef) -> WindowInfo?
+    /// Calls `changed` with each window that gets focus, in any app, from now on (S-083).
+    func watchFocus(_ changed: @escaping (WindowRef) -> Void)
 }
 
 /// Carries out window commands on the focused window of the app in front,
-/// and keeps what Fill remembers (S-062).
+/// and keeps what Fill remembers (S-062) and which windows had focus (S-083).
 final class WindowControl {
     let system: any WindowSystem
     private var filled = FillMemory<WindowRef>()
+    private var history = FocusHistory<WindowRef>()
 
     /// The window settings: the gap (spec v3, v7) and Arrange Windows' limits (spec v8), read when an action runs.
     let settings: () -> Config.Windows
@@ -55,6 +65,7 @@ final class WindowControl {
     init(system: any WindowSystem, settings: @escaping () -> Config.Windows = { Config.Windows() }) {
         self.system = system
         self.settings = settings
+        system.watchFocus { [weak self] in self?.history.record($0) }
     }
 
     func run(_ command: WindowCommand) async throws(PlanError) {
@@ -63,6 +74,8 @@ final class WindowControl {
         }
         let app = system.frontApp()
         let focused = app.flatMap { system.focusedWindow(of: $0) }
+        // In case the focus change wasn't reported, as for a window that got focus before the app started.
+        if let focused { history.record(focused) }
         // Focus Window and Arrange Windows also work with no focused window.
         switch command {
         case let .focus(target, scope):
@@ -121,16 +134,19 @@ final class WindowControl {
     }
 
     /// Focus Window's candidates (S-068), front to back: the windows you can
-    /// see, and the focused one (S-082, spec v12). Windows on every display
-    /// hide the ones behind them. With `"scope": "display"`, only those on
-    /// the display of `anchor`, or of the window in front without one (S-078).
+    /// see, and the focused one (S-082, spec v12), but none of an app in
+    /// `windows.exclude` (S-083, spec v13). Windows on every display hide
+    /// the ones behind them, excluded ones too. With `"scope": "display"`,
+    /// only those on the display of `anchor`, or of the window in front
+    /// without one (S-078).
     private func candidates(_ scope: WindowScope, around anchor: CGRect?, focused: WindowRef?) -> [Candidate] {
         let windows = system.focusableWindows()
         let parts = WindowGeometry.visibleParts(windows.map(\.frame))
-        let square = CGFloat(settings().minVisible)
+        let square = CGFloat(settings().minVisible), excluded = Set(settings().exclude)
         let seen = windows.indices.compactMap { index -> Candidate? in
             let window = windows[index]
-            guard window.ref == focused || WindowGeometry.shows(parts[index], square: square) else { return nil }
+            guard !window.isExcluded(by: excluded),
+                  window.ref == focused || WindowGeometry.shows(parts[index], square: square) else { return nil }
             return Candidate(info: window, seen: SeenWindow(frame: window.frame, parts: parts[index], owner: window.pid))
         }
         guard scope == .display, let anchor = anchor ?? seen.first?.info.frame else { return seen }
@@ -139,10 +155,41 @@ final class WindowControl {
         return seen.filter { WindowGeometry.screen(for: $0.info.frame, among: screens) == screen }
     }
 
-    /// Focus Window (S-068, S-069, S-072, S-073, S-078, S-079, S-082).
+    /// The window used before (S-083, spec v13): the first in the history
+    /// that still exists and isn't the focused one or an excluded app's, on
+    /// the scope's display. Focus Window's can be on another Space, Swap
+    /// Window's can't. With none, the front-most other window.
+    private func recent(_ scope: WindowScope, around anchor: CGRect?, focused: WindowRef?, anySpace: Bool) -> WindowInfo? {
+        let here = system.focusableWindows(), screens = system.screens(), excluded = Set(settings().exclude)
+        let display = scope == .display ? (anchor ?? here.first?.frame).flatMap { WindowGeometry.screen(for: $0, among: screens) } : nil
+        func counts(_ window: WindowInfo) -> Bool {
+            window.ref != focused && !window.isExcluded(by: excluded)
+                && (display == nil || WindowGeometry.screen(for: window.frame, among: screens) == display)
+        }
+        let onSpace = Set(here.map(\.ref))
+        let used = history.recent(before: focused) { ref in
+            (anySpace || onSpace.contains(ref)) && system.window(ref).map(counts) == true
+        }
+        return used.flatMap(system.window) ?? here.first(where: counts)
+    }
+
+    /// Focuses a window and puts it first in the history.
+    private func go(to window: WindowInfo) async throws(PlanError) {
+        try await system.focus(window)
+        history.record(window.ref)
+    }
+
+    /// Focus Window (S-068, S-069, S-072, S-073, S-078, S-079, S-082, S-083).
     /// Finding no window plays the alert sound (spec v10).
     private func focus(_ target: WindowTarget, scope: WindowScope, from focused: WindowRef?) async throws(PlanError) {
         let frame = focused.flatMap { system.frame(of: $0) }
+        if target == .window(.recent) {
+            guard let window = recent(scope, around: frame, focused: focused, anySpace: true) else {
+                throw PlanError(focused == nil ? "No window to focus." : FocusDirection.recent.failure, alerts: true)
+            }
+            try await go(to: window)
+            return
+        }
         let candidates = candidates(scope, around: frame, focused: focused)
         let windows = candidates.map(\.info)
         let order = WindowGeometry.cycleOrder(candidates.map(\.seen), screens: system.screens(), settings: settings())
@@ -156,7 +203,7 @@ final class WindowControl {
                 }
                 throw PlanError("No window to focus.", alerts: true)
             }
-            if windows[place].ref != focused { try await system.focus(windows[place]) }
+            if windows[place].ref != focused { try await go(to: windows[place]) }
             return
         case let .window(word):
             direction = word
@@ -164,21 +211,21 @@ final class WindowControl {
         // With no focused window, any other direction goes to the window in front of the others (S-072, spec v5).
         guard let frame else {
             guard let top = windows.first else { throw PlanError("No window to focus.", alerts: true) }
-            try await system.focus(top)
+            try await go(to: top)
             return
         }
         if direction == .next || direction == .previous {
             guard let index = WindowGeometry.step(from: windows.firstIndex { $0.ref == focused }, in: order, direction) else {
                 throw PlanError(direction.failure, alerts: true)
             }
-            try await system.focus(windows[index])
+            try await go(to: windows[index])
             return
         }
         let others = candidates.filter { $0.info.ref != focused }
         guard let index = WindowGeometry.neighbor(of: frame, direction, among: others.map(\.seen), settings: settings()) else {
             throw PlanError(direction.failure, alerts: true)
         }
-        try await system.focus(others[index].info)
+        try await go(to: others[index].info)
     }
 
     /// The window First, Last or a number names in the order; nil past its end.
@@ -193,8 +240,16 @@ final class WindowControl {
 
     /// Swap Window (S-077): the focused window and the one `target` names
     /// trade frames, and focus stays. Finding no window plays the alert
-    /// sound (spec v10).
+    /// sound (spec v10). The window used before must be on this Space (S-083).
     private func swap(_ window: WindowRef, at frame: CGRect, with target: WindowTarget, scope: WindowScope) throws(PlanError) {
+        if target == .window(.recent) {
+            guard let other = recent(scope, around: frame, focused: window, anySpace: false) else {
+                throw PlanError(FocusDirection.recent.failure, alerts: true)
+            }
+            put(window, in: other.frame)
+            put(other.ref, in: frame)
+            return
+        }
         let windows = candidates(scope, around: frame, focused: window)
         switch WindowGeometry.swapPartner(target, current: windows.firstIndex { $0.info.ref == window }, frame: frame,
                                           windows: windows.map(\.seen), screens: system.screens(), settings: settings()) {

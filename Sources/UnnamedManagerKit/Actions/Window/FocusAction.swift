@@ -1,8 +1,9 @@
 import Foundation
 
-/// Which window Focus Window goes to (spec v2; first and last from spec v6).
+/// Which window Focus Window goes to (spec v2; first and last from spec v6;
+/// recent, the window used before, from spec v13).
 public enum FocusDirection: String, CaseIterable, Sendable {
-    case left, right, up, down, next, previous, first, last
+    case left, right, up, down, next, previous, first, last, recent
 
     /// The end of "No window to the left.", for a direction.
     public var failure: String {
@@ -13,6 +14,7 @@ public enum FocusDirection: String, CaseIterable, Sendable {
         case .down: "No window below."
         case .next, .previous: "No other window to focus."
         case .first, .last: "No window to focus."
+        case .recent: "No window used before."
         }
     }
 }
@@ -30,10 +32,11 @@ public enum WindowScope: String, CaseIterable, Sendable {
 }
 
 /// Which window Focus Window goes to and Swap Window trades places with:
-/// a direction, the next or previous one, the first or last one, or one
-/// by number (spec v10 for Swap Window, v11 for Focus Window).
+/// a direction, the next or previous one, the first or last one, one by
+/// number (spec v10 for Swap Window, v11 for Focus Window), or the window
+/// used before (spec v13).
 public enum WindowTarget: Sendable, Hashable {
-    /// A word: a direction, next, previous, first or last.
+    /// A word: a direction, next, previous, first, last or recent.
     case window(FocusDirection)
     /// A place in Focus Window's order, from 1.
     case number(Int)
@@ -63,8 +66,9 @@ public enum WindowTarget: Sendable, Hashable {
 }
 
 /// Focus Window (S-068, S-069, S-073): the nearest window in a direction,
-/// the next or previous one, the first or last one, or one by number (S-079),
-/// on every display or only the focused window's (S-078).
+/// the next or previous one, the first or last one, one by number (S-079),
+/// or the window used before (S-083), on every display or only the focused
+/// window's (S-078).
 public struct FocusAction: ActionValue {
     /// The field the file names the target with: `target`, or `direction`,
     /// its old name before spec v11, which saving keeps.
@@ -114,7 +118,7 @@ public struct FocusAction: ActionValue {
 
     public static func schema(_ type: String) -> ActionSchema {
         ActionSchema([
-            currentField: WindowTarget.schema("The window to focus: a direction, next, previous, first, last, or its number in the order, from 1."),
+            currentField: WindowTarget.schema("The window to focus: a direction, next, previous, first, last, recent (the window used before), or its number in the order, from 1."),
             oldField: WindowTarget.schema("The old name of target, from before spec v11. The same values."),
             "scope": WindowScope.schema,
         ])
@@ -140,6 +144,7 @@ public struct FocusAction: ActionValue {
         case .window(.previous): "arrow.backward.circle"
         case .window(.first): "arrow.left.to.line.circle"
         case .window(.last): "arrow.right.to.line.circle"
+        case .window(.recent): "clock.arrow.trianglehead.counterclockwise.rotate.90"
         case .number: "number.circle"
         }
         return .symbol(symbol)

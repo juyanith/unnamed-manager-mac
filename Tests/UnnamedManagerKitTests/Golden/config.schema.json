@@ -439,7 +439,8 @@
                     "next",
                     "previous",
                     "first",
-                    "last"
+                    "last",
+                    "recent"
                   ]
                 },
                 {
@@ -456,7 +457,7 @@
               ]
             },
             "target" : {
-              "description" : "The window to focus: a direction, next, previous, first, last, or its number in the order, from 1.",
+              "description" : "The window to focus: a direction, next, previous, first, last, recent (the window used before), or its number in the order, from 1.",
               "oneOf" : [
                 {
                   "enum" : [
@@ -467,7 +468,8 @@
                     "next",
                     "previous",
                     "first",
-                    "last"
+                    "last",
+                    "recent"
                   ]
                 },
                 {
@@ -541,7 +543,7 @@
               ]
             },
             "target" : {
-              "description" : "The window to swap with: a direction, next, previous, first, last, or its number in Focus Window's order, from 1.",
+              "description" : "The window to swap with: a direction, next, previous, first, last, recent (the window used before), or its number in Focus Window's order, from 1.",
               "oneOf" : [
                 {
                   "enum" : [
@@ -552,7 +554,8 @@
                     "next",
                     "previous",
                     "first",
-                    "last"
+                    "last",
+                    "recent"
                   ]
                 },
                 {
@@ -1037,7 +1040,8 @@
                     "next",
                     "previous",
                     "first",
-                    "last"
+                    "last",
+                    "recent"
                   ]
                 },
                 {
@@ -1054,7 +1058,7 @@
               ]
             },
             "target" : {
-              "description" : "The window to focus: a direction, next, previous, first, last, or its number in the order, from 1.",
+              "description" : "The window to focus: a direction, next, previous, first, last, recent (the window used before), or its number in the order, from 1.",
               "oneOf" : [
                 {
                   "enum" : [
@@ -1065,7 +1069,8 @@
                     "next",
                     "previous",
                     "first",
-                    "last"
+                    "last",
+                    "recent"
                   ]
                 },
                 {
@@ -1139,7 +1144,7 @@
               ]
             },
             "target" : {
-              "description" : "The window to swap with: a direction, next, previous, first, last, or its number in Focus Window's order, from 1.",
+              "description" : "The window to swap with: a direction, next, previous, first, last, recent (the window used before), or its number in Focus Window's order, from 1.",
               "oneOf" : [
                 {
                   "enum" : [
@@ -1150,7 +1155,8 @@
                     "next",
                     "previous",
                     "first",
-                    "last"
+                    "last",
+                    "recent"
                   ]
                 },
                 {
@@ -1301,6 +1307,13 @@
     "windows" : {
       "additionalProperties" : false,
       "properties" : {
+        "exclude" : {
+          "description" : "Apps whose windows Focus Window and Swap Window never pick. Mac: bundle ids. Windows: an exe (ends in .exe) or an AppUserModelID. Default none.",
+          "items" : {
+            "type" : "string"
+          },
+          "type" : "array"
+        },
         "gap" : {
           "description" : "Points Place Window and Fill leave around windows and between them. Default 8.",
           "minimum" : 0,

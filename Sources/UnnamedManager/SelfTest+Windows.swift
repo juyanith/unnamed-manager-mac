@@ -118,6 +118,7 @@ extension SelfTest {
         await focusChecks()
         await swapChecks()
         await seenChecks()
+        await recentChecks()
         await arrangeChecks()
 
         fake.canControlWindows = false
@@ -431,6 +432,83 @@ extension SelfTest {
         check("S-082 from a window inside a larger one, a direction goes to the larger one, which then hides it",
               left == "large" && fake.focused == "large" && back == PlanError("No window to the right.", alerts: true),
               "\(String(describing: left)), \(String(describing: back))")
+    }
+
+    /// S-083: the window used before, from the focus history, across
+    /// displays, Spaces and windows on top; and apps left out.
+    static func recentChecks() async {
+        let fake = FakeWindowSystem()
+        let left = CGRect(x: 0, y: 0, width: 960, height: 1080), whole = CGRect(x: 0, y: 0, width: 1920, height: 1080)
+        let other = CGRect(x: 1920, y: 0, width: 1920, height: 1080)
+        fake.displays = [.init(frame: whole, usable: whole), .init(frame: other, usable: other)]
+        var settings = Config.Windows(gap: 0)
+        var runner = ActionRunner()
+        /// New windows, and a new history.
+        func start(_ windows: [String: FakeWindowSystem.Window], clicks: [String]) {
+            fake.windows = windows
+            fake.stacking = []
+            fake.currentSpace = 1
+            runner = ActionRunner(performer: SystemPerformer(context: StepContext(windows: WindowControl(system: fake, settings: { settings }))))
+            clicks.forEach(fake.click)
+        }
+        func run(_ action: some ActionValue) async -> PlanError? {
+            do throws(PlanError) {
+                try await runner.run(.family(AnyActionValue(action)), id: "recent")
+                return nil
+            } catch {
+                return error
+            }
+        }
+        let recent = FocusAction(.recent), swap = SwapAction(.window(.recent))
+
+        start(["a": .init(frame: left), "b": .init(frame: other)], clicks: ["a", "b"])
+        var visits: [String] = []
+        for _ in 0..<3 {
+            _ = await run(recent)
+            visits.append(fake.focused ?? "none")
+        }
+        check("S-083 Focus Window's recent goes back and forth between two windows, across displays",
+              visits == ["a", "b", "a"], "\(visits)")
+
+        start(["under": .init(frame: whole), "top": .init(frame: whole)], clicks: ["under", "top"])
+        _ = await run(recent)
+        check("S-083 the window used before counts when it's fully covered", fake.focused == "under")
+
+        start(["a": .init(frame: left), "c": .init(frame: left, space: 2)], clicks: ["a", "c"])
+        let away = fake.currentSpace
+        _ = await run(recent)
+        check("S-083 the window used before can be on another Space, and focusing it moves there",
+              away == 2 && fake.focused == "a" && fake.currentSpace == 1, "Space \(away), then \(fake.currentSpace)")
+
+        start(["a": .init(frame: left), "b": .init(frame: left), "c": .init(frame: left)], clicks: ["a", "b", "c"])
+        fake.windows["b"] = nil
+        _ = await run(recent)
+        let closed = fake.focused
+        start(["a": .init(frame: left)], clicks: ["a"])
+        let alone = await run(recent)
+        check("S-083 with the window used before closed, it's the one before that; with no other window, it fails with the sound",
+              closed == "a" && alone == PlanError("No window used before.", alerts: true), "\(String(describing: closed)), \(String(describing: alone))")
+
+        start(["a": .init(frame: left), "b": .init(frame: other)], clicks: ["a", "b"])
+        _ = await run(swap)
+        let swapped = (fake.windows["a"]?.frame, fake.windows["b"]?.frame, fake.focused)
+        _ = await run(swap)
+        check("S-083 Swap Window's recent trades frames with the window used before, keeps focus, and swaps back",
+              swapped == (other, left, "b") && fake.windows["a"]?.frame == left && fake.windows["b"]?.frame == other && fake.focused == "b")
+
+        start(["d": .init(frame: left), "a": .init(frame: left, space: 2), "b": .init(frame: other)], clicks: ["d", "a", "b"])
+        _ = await run(swap)
+        check("S-083 Swap Window's recent skips a window on another Space",
+              fake.windows["d"]?.frame == other && fake.windows["b"]?.frame == left && fake.windows["a"]?.frame == left)
+
+        settings.exclude = ["com.example.skip"]
+        start(["a": .init(frame: left), "x": .init(frame: CGRect(x: 960, y: 0, width: 960, height: 1080), app: "com.example.skip"),
+               "b": .init(frame: other)], clicks: ["a", "x", "b"])
+        _ = await run(recent)
+        let skipped = fake.focused
+        _ = await run(FocusAction(.right))
+        check("S-083 an app in windows.exclude is never picked, by recent or a direction",
+              skipped == "a" && fake.focused == "b", "\(String(describing: skipped)), \(String(describing: fake.focused))")
     }
 
     /// S-070: the window types in the Type picker, and each form's value

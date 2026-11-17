@@ -14,6 +14,9 @@ final class FakeWindowSystem: WindowSystem {
         /// A window that never changes size, such as a dialog.
         var isFixedSize = false
         var pid: pid_t = 1
+        var app: String?
+        /// Its Space (S-083); only the current Space's windows show.
+        var space = 1
     }
 
     var app: FrontApp? = FrontApp(pid: 1, name: "TextEdit")
@@ -24,6 +27,8 @@ final class FakeWindowSystem: WindowSystem {
     var displays = [WindowGeometry.Screen(frame: CGRect(x: 0, y: 0, width: 1440, height: 900),
                                           usable: CGRect(x: 0, y: 25, width: 1440, height: 875))]
     var canControlWindows = true
+    var currentSpace = 1
+    private var focusChanged: ((WindowRef) -> Void)?
 
     func frontApp() -> FrontApp? { app }
 
@@ -57,15 +62,39 @@ final class FakeWindowSystem: WindowSystem {
 
     func focusableWindows() -> [WindowInfo] {
         func depth(_ id: String) -> Int { stacking.firstIndex(of: id) ?? stacking.count }
-        return windows.filter { !$0.value.isMinimized }
+        return windows.filter { !$0.value.isMinimized && $0.value.space == currentSpace }
             .sorted { (depth($0.key), $0.key) < (depth($1.key), $1.key) }
-            .map { WindowInfo(ref: WindowRef(id: $0.key), frame: $0.value.frame, pid: $0.value.pid) }
+            .map { info($0.key, $0.value) }
     }
 
-    /// Focusing raises the window to the front, as the real one does.
+    private func info(_ id: String, _ window: Window) -> WindowInfo {
+        WindowInfo(ref: WindowRef(id: id), frame: window.frame, pid: window.pid, app: window.app)
+    }
+
+    /// Focusing raises the window to the front and brings its Space, as the real one does.
     func focus(_ window: WindowInfo) async throws(PlanError) {
         guard let id = window.ref.id.base as? String else { return }
+        raise(id)
+    }
+
+    func window(_ ref: WindowRef) -> WindowInfo? {
+        guard let id = ref.id.base as? String, let window = windows[id], !window.isMinimized else { return nil }
+        return info(id, window)
+    }
+
+    func watchFocus(_ changed: @escaping (WindowRef) -> Void) {
+        focusChanged = changed
+    }
+
+    /// A click on a window: it takes focus, as reported to `watchFocus`.
+    func click(_ id: String) {
+        raise(id)
+        focusChanged?(WindowRef(id: id))
+    }
+
+    private func raise(_ id: String) {
         focused = id
+        currentSpace = windows[id]?.space ?? currentSpace
         stacking.removeAll { $0 == id }
         stacking.insert(id, at: 0)
     }

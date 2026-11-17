@@ -57,7 +57,7 @@ extension FocusAction: EditableAction {
             TargetRows(label: "Focus On", target: value.target)
             scopePicker(value.scope)
         } footer: {
-            Text("Left, Right, Up and Down go to the nearest window you can see that way. Next Window and Previous Window go through the windows you can see in rows, as you read, display by display. First Window, Last Window and numbers count in that order. Windows hidden behind others are skipped. On the Same Display keeps to the display of the window in front. With no window there, you hear the alert sound.")
+            Text("Left, Right, Up and Down go to the nearest window you can see that way. Next Window and Previous Window go through the windows you can see in rows, as you read, display by display. First Window, Last Window and numbers count in that order. Windows hidden behind others are skipped. Window Used Before goes back to the window you used before this one, even behind others or on another Space, so pressing again comes back. On the Same Display keeps to the display of the window in front. With no window there, you hear the alert sound.")
         }
     }
 }
@@ -68,7 +68,7 @@ extension SwapAction: EditableAction {
             TargetRows(label: "Swap With", target: value.target)
             scopePicker(value.scope)
         } footer: {
-            Text("The window in front trades place and size with that window, and keeps focus. Left, Right, Up and Down pick the nearest window you can see that way. The others, and numbers, count the windows you can see in rows, as you read, display by display, as Focus Window does. With no window there, nothing moves and you hear the alert sound.")
+            Text("The window in front trades place and size with that window, and keeps focus. Left, Right, Up and Down pick the nearest window you can see that way. The others, and numbers, count the windows you can see in rows, as you read, display by display, as Focus Window does. Window Used Before is the window you used before this one, even behind others, on this Space; pressing again swaps them back. With no window there, nothing moves and you hear the alert sound.")
         }
     }
 }

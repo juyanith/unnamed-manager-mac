@@ -53,15 +53,18 @@ public struct Config: Sendable, Equatable {
         public var minVisible: Double
         public var rowTolerance: Double
         public var tieTolerance: Double
+        /// Apps whose windows Focus Window and Swap Window never pick (spec v13), by bundle id.
+        public var exclude: [String]
 
         public init(gap: Double = 8, maxColumns: Int = 2, maxRows: Int = 2,
-                    minVisible: Double = 20, rowTolerance: Double = 20, tieTolerance: Double = 2) {
+                    minVisible: Double = 20, rowTolerance: Double = 20, tieTolerance: Double = 2, exclude: [String] = []) {
             self.gap = gap
             self.maxColumns = maxColumns
             self.maxRows = maxRows
             self.minVisible = minVisible
             self.rowTolerance = rowTolerance
             self.tieTolerance = tieTolerance
+            self.exclude = exclude
         }
     }
 
@@ -225,7 +228,7 @@ extension Config.Runtime: Decodable {
 extension Config.Windows: Decodable {
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: AnyKey.self)
-        try c.rejectUnknown(allowed: ["gap", "maxColumns", "maxRows", "minVisible", "rowTolerance", "tieTolerance"], at: "windows")
+        try c.rejectUnknown(allowed: ["gap", "maxColumns", "maxRows", "minVisible", "rowTolerance", "tieTolerance", "exclude"], at: "windows")
         let d = Self()
         gap = try c.value("gap", default: d.gap)
         maxColumns = try c.value("maxColumns", default: d.maxColumns)
@@ -233,6 +236,7 @@ extension Config.Windows: Decodable {
         minVisible = try c.value("minVisible", default: d.minVisible)
         rowTolerance = try c.value("rowTolerance", default: d.rowTolerance)
         tieTolerance = try c.value("tieTolerance", default: d.tieTolerance)
+        exclude = try c.value("exclude", default: d.exclude)
     }
 }
 
