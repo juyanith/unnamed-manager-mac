@@ -161,8 +161,12 @@ extension SelfTest {
         try? await Task.sleep(for: .seconds(1))
         frontCheck("S-085 Help is a window of its own, and its links bring Settings back on the Bindings tab",
               helpInFront && settings?.isKeyWindow == true && model.tab == .bindings && window(WindowID.help)?.isVisible == true)
+        // macOS keeps a window within the screen, which is short on CI.
+        let screenHeight = settings?.screen?.visibleFrame.height ?? .infinity
+        let toolbar = (settings?.frame.height ?? 0) - (settings?.contentLayoutRect.height ?? 0)
+        let first = CGSize(width: Layout.settingsDefault.width, height: min(Layout.settingsDefault.height, screenHeight - toolbar))
         check("S-085 Settings can be resized, and opens at its first size",
-              settings?.styleMask.contains(.resizable) == true && settings?.contentLayoutRect.size == Layout.settingsDefault,
+              settings?.styleMask.contains(.resizable) == true && settings?.contentLayoutRect.size == first,
               "\(settings?.contentLayoutRect.size ?? .zero), resizable: \(settings?.styleMask.contains(.resizable) == true)")
         check("S-085 switching tabs never resizes Settings",
               await tabSizes(model, settings) == [settings?.frame.size ?? .zero], "\(await tabSizes(model, settings))")
@@ -174,7 +178,7 @@ extension SelfTest {
         }
         let sizes = await tabSizes(model, settings)
         check("S-085 Settings keeps the size you give it, on every tab",
-              sizes == [CGSize(width: 1100, height: 760)], "\(sizes)")
+              sizes == [CGSize(width: 1100, height: min(760, screenHeight))], "\(sizes)")
         check("S-085 there is no separate Bindings window",
               !NSApp.windows.contains { $0.identifier?.rawValue.hasPrefix("bindings") == true })
         window(WindowID.help)?.close()
