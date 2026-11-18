@@ -1288,6 +1288,14 @@
               {
                 "additionalProperties" : false,
                 "properties" : {
+                  "choose" : {
+                    "default" : "focus",
+                    "description" : "Spec v19. What choosing an item does. focus: go to its window. swap: trade places with it, as Swap Window does; then minimized, hidden and spaces don't apply.",
+                    "enum" : [
+                      "focus",
+                      "swap"
+                    ]
+                  },
                   "count" : {
                     "default" : 9,
                     "description" : "The most items. Keys 1 to 9 on each page, and 0 for More.",

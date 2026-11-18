@@ -91,21 +91,39 @@ struct EntryEditor: View {
         func set(_ change: (inout Config.List) -> Void) {
             var changed = list
             change(&changed)
-            editor.setList(path, changed, undo: undo)
+            editor.setList(path, changed.normalized, undo: undo)
         }
-        return Section("Recent Windows") {
+        return Section {
+            Picker("When Chosen", selection: Binding(get: { list.choose }, set: { value in
+                set {
+                    $0.choose = value
+                    // Swap has no use for these, and the file can't have them with it (spec v19).
+                    if $0.swaps { ($0.minimized, $0.hidden, $0.spaces) = (nil, nil, nil) }
+                }
+            })) {
+                Text("Focus").tag("focus")
+                Text("Swap").tag("swap")
+            }
             Stepper("Up to \(list.count) \(list.count == 1 ? "Window" : "Windows")",
                     value: Binding(get: { list.count }, set: { count in set { $0.count = count } }),
                     in: Config.List.countRange)
-            Toggle("Include Minimized Windows", isOn: Binding(get: { list.minimized }, set: { on in set { $0.minimized = on } }))
-            Toggle("Include Hidden Apps", isOn: Binding(get: { list.hidden }, set: { on in set { $0.hidden = on } }))
-            Picker("Spaces", selection: Binding(get: { list.spaces }, set: { value in set { $0.spaces = value } })) {
-                Text("All Spaces").tag("all")
-                Text("Current Space").tag("current")
+            if !list.swaps {
+                Toggle("Include Minimized Windows", isOn: Binding(get: { list.includesMinimized }, set: { on in set { $0.minimized = on } }))
+                Toggle("Include Hidden Apps", isOn: Binding(get: { list.includesHidden }, set: { on in set { $0.hidden = on } }))
+                Picker("Spaces", selection: Binding(get: { list.spaces ?? "all" }, set: { value in set { $0.spaces = value } })) {
+                    Text("All Spaces").tag("all")
+                    Text("Current Space").tag("current")
+                }
             }
             Picker("Displays", selection: Binding(get: { list.scope }, set: { value in set { $0.scope = value } })) {
                 Text("All Displays").tag("all")
                 Text("This Display").tag("display")
+            }
+        } header: {
+            Text("Recent Windows")
+        } footer: {
+            if list.swaps {
+                Text("Choosing a window trades places with it, as Swap Window does, and focus stays. Only windows shown on the current Space are listed.")
             }
         }
     }

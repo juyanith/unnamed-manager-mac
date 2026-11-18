@@ -144,6 +144,8 @@ public enum ConfigSchema {
                            "description": "all: windows on every Space or desktop. current: only the current one of each display."],
                 "scope": ["enum": ["all", "display"], "default": "all",
                           "description": "all: every display. display: only the focused window's display."],
+                "choose": ["enum": Config.List.chooseValues, "default": "focus",
+                           "description": "Spec v19. What choosing an item does. focus: go to its window. swap: trade places with it, as Swap Window does; then minimized, hidden and spaces don't apply."],
             ] as [String: Any],
         ]
         return ["description": "Spec v18. Makes this menu a list: the app fills it when it opens, so it has no entries under it and no action.",

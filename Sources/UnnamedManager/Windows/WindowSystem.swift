@@ -221,11 +221,16 @@ final class WindowControl {
     /// list's filters, without the focused one, in the history's order,
     /// then the windows the history doesn't hold, the one in front first.
     /// At most `count`, and never a window of an app left out of Focus Window.
+    /// A list that swaps (S-095, spec v19) has only shown windows on the
+    /// current Space, and leaves out apps left out of Swap Window instead.
     func recentWindows(_ list: Config.List) -> (front: RecentWindow?, items: [RecentWindow]) {
         guard system.canControlWindows else { return (nil, []) }
         let focused = system.frontApp().flatMap { system.focusedWindow(of: $0) }
+        // Swapping needs a focused window to trade places with (spec v19).
+        if list.swaps && focused == nil { return (nil, []) }
         if let focused { history.record(focused) }
-        let here = system.focusableWindows(), screens = system.screens(), excluded = settings().leftOut(of: \.focus)
+        let rule: KeyPath<Config.Windows.AppRules, Bool> = list.swaps ? \.swap : \.focus
+        let here = system.focusableWindows(), screens = system.screens(), excluded = settings().leftOut(of: rule)
         let onSpace = Set(here.map(\.ref))
         let all = system.allWindows()
         let found = Dictionary(all.map { ($0.info.ref, $0) }, uniquingKeysWith: { first, _ in first })
@@ -251,8 +256,8 @@ final class WindowControl {
                                        focused: focused, count: list.count) { ref in
             guard let window = listed[ref], !window.info.isExcluded(by: excluded) else { return false }
             let item = recent(window)
-            if !list.minimized && item.marks.contains(.minimized) { return false }
-            if !list.hidden && item.marks.contains(.hidden) { return false }
+            if !list.includesMinimized && item.marks.contains(.minimized) { return false }
+            if !list.includesHidden && item.marks.contains(.hidden) { return false }
             if list.currentSpaceOnly && item.marks.contains(.otherSpace) { return false }
             if list.displayOnly && item.marks.contains(.otherDisplay) { return false }
             items[ref] = item
@@ -270,6 +275,27 @@ final class WindowControl {
         }
         history.record(window)
         try await system.restore(listed)
+    }
+
+    /// Trades places with a window chosen in a list that swaps (S-095,
+    /// spec v19), as Swap Window does: focus stays, and the history doesn't
+    /// change, so choosing again right away swaps the two back.
+    func swap(with window: WindowRef) throws(PlanError) {
+        guard system.canControlWindows else {
+            throw PlanError("Unnamed Manager needs Accessibility access to move windows.")
+        }
+        guard let app = system.frontApp(), let focused = system.focusedWindow(of: app),
+              let frame = system.frame(of: focused) else {
+            throw PlanError("No window to swap with.", alerts: true)
+        }
+        if let bundle = system.window(focused)?.app, settings().leftOut(of: \.swap).contains(bundle) {
+            throw PlanError("\(app.name) is left out of Swap Window.", alerts: true)
+        }
+        guard let other = system.frame(of: window) else {
+            throw PlanError("That window has closed.", alerts: true)
+        }
+        put(focused, in: other)
+        put(window, in: frame)
     }
 
     /// False once a listed window has closed or its app has quit.

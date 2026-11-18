@@ -78,10 +78,12 @@ public enum ConfigWriter {
         let d = Config.List()
         var fields = [("type", quote(list.type))]
         if list.count != d.count { fields.append(("count", "\(list.count)")) }
-        if list.minimized != d.minimized { fields.append(("minimized", "\(list.minimized)")) }
-        if list.hidden != d.hidden { fields.append(("hidden", "\(list.hidden)")) }
-        if list.spaces != d.spaces { fields.append(("spaces", quote(list.spaces))) }
+        // What the file has: a field that was written stays written.
+        if let minimized = list.minimized { fields.append(("minimized", "\(minimized)")) }
+        if let hidden = list.hidden { fields.append(("hidden", "\(hidden)")) }
+        if let spaces = list.spaces { fields.append(("spaces", quote(spaces))) }
         if list.scope != d.scope { fields.append(("scope", quote(list.scope))) }
+        if list.choose != d.choose { fields.append(("choose", quote(list.choose))) }
         return object(fields)
     }
 

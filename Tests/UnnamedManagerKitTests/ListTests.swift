@@ -237,3 +237,40 @@ struct HoldEditingTests {
         #expect(d.entry(KeySequence(parsing: "CAG+R")!)?.list == nil)
     }
 }
+
+@Suite("Lists that swap (S-095, spec v19)")
+struct SwapListTests {
+    @Test("choose reads and writes, with focus left out")
+    func roundTrip() throws {
+        let config = try load(json(entries: """
+        { "keys": "CAG+Tab", "title": "Swap", "list": { "type": "windows.recent", "choose": "swap", "scope": "display" } },
+        { "keys": "CAG+H", "title": "Recent", "list": { "type": "windows.recent", "choose": "focus" } }
+        """)).get().config
+        #expect(config.entries[0].list?.swaps == true && config.entries[1].list == Config.List())
+        let text = ConfigWriter.write(config, actionOrder: [])
+        #expect(text.contains(#""list": { "type": "windows.recent", "scope": "display", "choose": "swap" }"#))
+        #expect(try load(text).get().config == config)
+    }
+
+    @Test("Swap's rules", arguments: [
+        (#"{ "keys": "CAG+Tab", "title": "S", "list": { "type": "windows.recent", "choose": "close" } }"#, "bad-list-value CAG+Tab"),
+        (#"{ "keys": "CAG+Tab", "title": "S", "list": { "type": "windows.recent", "choose": "swap", "minimized": true } }"#, "conflicting-fields CAG+Tab"),
+        (#"{ "keys": "CAG+Tab", "title": "S", "list": { "type": "windows.recent", "choose": "swap", "hidden": false } }"#, "conflicting-fields CAG+Tab"),
+        (#"{ "keys": "CAG+Tab", "title": "S", "list": { "type": "windows.recent", "choose": "swap", "spaces": "all" } }"#, "conflicting-fields CAG+Tab"),
+    ])
+    func rules(_ entries: String, _ rule: String) {
+        switch load(json(entries: entries)) {
+        case .success: Issue.record("\(entries) loaded")
+        case let .failure(errors): #expect(errors.issues.map { "\($0.rule?.rawValue ?? "") \($0.subject ?? "")" } == [rule])
+        }
+    }
+
+    @Test("A list that swaps has only shown windows on the current Space, and normalizing leaves defaults out")
+    func filters() {
+        let swap = Config.List(choose: "swap")
+        #expect(!swap.includesMinimized && !swap.includesHidden && swap.currentSpaceOnly)
+        let focus = Config.List()
+        #expect(focus.includesMinimized && focus.includesHidden && !focus.currentSpaceOnly)
+        #expect(Config.List(minimized: true, hidden: false, spaces: "all").normalized == Config.List(hidden: false))
+    }
+}

@@ -212,6 +212,76 @@ extension SelfTest {
         store.reload()
     }
 
+    /// S-095: a list that swaps trades places with the chosen window, keeps
+    /// focus, and swaps back when chosen again right away.
+    static func swapListChecks(_ model: AppModel) async {
+        let store = model.store
+        let launcher = model.launcher
+        let good = try? String(contentsOf: store.url, encoding: .utf8)
+        try? Data("""
+        { "version": 1, "runtime": { "hudDelayMs": 0 }, "entries": [
+          { "keys": "CAG+Tab", "title": "Swap With", "hold": true, "list": { "type": "windows.recent", "choose": "swap" } }
+        ] }
+        """.utf8).write(to: store.url)
+        store.reload()
+        let realWindows = launcher.windows, realHeld = launcher.heldModifiers
+        let cag: Modifiers = [.control, .option, .command]
+        let held = Held(cag)
+        launcher.heldModifiers = { held.value }
+        let fake = FakeWindowSystem()
+        let left = CGRect(x: 0, y: 24, width: 720, height: 876), right = CGRect(x: 720, y: 24, width: 720, height: 876)
+        fake.windows = [
+            "A": .init(frame: left, pid: 1, app: "com.apple.Notes", title: "Shopping"),
+            "B": .init(frame: right, pid: 2, app: "com.apple.Safari", title: "Apple"),
+            "C": .init(frame: right, isMinimized: true, pid: 3, app: "com.apple.TextEdit", title: "Draft"),
+            "D": .init(frame: right, pid: 4, app: "com.apple.Mail", space: 2, title: "Inbox"),
+            "E": .init(frame: right, pid: 5, app: "com.apple.calculator", title: "Calculator"),
+        ]
+        var rules = Config.Windows(gap: 0)
+        rules.apps = ["com.apple.calculator": .init(swap: false)]
+        let settings = rules
+        launcher.windows = WindowControl(system: fake) { settings }
+        for id in ["D", "C", "E", "B", "A"] { fake.click(id) }
+
+        func swapOnce() async {
+            held.value = cag
+            launcher.handleForTesting(.down(keyCode: KeyName.tab.keyCode!, modifiers: cag, isRepeat: false))
+            try? await Task.sleep(for: .milliseconds(50))
+            held.value = []
+            launcher.handleForTesting(.flags([]))
+            try? await Task.sleep(for: .milliseconds(100))
+        }
+
+        held.value = cag
+        launcher.handleForTesting(.down(keyCode: KeyName.tab.keyCode!, modifiers: cag, isRepeat: false))
+        try? await Task.sleep(for: .milliseconds(50))
+        let titles = launcher.guide.content?.rows.dropFirst().map(\.title) ?? []
+        check("S-095 a list that swaps holds only shown windows on this Space, without apps left out of Swap Window",
+              titles == ["Apple"], "\(titles)")
+        held.value = []
+        launcher.handleForTesting(.flags([]))
+        try? await Task.sleep(for: .milliseconds(100))
+        check("S-095 choosing trades places with the window, and focus stays",
+              fake.windows["A"]?.frame == right && fake.windows["B"]?.frame == left && fake.focused == "A" && fake.restored.isEmpty)
+        await swapOnce()
+        check("S-095 choosing again right away swaps the two back",
+              fake.windows["A"]?.frame == left && fake.windows["B"]?.frame == right && fake.focused == "A")
+
+        // The focused window's app is left out of Swap Window: choosing fails.
+        fake.click("E")
+        fake.app = FrontApp(pid: 5, name: "Calculator")
+        let alerts = launcher.alertsPlayed
+        await swapOnce()
+        check("S-095 when the focused app is left out of Swap Window, choosing fails with the alert",
+              fake.windows["E"]?.frame == right && launcher.alertsPlayed == alerts + 1
+              && launcher.lastFailure == "Calculator is left out of Swap Window.", launcher.lastFailure ?? "")
+
+        launcher.windows = realWindows
+        launcher.heldModifiers = realHeld
+        try? good?.write(to: store.url, atomically: true, encoding: .utf8)
+        store.reload()
+    }
+
     /// S-094: Hold to Choose and a list's fields in the Bindings tab save and undo.
     static func bindingsHoldChecks(_ model: AppModel) async {
         let store = model.store, editor = model.editor

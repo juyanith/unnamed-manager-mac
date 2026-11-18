@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "entries": [
+    { "keys": "CAG+Tab", "title": "Swap With", "hold": true, "list": { "type": "windows.recent", "choose": "swap" } },
+    { "keys": "Hyper+Tab", "title": "Swap Here", "hold": true, "list": { "type": "windows.recent", "count": 5, "scope": "display", "choose": "swap" } },
+    { "keys": "CAG+H", "title": "Recent Windows", "hold": true, "list": { "type": "windows.recent" } }
+  ]
+}

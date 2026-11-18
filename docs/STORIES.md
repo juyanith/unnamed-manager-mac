@@ -1204,6 +1204,22 @@ UX:
 Status: done
 Verified: Hold to Choose and every Recent Windows option save and undo; a repeat key is refused in the recorder; Hold over a repeat key shows the error unsaved, and its "Change the Key" fix records a new key for that row; a menu with keys under it can't become Recent Windows (self-test, 265 checks; unit, 322 tests); bindings-hold, bindings-list and help-held in light and dark, grid checks. The editor pane puts Hold and Contents before Icon so a list's options fit without scrolling. Not yet tried by hand: VoiceOver on the new controls.
 
+### S-095 Swap with a window chosen from Recent Windows
+As the user, I hold CAG+Tab, pick a window from the list, and it trades places with the focused one, as Swap Window does, so I can rearrange windows without leaving the keyboard.
+Screens: bindings-swap
+Depends: S-092, spec v19
+Acceptance:
+- [unit] `"choose": "swap"` reads and writes, `focus` is left out as the default; another value is `bad-list-value`; `minimized`, `hidden` or `spaces` with swap is `conflicting-fields`; the v19 fixtures pass.
+- [self] A list that swaps holds only shown windows on the current Space, without apps left out of Swap Window; choosing trades frames and keeps focus; choosing again right away swaps back; a focused app left out of Swap Window fails with the alert.
+- [snap] `bindings-swap`: When Chosen set to Swap, the focus-only options hidden, and a footer.
+UX:
+- Flow: select a Recent Windows menu → When Chosen: Swap → the options swap doesn't use go away → ⌘Z undoes.
+- Surface: inline, in the Recent Windows section of the editor pane.
+- Words: "When Chosen" with "Focus" or "Swap". Footer with Swap: "Choosing a window trades places with it, as Swap Window does, and focus stays. Only windows shown on the current Space are listed." Switching to Swap clears Minimized, Hidden and Spaces, since the file can't have them with it.
+- Help: the Held Menus footer says a Recent Windows menu can swap instead.
+Status: done
+Verified: unit, 325 tests; self-test, 269 checks; bindings-swap in light and dark, grid checks. Not yet tried by hand: CAG+Tab through Kanata on real windows.
+
 ## Later
 - Pick a window from an overlay: `"target": "pick"` on Focus Window and Swap Window labels the visible windows in order and waits for one key (numbers or home-row letters), Escape cancels.
 - Import and export a single menu as a JSON snippet.

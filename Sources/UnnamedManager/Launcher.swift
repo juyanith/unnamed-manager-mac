@@ -56,8 +56,10 @@ final class Launcher {
     /// window actions use, so they share the focus history. The self-test
     /// replaces it.
     @ObservationIgnored lazy var windows: WindowControl? = (runner.performer as? SystemPerformer)?.context.windows
-    /// The window of each item in the lists shown this sequence, by item id.
+    /// The window of each item in the list shown, by item id.
     @ObservationIgnored private var listed: [Int: WindowRef] = [:]
+    /// The list shown swaps with the chosen window instead of focusing it (S-095).
+    @ObservationIgnored private var listSwaps = false
     @ObservationIgnored private var nextItemID = 1
     /// While a list is up, checks that its items' windows are still open.
     @ObservationIgnored private var listWatch: Task<Void, Never>?
@@ -206,6 +208,7 @@ final class Launcher {
         var items: [ListItem] = [], front: ListItem?
         // Only the list just opened can be chosen from.
         listed = [:]
+        listSwaps = menu.list?.swaps ?? false
         if let list = menu.list, let windows {
             let found = windows.recentWindows(list)
             func item(_ window: WindowControl.RecentWindow) -> ListItem {
@@ -243,9 +246,10 @@ final class Launcher {
     /// Goes to the window of a list's item (S-092).
     private func choose(_ item: ListItem, title: String) {
         guard let ref = listed[item.id], let windows else { return }
+        let swaps = listSwaps
         Task {
             do throws(PlanError) {
-                try await windows.choose(ref)
+                if swaps { try windows.swap(with: ref) } else { try await windows.choose(ref) }
             } catch {
                 report(error.message, title: title, alerts: error.alerts)
             }

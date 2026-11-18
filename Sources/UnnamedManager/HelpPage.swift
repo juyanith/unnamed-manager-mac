@@ -190,7 +190,7 @@ struct HelpPage: View {
         } header: {
             Text("Held Menus")
         } footer: {
-            Text("Turn on Hold to Choose for a leader on Settings' Bindings tab. A menu whose Contents is Recent Windows lists the windows you used last.")
+            Text("Turn on Hold to Choose for a leader on Settings' Bindings tab. A menu whose Contents is Recent Windows lists the windows you used last, and with When Chosen set to Swap, the window you pick trades places with the focused one.")
         }
         .id(HelpContent.heldMenusID)
     }

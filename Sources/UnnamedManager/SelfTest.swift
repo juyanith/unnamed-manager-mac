@@ -53,6 +53,7 @@ enum SelfTest {
             await spaceSwitchChecks()
             await heldChecks(model)
             await recentChecks(model)
+            await swapListChecks(model)
             await bindingsHoldChecks(model)
             await frontChecks(model)
 

@@ -38,6 +38,7 @@ One name per idea. Use these words in the UI, the docs, the log and VoiceOver la
 | List | A menu the app fills when it opens, such as Recent Windows (spec v18). | generated menu, dynamic menu, auto menu |
 | More | Key 0 in a list with more than 9 items: go to the next page of 9. | Next, page down, show more |
 | Recent Windows | The list of the windows used last, most recent first. | window switcher, MRU, history |
+| When Chosen | What choosing an item in Recent Windows does: Focus goes to its window, Swap trades places with it (`choose`, spec v19). | action, select, mode |
 | Config file | `~/.config/unnamed-manager/config.json`, the one source of truth for bindings and settings. | settings file, preferences, profile, keymap |
 | Starter config | The config file the app writes on first launch when there is none: one leader, two bindings and Show Help. | default config, template, sample |
 | Unnamed Launcher | The app Unnamed Manager grew out of. Named only when copying its config or when it's running alongside. | the launcher, the old app, v1 |

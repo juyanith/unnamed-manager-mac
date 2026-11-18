@@ -131,34 +131,56 @@ public struct Config: Sendable, Equatable {
     }
 
     /// What a list holds (spec v18, Lists). Values stay as written, so the
-    /// validator can name a wrong one.
+    /// validator can name a wrong one. `minimized`, `hidden` and `spaces`
+    /// are nil when the file leaves them out, since with `"choose": "swap"`
+    /// writing one at all is an error (spec v19).
     public struct List: Sendable, Equatable {
         public static let recentWindows = "windows.recent"
         public static let countRange = 1...99
+        /// What choosing an item does (spec v19).
+        public static let chooseValues = ["focus", "swap"]
 
         public var type: String
         public var count: Int
-        public var minimized: Bool
-        public var hidden: Bool
+        public var minimized: Bool?
+        public var hidden: Bool?
         /// `all` or `current`.
-        public var spaces: String
+        public var spaces: String?
         /// `all` or `display`.
         public var scope: String
+        /// `focus` or `swap`.
+        public var choose: String
 
-        public init(type: String = Self.recentWindows, count: Int = 9, minimized: Bool = true, hidden: Bool = true,
-                    spaces: String = "all", scope: String = "all") {
+        public init(type: String = Self.recentWindows, count: Int = 9, minimized: Bool? = nil, hidden: Bool? = nil,
+                    spaces: String? = nil, scope: String = "all", choose: String = "focus") {
             self.type = type
             self.count = count
             self.minimized = minimized
             self.hidden = hidden
             self.spaces = spaces
             self.scope = scope
+            self.choose = choose
         }
 
+        /// Choosing an item swaps with its window, instead of focusing it.
+        public var swaps: Bool { choose == "swap" }
+        /// Swap only works with windows that are shown on the current Space.
+        public var includesMinimized: Bool { !swaps && (minimized ?? true) }
+        public var includesHidden: Bool { !swaps && (hidden ?? true) }
         /// Only the current Space of each display.
-        public var currentSpaceOnly: Bool { spaces == "current" }
+        public var currentSpaceOnly: Bool { swaps || spaces == "current" }
         /// Only the focused window's display.
         public var displayOnly: Bool { scope == "display" }
+
+        /// The same list with the fields that are at their default left
+        /// out, as the file has them.
+        public var normalized: List {
+            var list = self
+            if list.minimized == true { list.minimized = nil }
+            if list.hidden == true { list.hidden = nil }
+            if list.spaces == "all" { list.spaces = nil }
+            return list
+        }
     }
 
     public struct Context: Sendable, Equatable {
@@ -352,14 +374,15 @@ extension Config.Entry: Decodable {
 extension Config.List: Decodable {
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: AnyKey.self)
-        try c.rejectUnknown(allowed: ["type", "count", "minimized", "hidden", "spaces", "scope"], at: "a list")
+        try c.rejectUnknown(allowed: ["type", "count", "minimized", "hidden", "spaces", "scope", "choose"], at: "a list")
         let d = Self()
         type = try c.required("type")
         count = try c.value("count", default: d.count)
-        minimized = try c.value("minimized", default: d.minimized)
-        hidden = try c.value("hidden", default: d.hidden)
-        spaces = try c.value("spaces", default: d.spaces)
+        minimized = try c.decodeIfPresent(Bool.self, forKey: AnyKey("minimized"))
+        hidden = try c.decodeIfPresent(Bool.self, forKey: AnyKey("hidden"))
+        spaces = try c.decodeIfPresent(String.self, forKey: AnyKey("spaces"))
         scope = try c.value("scope", default: d.scope)
+        choose = try c.value("choose", default: d.choose)
     }
 }
 

@@ -306,11 +306,20 @@ public enum ConfigValidator {
         if !counts.contains(list.count) {
             error(.badListValue, "The list of “\(path)” has count \(list.count). Use a number from \(counts.lowerBound) to \(counts.upperBound).", subject)
         }
-        if !["all", "current"].contains(list.spaces) {
-            error(.badListValue, "The list of “\(path)” has spaces “\(list.spaces)”. Use all or current.", subject)
+        if let spaces = list.spaces, !["all", "current"].contains(spaces) {
+            error(.badListValue, "The list of “\(path)” has spaces “\(spaces)”. Use all or current.", subject)
         }
         if !["all", "display"].contains(list.scope) {
             error(.badListValue, "The list of “\(path)” has scope “\(list.scope)”. Use all or display.", subject)
+        }
+        if !Config.List.chooseValues.contains(list.choose) {
+            error(.badListValue, "The list of “\(path)” has choose “\(list.choose)”. Use focus or swap.", subject)
+        }
+        // Swap only works with shown windows on the current Space (spec v19).
+        let swapLeavesOut = [("minimized", list.minimized != nil), ("hidden", list.hidden != nil), ("spaces", list.spaces != nil)]
+            .filter(\.1).map(\.0)
+        if list.swaps, let field = swapLeavesOut.first {
+            error(.conflictingFields, "The list of “\(path)” swaps, so “\(field)” doesn't go with it: Swap only works with windows shown on the current Space. Remove “\(field)”.", subject)
         }
         // The digits are the items' keys, so a held list can't be opened by one.
         let repeatKey = path.lastStep?.key ?? path.leader.key

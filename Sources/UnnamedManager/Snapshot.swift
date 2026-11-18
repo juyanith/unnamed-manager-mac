@@ -103,7 +103,7 @@ enum Snapshot {
                     capture(to: "\(dir)/bindings-builtin-\(mode).png")
                 }
             }
-            if only == nil || !(only ?? []).isDisjoint(with: ["bindings-hold", "bindings-list"]) {
+            if only == nil || !(only ?? []).isDisjoint(with: ["bindings-hold", "bindings-list", "bindings-swap"]) {
                 // S-094: Hold to Choose on a leader, and a menu that's Recent Windows.
                 var document = ConfigDocument(config: SeedData.fixture.config)
                 let leader = KeySequence(parsing: "Hyper+Space")!, recent = KeySequence(parsing: "Hyper+Space R")!
@@ -111,11 +111,15 @@ enum Snapshot {
                 let at = document.config.entries.firstIndex { $0.keys == "Hyper+Space N" }!
                 document.config.entries.insert(Config.Entry(keys: recent.description, title: "Recent Windows",
                                                             list: Config.List(count: 20, minimized: false, spaces: "current")), at: at)
+                // S-095: a list that swaps.
+                let swap = KeySequence(parsing: "Hyper+Space O")!
+                document.config.entries.insert(Config.Entry(keys: swap.description, title: "Swap With",
+                                                            list: Config.List(choose: "swap")), at: at)
                 model.editor.preview(document)
                 model.tab = .bindings
                 for mode in ["light", "dark"] {
                     NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
-                    for (name, path) in [("bindings-hold", leader), ("bindings-list", recent)] {
+                    for (name, path) in [("bindings-hold", leader), ("bindings-list", recent), ("bindings-swap", swap)] {
                         model.editor.selection = path
                         try? await Task.sleep(for: .seconds(0.8))
                         capture(to: "\(dir)/\(name)-\(mode).png")
