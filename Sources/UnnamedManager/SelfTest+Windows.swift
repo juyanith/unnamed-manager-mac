@@ -616,10 +616,11 @@ extension SelfTest {
                   && { undo.undo(); return !file().contains("com.apple.calculator") }())
         undo.beginUndoGrouping()
         editor.edit("Change Quit on Close", undo: undo) { $0.config.windows.quitOnClose = true }
+        editor.edit("Change Wait After Closing", undo: undo) { $0.config.windows.quitOnCloseDelayMs = 1200 }
         editor.edit("Change App Rules", undo: undo) { $0.config.windows.apps = ["com.apple.Preview": .init(quit: false)] }
         undo.endUndoGrouping()
-        check("S-086 Quit on Close and an app's Quit rule are saved in the file's windows settings, and undo",
-              file().contains(#""quitOnClose": true"#)
+        check("S-086 Quit on Close, its wait and an app's Quit rule are saved in the file's windows settings, and undo",
+              file().contains(#""quitOnClose": true"#) && file().contains(#""quitOnCloseDelayMs": 1200"#)
                   && file().contains(#""com.apple.Preview": { "focus": true, "swap": true, "arrange": true, "quit": false }"#)
                   && model.store.loaded?.config.windows.quitOnClose == true
                   && { undo.undo(); return !file().contains("quitOnClose") && !file().contains("com.apple.Preview") }())

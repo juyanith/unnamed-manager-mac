@@ -4,8 +4,8 @@ import UnnamedManagerKit
 
 /// Quits an app when its last window closes (S-086, spec v16). While
 /// `windows.quitOnClose` is on, each app with a Dock icon gets an
-/// Accessibility observer for its windows opening and closing. A moment
-/// after one closes, the app's windows are counted again, and
+/// Accessibility observer for its windows opening and closing.
+/// `windows.quitOnCloseDelayMs` after one closes, the app's windows are counted again, and
 /// `QuitOnClose` decides. Windows on another Space aren't in an app's
 /// window list, so every window seen is kept, and counts while its
 /// element still answers (as for S-083).
@@ -18,9 +18,6 @@ final class QuitOnCloseWatcher {
         var hadWindow = false
     }
 
-    /// How long after a window closes the app's windows are counted: long
-    /// enough for an app to open the window that replaces it.
-    private static let settle = Duration.milliseconds(500)
     /// How long one Accessibility call may wait on a busy app.
     private static let timeout: Float = 0.25
 
@@ -123,9 +120,11 @@ final class QuitOnCloseWatcher {
         if notification == kAXWindowCreatedNotification {
             opened(element, pid)
         } else if notification == kAXUIElementDestroyedNotification {
+            // Long enough for an app to open the window that replaces it.
+            let delay = Duration.milliseconds(settings.quitOnCloseDelayMs)
             checks[pid]?.cancel()
             checks[pid] = Task { @MainActor [weak self] in
-                try? await Task.sleep(for: Self.settle)
+                try? await Task.sleep(for: delay)
                 guard !Task.isCancelled else { return }
                 self?.check(pid)
             }

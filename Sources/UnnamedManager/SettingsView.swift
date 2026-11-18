@@ -58,10 +58,14 @@ struct SettingsForm: View {
 
                 Section {
                     Toggle("Quit Apps When Their Last Window Closes", isOn: windowSetting(\.quitOnClose, "Change Quit on Close"))
+                    LabeledContent("Wait After Closing") {
+                        MillisecondsField(value: windowSetting(\.quitOnCloseDelayMs, "Change Wait After Closing"), zeroLabel: "No Wait")
+                    }
+                    .disabled(!editor.draft.config.windows.quitOnClose)
                 } header: {
                     Text("Quit on Close")
                 } footer: {
-                    Text("Closing an app's last window also quits the app. Finder, menu bar apps and apps with Quit unchecked under Apps stay open, and so does an app with a window minimized, hidden or on another Space. An app that keeps working with no window, such as a screen recorder, quits too, unless you uncheck Quit for it.")
+                    Text("Closing an app's last window also quits the app. Finder, menu bar apps and apps with Quit unchecked under Apps stay open, and so does an app with a window minimized, hidden or on another Space. An app that keeps working with no window, such as a screen recorder, quits too, unless you uncheck Quit for it. The wait gives an app time to open a window in place of the one you closed.")
                 }
 
                 Section {
@@ -244,8 +248,8 @@ struct SettingsForm: View {
         }
     }
 
-    /// Quit on Close (S-086).
-    private func windowSetting(_ key: WritableKeyPath<Config.Windows, Bool>, _ name: String) -> Binding<Bool> {
+    /// Quit on Close and its wait (S-086).
+    private func windowSetting<T: Equatable>(_ key: WritableKeyPath<Config.Windows, T>, _ name: String) -> Binding<T> {
         Binding(get: { editor.draft.config.windows[keyPath: key] }, set: { value in
             guard editor.draft.config.windows[keyPath: key] != value else { return }
             editor.edit(name, undo: undo) { $0.config.windows[keyPath: key] = value }

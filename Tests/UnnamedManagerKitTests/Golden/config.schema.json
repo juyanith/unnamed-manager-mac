@@ -1359,6 +1359,11 @@
           "description" : "Mac only. Closing an app's last window also quits the app. Finder is never quit. Default false.",
           "type" : "boolean"
         },
+        "quitOnCloseDelayMs" : {
+          "description" : "Mac only. Milliseconds after a window closes before Quit on close counts the app's windows. Default 500.",
+          "minimum" : 0,
+          "type" : "integer"
+        },
         "rowTolerance" : {
           "description" : "Windows whose tops are within this many points share a row in Focus Window's order. Default 20.",
           "minimum" : 0,

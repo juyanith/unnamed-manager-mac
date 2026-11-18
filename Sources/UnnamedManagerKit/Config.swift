@@ -55,11 +55,13 @@ public struct Config: Sendable, Equatable {
         public var tieTolerance: Double
         /// Quit an app when its last window closes (spec v16, Mac only).
         public var quitOnClose: Bool
+        /// How long after a window closes its app's windows are counted (spec v16).
+        public var quitOnCloseDelayMs: Int
         /// Rules for each app's windows, by bundle id (spec v15).
         public var apps: [String: AppRules]
 
         public init(gap: Double = 8, maxColumns: Int = 2, maxRows: Int = 2,
-                    minVisible: Double = 20, rowTolerance: Double = 20, tieTolerance: Double = 2, quitOnClose: Bool = false, apps: [String: AppRules] = [:]) {
+                    minVisible: Double = 20, rowTolerance: Double = 20, tieTolerance: Double = 2, quitOnClose: Bool = false, quitOnCloseDelayMs: Int = 500, apps: [String: AppRules] = [:]) {
             self.gap = gap
             self.maxColumns = maxColumns
             self.maxRows = maxRows
@@ -67,6 +69,7 @@ public struct Config: Sendable, Equatable {
             self.rowTolerance = rowTolerance
             self.tieTolerance = tieTolerance
             self.quitOnClose = quitOnClose
+            self.quitOnCloseDelayMs = quitOnCloseDelayMs
             self.apps = apps
         }
 
@@ -256,7 +259,7 @@ extension Config.Runtime: Decodable {
 extension Config.Windows: Decodable {
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: AnyKey.self)
-        try c.rejectUnknown(allowed: ["gap", "maxColumns", "maxRows", "minVisible", "rowTolerance", "tieTolerance", "quitOnClose", "apps"], at: "windows")
+        try c.rejectUnknown(allowed: ["gap", "maxColumns", "maxRows", "minVisible", "rowTolerance", "tieTolerance", "quitOnClose", "quitOnCloseDelayMs", "apps"], at: "windows")
         let d = Self()
         gap = try c.value("gap", default: d.gap)
         maxColumns = try c.value("maxColumns", default: d.maxColumns)
@@ -265,6 +268,7 @@ extension Config.Windows: Decodable {
         rowTolerance = try c.value("rowTolerance", default: d.rowTolerance)
         tieTolerance = try c.value("tieTolerance", default: d.tieTolerance)
         quitOnClose = try c.value("quitOnClose", default: d.quitOnClose)
+        quitOnCloseDelayMs = try c.value("quitOnCloseDelayMs", default: d.quitOnCloseDelayMs)
         apps = try c.value("apps", default: d.apps)
     }
 }

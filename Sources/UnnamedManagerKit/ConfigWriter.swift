@@ -20,6 +20,9 @@ public enum ConfigWriter {
             if config.windows.rowTolerance != standard.rowTolerance { fields.number("rowTolerance", config.windows.rowTolerance) }
             if config.windows.tieTolerance != standard.tieTolerance { fields.number("tieTolerance", config.windows.tieTolerance) }
             if config.windows.quitOnClose != standard.quitOnClose { fields.bool("quitOnClose", config.windows.quitOnClose) }
+            if config.windows.quitOnCloseDelayMs != standard.quitOnCloseDelayMs {
+                fields.number("quitOnCloseDelayMs", Double(config.windows.quitOnCloseDelayMs))
+            }
             if !config.windows.apps.isEmpty {
                 // Every rule of every app listed, so the file reads like the table in Settings.
                 var apps = ActionFieldWriter()

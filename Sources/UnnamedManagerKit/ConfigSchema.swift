@@ -79,6 +79,7 @@ public enum ConfigSchema {
                         "rowTolerance": ["type": "number", "minimum": 0, "description": "Windows whose tops are within this many points share a row in Focus Window's order. Default 20."],
                         "tieTolerance": ["type": "number", "minimum": 0, "description": "Gaps within this many points count as the same when Focus Window picks a window in a direction. Default 2."],
                         "quitOnClose": ["type": "boolean", "description": "Mac only. Closing an app's last window also quits the app. Finder is never quit. Default false."],
+                        "quitOnCloseDelayMs": ["type": "integer", "minimum": 0, "description": "Mac only. Milliseconds after a window closes before Quit on close counts the app's windows. Default 500."],
                         "apps": [
                             "type": "object",
                             "description": "Rules for each app's windows, keyed by app id. Mac: bundle ids. Windows: an exe (ends in .exe) or an AppUserModelID. An app that isn't listed takes part in every window action.",

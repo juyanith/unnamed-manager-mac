@@ -18,8 +18,18 @@ struct QuitOnCloseTests {
             #""windows": { "quitOnClose": true, "apps": { "com.apple.Preview": { "focus": true, "swap": true, "arrange": true, "quit": false } } }"#))
     }
 
-    @Test("A quitOnClose or quit that isn't a boolean is wrong-type")
+    @Test("The wait is 500 ms by default, written only when it's changed")
+    func delay() throws {
+        let plain = try ConfigLoader.load(Data((FocusHistoryTests.minimal + " }").utf8)).get()
+        #expect(plain.config.windows.quitOnCloseDelayMs == 500)
+        let set = try ConfigLoader.load(Data((FocusHistoryTests.minimal + #", "windows": { "quitOnCloseDelayMs": 0 } }"#).utf8)).get()
+        #expect(set.config.windows.quitOnCloseDelayMs == 0)
+        #expect(ConfigWriter.write(set.config, actionOrder: []).contains(#""windows": { "quitOnCloseDelayMs": 0 }"#))
+    }
+
+    @Test("A quitOnClose or quit that isn't a boolean is wrong-type, and a negative wait is negative-delay")
     func rejected() {
+        #expect(FocusHistoryTests().rule(#""quitOnCloseDelayMs": -1"#) == .negativeDelay)
         #expect(FocusHistoryTests().rule(#""quitOnClose": "yes""#) == .wrongType)
         #expect(FocusHistoryTests().rule(#""apps": { "com.apple.Preview": { "quit": 0 } }"#) == .wrongType)
     }
