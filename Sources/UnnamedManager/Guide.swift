@@ -41,6 +41,10 @@ struct GuideContent: Equatable {
     var highlight: Int?
     /// What an empty list says in place of rows (S-092).
     var empty: String?
+    /// How many items the menu has, on every page of a list (S-093), and
+    /// the number of the first one shown, for VoiceOver.
+    var itemCount = 0
+    var firstItem = 1
 
     /// A held menu when `highlight` is set: Cancel first, then the menu's rows.
     init(menu: BindingNode, path: [String], config: LoadedConfig, frontApp: String?, frontAppName: String? = nil,
@@ -58,6 +62,10 @@ struct GuideContent: Equatable {
                             icon: front?.app.map(IconSource.app), isCancel: true), at: 0)
         }
         if rows.isEmpty, menu.list != nil { empty = "No recent windows" }
+        itemCount = menu.list != nil ? menu.items.count : menu.children.count
+        firstItem = menu.page * BindingNode.pageSize + 1
+        // More is a key, not an item: the highlight never rests on it (S-093).
+        if menu.hasMore { rows.append(Row(key: KeyName.d0.name, title: "More", isMenu: true)) }
         sections = [Section(rows: rows)]
         cancelKey = Self.footerLabel(config.cancelKey)
         backKey = config.backKey.map(Self.footerLabel)
@@ -168,9 +176,8 @@ struct GuideContent: Equatable {
     /// Cancel isn't counted.
     var highlightAnnouncement: String? {
         guard let highlight, rows.indices.contains(highlight) else { return nil }
-        let items = rows.count - 1
         guard highlight > 0 else { return rows[0].title == "Cancel" ? "Cancel" : "Cancel, \(rows[0].title)" }
-        return "\(rows[highlight].title), \(highlight) of \(items)"
+        return "\(rows[highlight].title), \(firstItem + highlight - 1) of \(itemCount)"
     }
 }
 

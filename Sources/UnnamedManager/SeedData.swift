@@ -116,6 +116,17 @@ enum SeedData {
         return GuideContent(menu: list, path: [list.title], config: config, frontApp: nil, highlight: 1)
     }
 
+    /// Recent Windows with 20 windows, on its second page of three, with More (S-093).
+    static var recentMoreContent: GuideContent {
+        let json = #"{ "version": 1, "entries": [{ "keys": "CAG+H", "title": "Recent Windows", "hold": true, "list": { "type": "windows.recent", "count": 20 } }] }"#
+        let config = try! ConfigLoader.load(Data(json.utf8)).get()
+        let apps = ["com.apple.Safari", "com.apple.Notes", "com.apple.Terminal", "com.apple.TextEdit", "com.apple.mail"]
+        let items = (1...20).map { ListItem(id: $0, title: "Window \($0)", app: apps[$0 % apps.count]) }
+        let list = config.leaders[0].filled(with: items, front: ListItem(id: 0, title: "UnnamedManager — Zed", app: "dev.zed.Zed")).onPage(1)
+        GuideIcons.shared.load(Set(([list.front!] + items).compactMap { $0.app.map(IconSource.app) }))
+        return GuideContent(menu: list, path: list.pathTitles, config: config, frontApp: nil, highlight: 1)
+    }
+
     /// The Windows menu under Commands (S-070).
     static var windowsContent: GuideContent {
         let config = fixture

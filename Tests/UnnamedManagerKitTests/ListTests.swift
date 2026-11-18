@@ -162,11 +162,59 @@ struct ListTests {
         #expect(FocusHistory<Int>.limit >= 30)
     }
 
-    @Test("At most nine items get keys until pages come (S-093)")
-    func nine() throws {
+    @Test("Pages of 9, More on 0 on every page but the last, and the page in the path (S-093)")
+    func pages() throws {
         var e = try engine()
         _ = e.handle(down(.h))
-        let many = (0..<12).map { ListItem(id: $0, title: "W\($0)") }
-        #expect(held(e.fill(many, front: nil).first)?.titles.count == 9)
+        let many = (0..<20).map { ListItem(id: $0, title: "W\($0)") }
+        guard case let .showHeld(first, 1, path, _) = e.fill(many, front: nil).first else { Issue.record("not held"); return }
+        #expect(first.children.count == 9 && first.hasMore && path == ["Recent Windows", "Page 1 of 3"])
+        guard case let .showHeld(second, 1, secondPath, _) = e.handle(down(.d0)).effect else { Issue.record("no More"); return }
+        #expect(second.children.map(\.title).first == "W9" && second.children.map { $0.path.lastStep!.key }.first == .d1)
+        #expect(secondPath == ["Recent Windows", "Page 2 of 3"])
+        guard case let .showHeld(last, _, _, _) = e.handle(down(.d0)).effect else { Issue.record("no More"); return }
+        #expect(last.children.map(\.title) == ["W18", "W19"] && !last.hasMore)
+        // No More on the last page: 0 is an unbound key.
+        guard case .unbound = e.handle(down(.d0)).effect else { Issue.record("0 did something"); return }
+        // Back goes to the page before.
+        guard case let .showHeld(back, _, _, _) = e.handle(down(.backspace, cag)).effect else { Issue.record("no Back"); return }
+        #expect(back.page == 1)
+        #expect(ranItem(e.handle(.flags([])).effect) == 9)
+    }
+
+    @Test("The repeat key goes from item 9 onto the next page, and after the last item to Cancel on the first page")
+    func across() throws {
+        var e = try engine()
+        _ = e.handle(down(.h))
+        let many = (0..<11).map { ListItem(id: $0, title: "W\($0)") }
+        _ = e.fill(many, front: nil)
+        for _ in 1..<9 { _ = e.handle(down(.h)) }
+        #expect(held(e.handle(down(.h)).effect)! == (["W9", "W10"], 1))
+        #expect(held(e.handle(down(.down)).effect)! == (["W9", "W10"], 2))
+        let cancel = held(e.handle(down(.h)).effect)!
+        #expect(cancel.highlight == 0 && cancel.titles.count == 9)
+        // Back from Cancel: the last item, on the last page.
+        #expect(held(e.handle(down(.h, cag.union(.shift))).effect)! == (["W9", "W10"], 2))
+    }
+
+    @Test("Removing an item moves the later ones up across pages, and the highlight with them")
+    func removesAcross() throws {
+        var e = try engine()
+        _ = e.handle(down(.h))
+        _ = e.fill((0..<11).map { ListItem(id: $0, title: "W\($0)") }, front: nil)
+        _ = e.handle(down(.d0))
+        // W9 is highlighted, first on page 2; W0 goes, so W9 moves to item 9 of page 1.
+        #expect(held(e.removeItem(id: 0))! == (["W1", "W2", "W3", "W4", "W5", "W6", "W7", "W8", "W9"], 9))
+    }
+
+    @Test("A list that isn't held pages with 0 too")
+    func pagesNotHeld() throws {
+        var e = try engine()
+        _ = e.handle(down(.w, .hyper))
+        _ = e.handle(down(.r, []))
+        _ = e.fill((0..<12).map { ListItem(id: $0, title: "W\($0)") }, front: nil)
+        guard case let .showMenu(menu, _, _) = e.handle(down(.d0, [])).effect else { Issue.record("no More"); return }
+        #expect(menu.children.map(\.title) == ["W9", "W10", "W11"])
+        #expect(ranItem(e.handle(down(.d2, [])).effect) == 10)
     }
 }

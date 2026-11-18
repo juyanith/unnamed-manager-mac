@@ -83,7 +83,7 @@ public struct SequenceEngine: Sendable {
 
     /// The titles from the leader down: ["Commands", "Applications"], after
     /// "Home" once the sequence has been there.
-    public var path: [String] { (viaHome ? [Home.title] : []) + stack.map(\.title) }
+    public var path: [String] { (viaHome ? [Home.title] : []) + stack.flatMap(\.pathTitles) }
 
     /// Swaps in a new config. A running sequence ends.
     public mutating func replaceConfig(_ config: LoadedConfig) {
@@ -142,14 +142,23 @@ public struct SequenceEngine: Sendable {
     /// goes to the next item, else the one before, else Cancel.
     public mutating func removeItem(id: Int) -> SequenceEffect? {
         guard pending == nil, let list = stack.last, list.list != nil,
-              let index = list.children.firstIndex(where: { $0.item?.id == id }) else { return nil }
-        var items = list.children.compactMap(\.item)
+              let index = list.items.firstIndex(where: { $0.id == id }) else { return nil }
+        var items = list.items
         items.remove(at: index)
-        let filled = list.filled(with: items, front: list.front)
+        var filled = list.filled(with: items, front: list.front)
+        guard let highlight else {
+            stack[stack.count - 1] = filled.onPage(list.page)
+            return .showMenu(stack.last!, path: path, frontApp: sequenceFrontApp)
+        }
+        // Items count from 0 across pages; nil is Cancel.
+        var position = highlight == 0 ? nil : list.page * BindingNode.pageSize + highlight - 1
+        if let at = position, at >= index {
+            position = at == index && index < items.count ? index : at - 1
+            if position! < 0 { position = nil }
+        }
+        filled = filled.onPage(position.map { $0 / BindingNode.pageSize } ?? 0)
         stack[stack.count - 1] = filled
-        guard let highlight else { return .showMenu(filled, path: path, frontApp: sequenceFrontApp) }
-        let position = index + 1
-        self.highlight = highlight == position ? min(position, items.count) : highlight > position ? highlight - 1 : highlight
+        self.highlight = position.map { $0 % BindingNode.pageSize + 1 } ?? 0
         return .showHeld(filled, highlight: self.highlight!, path: path, frontApp: sequenceFrontApp)
     }
 
@@ -242,11 +251,29 @@ public struct SequenceEngine: Sendable {
         return .showHeld(menu, highlight: highlight!, path: path, frontApp: sequenceFrontApp)
     }
 
-    /// Moves the highlight one item, wrapping through Cancel.
+    /// Moves the highlight one item, wrapping through Cancel. In a list it
+    /// goes across pages, and after the last item to Cancel on the first page (S-093).
     private mutating func moveHighlight(in menu: BindingNode, by step: Int) -> SequenceEffect {
-        let count = menu.children.count + 1
-        highlight = ((highlight ?? 0) + step + count) % count
-        return .showHeld(menu, highlight: highlight!, path: path, frontApp: sequenceFrontApp)
+        guard menu.list != nil else {
+            let count = menu.children.count + 1
+            highlight = ((highlight ?? 0) + step + count) % count
+            return .showHeld(menu, highlight: highlight!, path: path, frontApp: sequenceFrontApp)
+        }
+        // 0 is Cancel, then every item on every page.
+        let count = menu.items.count + 1
+        let current = highlight == 0 || highlight == nil ? 0 : menu.page * BindingNode.pageSize + highlight!
+        let next = (current + step + count) % count
+        let page = next == 0 ? 0 : (next - 1) / BindingNode.pageSize
+        highlight = next == 0 ? 0 : (next - 1) % BindingNode.pageSize + 1
+        return turn(to: page, of: menu)
+    }
+
+    /// Shows another page of the list in front, keeping the highlight.
+    private mutating func turn(to page: Int, of menu: BindingNode) -> SequenceEffect {
+        let turned = menu.onPage(page)
+        stack[stack.count - 1] = turned
+        guard let highlight else { return .showMenu(turned, path: path, frontApp: sequenceFrontApp) }
+        return .showHeld(turned, highlight: highlight, path: path, frontApp: sequenceFrontApp)
     }
 
     /// A key while held (SPEC.md, Held menus): the repeat key, with Shift,
@@ -266,6 +293,11 @@ public struct SequenceEngine: Sendable {
             }
             highlight = index + 1
             return .consumed(.showHeld(menu, highlight: index + 1, path: path, frontApp: sequenceFrontApp))
+        }
+        // More: the next page, its first item highlighted (S-093).
+        if key == .d0, menu.hasMore {
+            highlight = 1
+            return .consumed(turn(to: menu.page + 1, of: menu))
         }
         // An item on Down or Up wins over moving the highlight.
         if key == .down || key == .up {
@@ -305,6 +337,11 @@ public struct SequenceEngine: Sendable {
             reset()
             return .consumed(.cancelled)
         }
+        if extra.isEmpty && key == config.backKey, menu.list != nil, menu.page > 0 {
+            // Back goes to the page before (S-093).
+            if isHeld { highlight = 1 }
+            return .consumed(turn(to: menu.page - 1, of: menu))
+        }
         if extra.isEmpty && key == config.backKey {
             let leaving = stack.removeLast()
             guard let parent = stack.last else {
@@ -322,12 +359,13 @@ public struct SequenceEngine: Sendable {
             }
             if isHeld {
                 // The highlight goes on the menu you came from.
-                highlight = (parent.children.firstIndex(of: leaving) ?? 0) + 1
+                highlight = (parent.children.firstIndex { $0.path == leaving.path } ?? 0) + 1
                 return .consumed(.showHeld(parent, highlight: highlight!, path: path, frontApp: sequenceFrontApp))
             }
             return .consumed(.showMenu(parent, path: path, frontApp: sequenceFrontApp))
         }
         if isHeld { return stepHeld(menu, key: key, extra: extra) }
+        if extra.isEmpty, key == .d0, menu.hasMore { return .consumed(turn(to: menu.page + 1, of: menu)) }
         guard extra.isEmpty, let child = menu.child(for: key) else {
             return .consumed(.unbound(path: path))
         }

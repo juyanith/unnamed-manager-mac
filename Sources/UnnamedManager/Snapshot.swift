@@ -149,10 +149,11 @@ enum Snapshot {
                     try? await Task.sleep(for: .seconds(0.3))
                 }
             }
-            if only == nil || only?.contains("hud-held") == true || only?.contains("hud-recent") == true {
-                // S-091: a held menu, with Cancel and the highlight. S-092: Recent Windows.
+            if only == nil || !(only ?? []).isDisjoint(with: ["hud-held", "hud-recent", "hud-recent-more"]) {
+                // S-091: a held menu, with Cancel and the highlight. S-092: Recent Windows. S-093: its second page.
                 let guide = model.launcher.guide
-                for (name, content) in [("hud-held", SeedData.heldContent), ("hud-recent", SeedData.recentContent)]
+                for (name, content) in [("hud-held", SeedData.heldContent), ("hud-recent", SeedData.recentContent),
+                                        ("hud-recent-more", SeedData.recentMoreContent)]
                 where only == nil || only?.contains(name) == true {
                     for mode in ["light", "dark"] {
                         NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)

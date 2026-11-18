@@ -1179,7 +1179,9 @@ Acceptance:
 - [self] A `count` of 20 lists 20 windows over three pages.
 UX:
 - Glossary: "More", not "Next" (Focus Next and Swap Next already have it).
-Status: todo
+- The path adds the page whenever a list has more than one: "Recent Windows › Page 2 of 3". In a held list, More and Back put the highlight on the page's first item. VoiceOver counts across pages: "Window 10, 10 of 20".
+Status: done
+Verified: pages, More, Back to the page before, the repeat key and Down across pages and on to Cancel, Shift back from Cancel to the last item, removal across pages, and paging in a list that isn't held (unit, 321 tests); 20 windows over three pages (self-test, 255 checks); hud-recent-more in light and dark. Not yet tried by hand.
 
 ### S-094 Turn on Hold and make a list in the Bindings tab
 As the user, I switch Hold on for a leader and make a menu into Recent Windows in Settings' Bindings tab, with its options, and the Help page tells me how held menus work.

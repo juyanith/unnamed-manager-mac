@@ -231,7 +231,7 @@ nonisolated final class EngineBox: Sendable {
     var listItems: [ListItem] {
         engine.withLock { engine in
             guard let menu = engine?.stack.last, menu.list != nil, engine?.isFilling == false else { return [] }
-            return menu.children.compactMap(\.item)
+            return menu.items
         }
     }
 

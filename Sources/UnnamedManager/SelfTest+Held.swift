@@ -93,7 +93,8 @@ extension SelfTest {
         try? Data("""
         { "version": 1, "runtime": { "hudDelayMs": 0 }, "entries": [
           { "keys": "CAG+F18", "title": "Recent Windows", "hold": true, "list": { "type": "windows.recent" } },
-          { "keys": "CAG+F17", "title": "Here", "hold": true, "list": { "type": "windows.recent", "minimized": false, "hidden": false, "spaces": "current" } }
+          { "keys": "CAG+F17", "title": "Here", "hold": true, "list": { "type": "windows.recent", "minimized": false, "hidden": false, "spaces": "current" } },
+          { "keys": "CAG+F16", "title": "Twenty", "hold": true, "list": { "type": "windows.recent", "count": 20 } }
         ] }
         """.utf8).write(to: store.url)
         store.reload()
@@ -180,6 +181,30 @@ extension SelfTest {
         await letGo()
         check("S-092 letting go of Cancel does nothing and plays no sound",
               fake.restored.count == restored && launcher.alertsPlayed == alerts && !launcher.sequenceIsHeld)
+
+        // S-093: a count of 20 lists 20 windows over three pages.
+        fake.windows = Dictionary(uniqueKeysWithValues: (0...24).map {
+            (String(format: "W%02d", $0), FakeWindowSystem.Window(frame: frame, pid: 1, app: "com.apple.Notes", title: String(format: "W%02d", $0)))
+        })
+        fake.click("W00")
+        await open(.f16)
+        var titles: [String] = []
+        var pages: [String] = []
+        for page in 0..<3 {
+            let content = launcher.guide.content
+            pages.append(content?.path.last ?? "")
+            titles += content?.rows.filter { !$0.isCancel && $0.title != "More" }.map(\.title) ?? []
+            if page < 2 {
+                launcher.handleForTesting(.down(keyCode: KeyName.d0.keyCode!, modifiers: cag, isRepeat: false))
+                try? await Task.sleep(for: .milliseconds(50))
+            }
+        }
+        check("S-093 a count of 20 lists 20 windows over three pages, with More on all but the last",
+              titles.count == 20 && Set(titles).count == 20 && pages == ["Page 1 of 3", "Page 2 of 3", "Page 3 of 3"]
+              && launcher.guide.content?.rows.contains { $0.title == "More" } == false, "\(titles.count) \(pages)")
+        launcher.handleForTesting(.down(keyCode: KeyName.escape.keyCode!, modifiers: [], isRepeat: false))
+        held.value = []
+        try? await Task.sleep(for: .milliseconds(300))
 
         launcher.windows = realWindows
         launcher.heldModifiers = realHeld

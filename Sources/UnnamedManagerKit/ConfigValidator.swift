@@ -43,11 +43,31 @@ public struct BindingNode: Sendable, Equatable {
     /// A list's item has no action but runs, like a binding.
     public var isMenu: Bool { action == nil && item == nil }
 
-    /// A list filled with `items`, keys 1 to 9 in order. Later pages come with More (S-093).
+    /// Every item of a filled list, on every page (S-093).
+    public var items: [ListItem] = []
+    /// The page of a filled list its children show, from 0.
+    public var page = 0
+
+    /// Items on one page of a list: keys 1 to 9 (spec v18).
+    public static let pageSize = KeyName.itemKeys.count
+    public var pageCount: Int { max(1, (items.count + Self.pageSize - 1) / Self.pageSize) }
+    /// A list with a page after this one has More, on key 0.
+    public var hasMore: Bool { list != nil && page < pageCount - 1 }
+
+    /// A list filled with `items`, on its first page.
     public func filled(with items: [ListItem], front: ListItem?) -> BindingNode {
         var node = self
+        node.items = items
         node.front = front
-        node.children = zip(KeyName.itemKeys, items).map { key, item in
+        return node.onPage(0)
+    }
+
+    /// The list on another page: its children are that page's items, keys 1 to 9.
+    public func onPage(_ page: Int) -> BindingNode {
+        var node = self
+        node.page = min(max(page, 0), pageCount - 1)
+        let start = node.page * Self.pageSize
+        node.children = zip(KeyName.itemKeys, items[start..<min(start + Self.pageSize, items.count)]).map { key, item in
             BindingNode(path: KeySequence(leader: path.leader, steps: path.steps + [Chord(modifiers: [], key: key)]),
                         title: item.title, action: nil, item: item, children: [])
         }
@@ -61,6 +81,11 @@ public struct BindingNode: Sendable, Equatable {
     /// The child selected by a step key, if any.
     public func child(for key: KeyName) -> BindingNode? {
         children.first { $0.path.lastStep?.key == key }
+    }
+
+    /// Its title in the path: a list with pages adds the page (S-093).
+    public var pathTitles: [String] {
+        list != nil && pageCount > 1 ? [title, "Page \(page + 1) of \(pageCount)"] : [title]
     }
 }
 
