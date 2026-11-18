@@ -53,35 +53,41 @@ public struct Config: Sendable, Equatable {
         public var minVisible: Double
         public var rowTolerance: Double
         public var tieTolerance: Double
+        /// Quit an app when its last window closes (spec v16, Mac only).
+        public var quitOnClose: Bool
         /// Rules for each app's windows, by bundle id (spec v15).
         public var apps: [String: AppRules]
 
         public init(gap: Double = 8, maxColumns: Int = 2, maxRows: Int = 2,
-                    minVisible: Double = 20, rowTolerance: Double = 20, tieTolerance: Double = 2, apps: [String: AppRules] = [:]) {
+                    minVisible: Double = 20, rowTolerance: Double = 20, tieTolerance: Double = 2, quitOnClose: Bool = false, apps: [String: AppRules] = [:]) {
             self.gap = gap
             self.maxColumns = maxColumns
             self.maxRows = maxRows
             self.minVisible = minVisible
             self.rowTolerance = rowTolerance
             self.tieTolerance = tieTolerance
+            self.quitOnClose = quitOnClose
             self.apps = apps
         }
 
         /// The rules for one app's windows (spec v15): which window actions
-        /// take part with them. A missing rule is true.
+        /// take part with them, and whether Quit on Close quits it (spec v16).
+        /// A missing rule is true.
         public struct AppRules: Sendable, Equatable {
             public var focus: Bool
             public var swap: Bool
             public var arrange: Bool
+            public var quit: Bool
 
-            public init(focus: Bool = true, swap: Bool = true, arrange: Bool = true) {
+            public init(focus: Bool = true, swap: Bool = true, arrange: Bool = true, quit: Bool = true) {
                 self.focus = focus
                 self.swap = swap
                 self.arrange = arrange
+                self.quit = quit
             }
 
             /// Left out of everything, as a new app in Settings starts.
-            public static let leftOutOfAll = Self(focus: false, swap: false, arrange: false)
+            public static let leftOutOfAll = Self(focus: false, swap: false, arrange: false, quit: false)
         }
 
         /// The apps whose rule leaves them out of an action, such as `\.arrange`.
@@ -250,7 +256,7 @@ extension Config.Runtime: Decodable {
 extension Config.Windows: Decodable {
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: AnyKey.self)
-        try c.rejectUnknown(allowed: ["gap", "maxColumns", "maxRows", "minVisible", "rowTolerance", "tieTolerance", "apps"], at: "windows")
+        try c.rejectUnknown(allowed: ["gap", "maxColumns", "maxRows", "minVisible", "rowTolerance", "tieTolerance", "quitOnClose", "apps"], at: "windows")
         let d = Self()
         gap = try c.value("gap", default: d.gap)
         maxColumns = try c.value("maxColumns", default: d.maxColumns)
@@ -258,6 +264,7 @@ extension Config.Windows: Decodable {
         minVisible = try c.value("minVisible", default: d.minVisible)
         rowTolerance = try c.value("rowTolerance", default: d.rowTolerance)
         tieTolerance = try c.value("tieTolerance", default: d.tieTolerance)
+        quitOnClose = try c.value("quitOnClose", default: d.quitOnClose)
         apps = try c.value("apps", default: d.apps)
     }
 }
@@ -265,11 +272,12 @@ extension Config.Windows: Decodable {
 extension Config.Windows.AppRules: Decodable {
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: AnyKey.self)
-        try c.rejectUnknown(allowed: ["focus", "swap", "arrange"], at: "windows.apps")
+        try c.rejectUnknown(allowed: ["focus", "swap", "arrange", "quit"], at: "windows.apps")
         let d = Self()
         focus = try c.value("focus", default: d.focus)
         swap = try c.value("swap", default: d.swap)
         arrange = try c.value("arrange", default: d.arrange)
+        quit = try c.value("quit", default: d.quit)
     }
 }
 

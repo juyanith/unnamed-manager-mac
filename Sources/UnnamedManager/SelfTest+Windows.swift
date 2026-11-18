@@ -611,9 +611,18 @@ extension SelfTest {
         undo.beginUndoGrouping()
         editor.edit("Change App Rules", undo: undo) { $0.config.windows.apps = ["com.apple.calculator": .init(arrange: false)] }
         undo.endUndoGrouping()
-        check("S-084 an app's rules are saved in the file's windows settings, all three, and undo",
-              file().contains(#""apps": { "com.apple.calculator": { "focus": true, "swap": true, "arrange": false } }"#)
+        check("S-084 an app's rules are saved in the file's windows settings, all four, and undo",
+              file().contains(#""apps": { "com.apple.calculator": { "focus": true, "swap": true, "arrange": false, "quit": true } }"#)
                   && { undo.undo(); return !file().contains("com.apple.calculator") }())
+        undo.beginUndoGrouping()
+        editor.edit("Change Quit on Close", undo: undo) { $0.config.windows.quitOnClose = true }
+        editor.edit("Change App Rules", undo: undo) { $0.config.windows.apps = ["com.apple.Preview": .init(quit: false)] }
+        undo.endUndoGrouping()
+        check("S-086 Quit on Close and an app's Quit rule are saved in the file's windows settings, and undo",
+              file().contains(#""quitOnClose": true"#)
+                  && file().contains(#""com.apple.Preview": { "focus": true, "swap": true, "arrange": true, "quit": false }"#)
+                  && model.store.loaded?.config.windows.quitOnClose == true
+                  && { undo.undo(); return !file().contains("quitOnClose") && !file().contains("com.apple.Preview") }())
 
         // S-080: choosing a built-in action saves only its name; an override in use can be deleted.
         let builtIn = "window-place-right-half"

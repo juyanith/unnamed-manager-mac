@@ -19,6 +19,7 @@ public enum ConfigWriter {
             if config.windows.minVisible != standard.minVisible { fields.number("minVisible", config.windows.minVisible) }
             if config.windows.rowTolerance != standard.rowTolerance { fields.number("rowTolerance", config.windows.rowTolerance) }
             if config.windows.tieTolerance != standard.tieTolerance { fields.number("tieTolerance", config.windows.tieTolerance) }
+            if config.windows.quitOnClose != standard.quitOnClose { fields.bool("quitOnClose", config.windows.quitOnClose) }
             if !config.windows.apps.isEmpty {
                 // Every rule of every app listed, so the file reads like the table in Settings.
                 var apps = ActionFieldWriter()
@@ -27,6 +28,7 @@ public enum ConfigWriter {
                     each.bool("focus", rules.focus)
                     each.bool("swap", rules.swap)
                     each.bool("arrange", rules.arrange)
+                    each.bool("quit", rules.quit)
                     apps.object(app, each)
                 }
                 fields.object("apps", apps)

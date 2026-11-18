@@ -4,7 +4,7 @@ import UnnamedManagerKit
 
 /// The General and Windows tabs of Settings: a grouped Form each, at most
 /// 600 pt wide in the window every tab shares. General has Guide, Keys, Feedback and Startup; Windows has
-/// Windows, Focus and Swap, and Apps (S-032, S-036, S-082, S-084, S-085).
+/// Windows, Focus and Swap, Quit on Close, and Apps (S-032, S-036, S-082, S-084, S-085, S-086).
 /// Changes are written to the config file at once, like every other edit.
 struct SettingsForm: View {
     let tab: SettingsTab
@@ -57,6 +57,14 @@ struct SettingsForm: View {
                 }
 
                 Section {
+                    Toggle("Quit Apps When Their Last Window Closes", isOn: windowSetting(\.quitOnClose, "Change Quit on Close"))
+                } header: {
+                    Text("Quit on Close")
+                } footer: {
+                    Text("Closing an app's last window also quits the app. Finder, menu bar apps and apps with Quit unchecked under Apps stay open, and so does an app with a window minimized, hidden or on another Space. An app that keeps working with no window, such as a screen recorder, quits too, unless you uncheck Quit for it.")
+                }
+
+                Section {
                     let apps = editor.draft.config.windows.apps
                     if !apps.isEmpty {
                         HStack(spacing: Space.sm) {
@@ -79,10 +87,13 @@ struct SettingsForm: View {
                             }
                             Spacer()
                             ForEach(Self.rules, id: \.name) { rule in
-                                Toggle(rule.name, isOn: takesPart(bundleId, in: rule.path))
+                                let fixed = rule.path == \.quit && !QuitOnClose.canQuit(bundleId)
+                                Toggle(rule.name, isOn: fixed ? .constant(false) : takesPart(bundleId, in: rule.path))
                                     .labelsHidden()
+                                    .disabled(fixed)
                                     .frame(width: Layout.ruleColumnWidth)
-                                    .help("\(rule.help) \(AppIcon.name(bundleId))'s windows")
+                                    .help(fixed ? "\(AppIcon.name(bundleId)) never quits on close"
+                                                : rule.help.replacingOccurrences(of: "{app}", with: AppIcon.name(bundleId)))
                                     .accessibilityLabel("\(rule.name) for \(AppIcon.name(bundleId))")
                             }
                             Button("Remove", systemImage: "minus.circle") {
@@ -90,7 +101,7 @@ struct SettingsForm: View {
                             }
                             .labelStyle(.iconOnly)
                             .buttonStyle(.borderless)
-                            .help("Let every window action pick \(AppIcon.name(bundleId)) again")
+                            .help("Check every box for \(AppIcon.name(bundleId)) again")
                         }
                         .toggleStyle(.checkbox)
                     }
@@ -98,7 +109,7 @@ struct SettingsForm: View {
                 } header: {
                     Text("Apps")
                 } footer: {
-                    Text("Uncheck what an app's windows stay out of. Focus: Focus Window never picks them, Window Used Before too. Swap: Swap Window never moves them. Arrange: Arrange Windows never counts or moves them. Their windows still hide the ones behind them.")
+                    Text("Uncheck what an app's windows stay out of. Focus: Focus Window never picks them, Window Used Before too. Swap: Swap Window never moves them. Arrange: Arrange Windows never counts or moves them. Their windows still hide the ones behind them. Quit: Quit on Close never quits the app.")
                 }
             default:
                 Section {
@@ -199,11 +210,13 @@ struct SettingsForm: View {
         })
     }
 
-    /// The columns of the Apps table: each rule in `windows.apps` (S-084, spec v15).
+    /// The columns of the Apps table: each rule in `windows.apps` (S-084, spec v15),
+    /// and Quit (S-086, spec v16).
     static let rules: [(name: String, path: WritableKeyPath<Config.Windows.AppRules, Bool>, help: String)] = [
-        ("Focus", \.focus, "Focus Window picks"),
-        ("Swap", \.swap, "Swap Window moves"),
-        ("Arrange", \.arrange, "Arrange Windows moves"),
+        ("Focus", \.focus, "Focus Window picks {app}'s windows"),
+        ("Swap", \.swap, "Swap Window moves {app}'s windows"),
+        ("Arrange", \.arrange, "Arrange Windows moves {app}'s windows"),
+        ("Quit", \.quit, "Quit on Close quits {app}"),
     ]
 
     private func editApps(_ change: (inout [String: Config.Windows.AppRules]) -> Void) {
@@ -229,6 +242,14 @@ struct SettingsForm: View {
         editApps { apps in
             for app in added { apps[app] = .leftOutOfAll }
         }
+    }
+
+    /// Quit on Close (S-086).
+    private func windowSetting(_ key: WritableKeyPath<Config.Windows, Bool>, _ name: String) -> Binding<Bool> {
+        Binding(get: { editor.draft.config.windows[keyPath: key] }, set: { value in
+            guard editor.draft.config.windows[keyPath: key] != value else { return }
+            editor.edit(name, undo: undo) { $0.config.windows[keyPath: key] = value }
+        })
     }
 
     /// One of Arrange Windows' limits (S-076).

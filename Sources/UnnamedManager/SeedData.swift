@@ -8,7 +8,7 @@ enum SeedData {
     static let fixtureJSON = """
     {
       "version": 1,
-      "windows": { "apps": { "com.apple.calculator": { "arrange": false }, "com.apple.finder": { "focus": false, "swap": false } } },
+      "windows": { "quitOnClose": true, "apps": { "com.apple.calculator": { "arrange": false, "quit": false }, "com.apple.finder": { "focus": false, "swap": false } } },
       "entries": [
         { "keys": "Hyper+Space", "title": "Commands" },
         { "keys": "Hyper+Space Space", "title": "Spotlight", "action": "spotlight" },

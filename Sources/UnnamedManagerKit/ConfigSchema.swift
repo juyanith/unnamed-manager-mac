@@ -78,6 +78,7 @@ public enum ConfigSchema {
                         "minVisible": ["type": "number", "minimum": 0, "description": "Points on a side of the square a window must show for Focus Window and Swap Window to count it, and points it must share with the focused window to be in line. Default 20."],
                         "rowTolerance": ["type": "number", "minimum": 0, "description": "Windows whose tops are within this many points share a row in Focus Window's order. Default 20."],
                         "tieTolerance": ["type": "number", "minimum": 0, "description": "Gaps within this many points count as the same when Focus Window picks a window in a direction. Default 2."],
+                        "quitOnClose": ["type": "boolean", "description": "Mac only. Closing an app's last window also quits the app. Finder is never quit. Default false."],
                         "apps": [
                             "type": "object",
                             "description": "Rules for each app's windows, keyed by app id. Mac: bundle ids. Windows: an exe (ends in .exe) or an AppUserModelID. An app that isn't listed takes part in every window action.",
@@ -85,6 +86,7 @@ public enum ConfigSchema {
                                 "focus": ["type": "boolean", "description": "false: Focus Window never picks this app's windows. Default true."],
                                 "swap": ["type": "boolean", "description": "false: Swap Window never moves this app's windows. Default true."],
                                 "arrange": ["type": "boolean", "description": "false: Arrange Windows never counts or moves this app's windows. Default true."],
+                                "quit": ["type": "boolean", "description": "Mac only. false: Quit on close never quits this app. Default true."],
                             ]],
                         ],
                     ],

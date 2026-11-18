@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "windows": { "quitOnClose": true, "apps": { "com.apple.Notes": { "focus": true, "swap": true, "arrange": true, "quit": true }, "com.apple.Preview": { "focus": true, "swap": true, "arrange": true, "quit": false } } },
+  "entries": [
+    { "keys": "Meh+W", "title": "Windows" },
+    { "keys": "Meh+W A", "title": "Arrange", "action": "window-arrange" },
+    { "keys": "Meh+W Tab", "title": "Focus the window used before", "action": "window-focus-recent" }
+  ]
+}

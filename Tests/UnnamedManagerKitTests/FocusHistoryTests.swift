@@ -45,15 +45,15 @@ struct FocusHistoryTests {
         #expect(set.config.windows.leftOut(of: \.focus).isEmpty)
     }
 
-    @Test("Every listed app is written with all three rules, sorted, even with every rule true")
+    @Test("Every listed app is written with all four rules, sorted, even with every rule true")
     func appsWritten() throws {
         var windows = Config.Windows(apps: ["com.apple.finder": .init(focus: false, swap: false), "com.apple.calculator": .init(arrange: false)])
         var config = try ConfigLoader.load(Data((Self.minimal + " }").utf8)).get().config
         config.windows = windows
-        #expect(ConfigWriter.write(config, actionOrder: []).contains(#""windows": { "apps": { "com.apple.calculator": { "focus": true, "swap": true, "arrange": false }, "com.apple.finder": { "focus": false, "swap": false, "arrange": true } } }"#))
+        #expect(ConfigWriter.write(config, actionOrder: []).contains(#""windows": { "apps": { "com.apple.calculator": { "focus": true, "swap": true, "arrange": false, "quit": true }, "com.apple.finder": { "focus": false, "swap": false, "arrange": true, "quit": true } } }"#))
         windows.apps["com.apple.calculator"]?.arrange = true
         config.windows = windows
-        #expect(ConfigWriter.write(config, actionOrder: []).contains(#""com.apple.calculator": { "focus": true, "swap": true, "arrange": true }"#))
+        #expect(ConfigWriter.write(config, actionOrder: []).contains(#""com.apple.calculator": { "focus": true, "swap": true, "arrange": true, "quit": true }"#))
     }
 
     @Test("A rule that isn't one is unknown-field, one that isn't a boolean is wrong-type, and windows.exclude is gone")

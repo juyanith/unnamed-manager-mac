@@ -49,7 +49,8 @@ One name per idea. Use these words in the UI, the docs, the log and VoiceOver la
 | Override | An action you define with a built-in action's name. It runs instead of the built-in one everywhere that name is used. | shadow, replace, remap |
 | Swap Window | Trade place and size with the window in a direction, the next or previous one, the first or last one, or a Window Number. The window in front keeps focus. | exchange, switch, flip |
 | Window Used Before | The window that had focus before the one in front, from the history the app keeps while it runs; it can be behind others, and for Focus Window on another Space ("recent" in the config file). Pressing again goes back. | previous window, last window, recent, toggle |
-| Apps (Settings) | The table on Settings' Windows tab of apps with their own window rules: Focus, Swap and Arrange, each checked when that action takes part with the app's windows ("windows.apps" in the config file). Unchecked is "left out". | excluded, ignored, blacklist, floating |
+| Apps (Settings) | The table on Settings' Windows tab of apps with their own window rules: Focus, Swap and Arrange, each checked when that action takes part with the app's windows, and Quit, checked when Quit on Close quits the app ("windows.apps" in the config file). Unchecked is "left out". | excluded, ignored, blacklist, floating |
+| Quit on Close | The setting on Settings' Windows tab that quits an app when its last window closes ("windows.quitOnClose"). Finder never quits. | auto quit, close to quit, quit when closed |
 | On the Same Display | Keeps Focus Window and Swap Window to the display of the window in front ("scope" in the config file). On Every Display is the default. | this screen, current monitor |
 | Minimize | Send the window in front to the Dock, as ⌘M does. | hide, dock |
 | Move Window | Move the window To a Spot (such as Center) or By Points. Its size stays the same. | position, drag, nudge |

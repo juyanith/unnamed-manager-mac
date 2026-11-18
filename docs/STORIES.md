@@ -1029,6 +1029,22 @@ UX:
 Status: done
 Verified: tabs, no Bindings window, one size on every tab, resizing and keeping the size, Help as its own window, and Settings… and Help in front of another app with no window open (self-test, 222 checks); every tab, empty tabs and Help in light and dark, grid checks. The front checks are skipped while another copy of the app runs, since NSWorkspace brings the copy with the same bundle id forward.
 
+### S-086 Quit an app when I close its last window
+As the user, I close an app's last window and the app quits, as on Windows, so apps I'm done with don't pile up in the Dock. Finder and the apps I choose stay open.
+Screens: windows
+Depends: S-084
+Acceptance:
+- [unit] `windows.quitOnClose` is false by default and `quit` in `windows.apps` true; the Mac app writes `quit` with the other three rules; one that isn't a boolean is `wrong-type`; the spec-v16 fixtures pass.
+- [unit] With it on, an app whose last window closed quits. Finder and this app never quit, nor does an app with `quit` false or an app inside one, an app that never showed a window, a hidden app, a menu bar app, or an app with a window left (minimized or on another Space).
+- [self] Settings saves Quit on Close and an app's Quit rule, and undo works.
+- [manual] With it on, closing TextEdit's last window quits TextEdit; closing Finder's doesn't; minimizing TextEdit's last window doesn't; with Quit unchecked for TextEdit, it stays open.
+UX:
+- Settings' Windows tab: a "Quit on Close" section before Apps with "Quit Apps When Their Last Window Closes", and a fourth column, Quit, in the Apps table. Finder's Quit box is unchecked and can't change. Glossary: "Quit on Close".
+- An app is counted a moment (0.5 s) after a window closes, so one that opens a new window in its place stays. Floating panels, such as an inspector, don't keep an app open; dialogs do.
+- Off in snapshots and the self-test, so a test config never quits your apps.
+Status: done
+Verified: the setting, the rule, `wrong-type`, every keep and quit case and helper apps (unit tests, `QuitOnCloseTests`, the spec-v16 fixtures); saving and undo (self-test); windows and windows-bottom in light and dark, grid checks. Not yet tried by hand.
+
 ## Later
 - Pick a window from an overlay: `"target": "pick"` on Focus Window and Swap Window labels the visible windows in order and waits for one key (numbers or home-row letters), Escape cancels.
 - Import and export a single menu as a JSON snippet.

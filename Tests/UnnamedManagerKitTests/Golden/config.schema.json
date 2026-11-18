@@ -1319,6 +1319,10 @@
                 "description" : "false: Focus Window never picks this app's windows. Default true.",
                 "type" : "boolean"
               },
+              "quit" : {
+                "description" : "Mac only. false: Quit on close never quits this app. Default true.",
+                "type" : "boolean"
+              },
               "swap" : {
                 "description" : "false: Swap Window never moves this app's windows. Default true.",
                 "type" : "boolean"
@@ -1350,6 +1354,10 @@
           "description" : "Points on a side of the square a window must show for Focus Window and Swap Window to count it, and points it must share with the focused window to be in line. Default 20.",
           "minimum" : 0,
           "type" : "number"
+        },
+        "quitOnClose" : {
+          "description" : "Mac only. Closing an app's last window also quits the app. Finder is never quit. Default false.",
+          "type" : "boolean"
         },
         "rowTolerance" : {
           "description" : "Windows whose tops are within this many points share a row in Focus Window's order. Default 20.",

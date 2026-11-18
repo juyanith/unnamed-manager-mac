@@ -60,6 +60,9 @@ final class AppModel {
     let migration: LauncherMigration
     /// The draft every Settings tab edits.
     let editor: BindingsEditor
+    /// Quits apps whose last window closed (S-086). Never in snapshots or
+    /// the self-test, whose configs mustn't quit the apps you're using.
+    @ObservationIgnored private var quitOnClose: QuitOnCloseWatcher?
     /// The selected action and context on their pages.
     var actionSelection: String?
     var contextSelection: String?
@@ -84,6 +87,7 @@ final class AppModel {
         migration.start()
         editor = BindingsEditor(store: store)
         editor.onRecordingChange = { [launcher] in launcher.setRecording($0) }
+        if !SelfTest.requested && !isSnapshot { quitOnClose = QuitOnCloseWatcher(store: store) }
         Self.current = self
     }
 

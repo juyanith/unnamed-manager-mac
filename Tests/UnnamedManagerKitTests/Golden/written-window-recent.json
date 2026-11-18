@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "windows": { "apps": { "com.apple.finder": { "focus": false, "swap": false, "arrange": true }, "notepad.exe": { "focus": false, "swap": true, "arrange": true } } },
+  "windows": { "apps": { "com.apple.finder": { "focus": false, "swap": false, "arrange": true, "quit": true }, "notepad.exe": { "focus": false, "swap": true, "arrange": true, "quit": true } } },
   "entries": [
     { "keys": "Meh+W", "title": "Windows" },
     { "keys": "Meh+W Tab", "title": "Focus the window used before", "action": "window-focus-recent" },
