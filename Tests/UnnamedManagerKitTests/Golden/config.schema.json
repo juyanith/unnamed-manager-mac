@@ -1282,6 +1282,57 @@
             "pattern" : "^\\s*(?:(?:[Cc][Oo][Nn][Tt][Rr][Oo][Ll]|[Cc][Tt][Rr][Ll]|[Oo][Pp][Tt][Ii][Oo][Nn]|[Oo][Pp][Tt]|[Aa][Ll][Tt]|[Ss][Hh][Ii][Ff][Tt]|[Cc][Oo][Mm][Mm][Aa][Nn][Dd]|[Cc][Mm][Dd]|[Pp][Rr][Ii][Mm][Aa][Rr][Yy]|[Hh][Yy][Pp][Ee][Rr]|[Mm][Ee][Hh]|[Cc][Aa][Gg]|[⇧⌃⌘⌥]+)\\+)*[⇧⌃⌘⌥]*(?:[Rr][Ii][Gg][Hh][Tt][Bb][Rr][Aa][Cc][Kk][Ee][Tt]|[Ll][Ee][Ff][Tt][Bb][Rr][Aa][Cc][Kk][Ee][Tt]|[Bb][Aa][Cc][Kk][Ss][Pp][Aa][Cc][Ee]|[Bb][Aa][Cc][Kk][Ss][Ll][Aa][Ss][Hh]|[Ss][Ee][Mm][Ii][Cc][Oo][Ll][Oo][Nn]|[Pp][Aa][Gg][Ee][Dd][Oo][Ww][Nn]|[Dd][Ee][Ll][Ee][Tt][Ee]|[Ee][Ss][Cc][Aa][Pp][Ee]|[Pp][Aa][Gg][Ee][Uu][Pp]|[Pp][Ee][Rr][Ii][Oo][Dd]|[Ss][Pp][Aa][Cc][Ee]|[Ee][Nn][Tt][Ee][Rr]|[Rr][Ii][Gg][Hh][Tt]|[Gg][Rr][Aa][Vv][Ee]|[Mm][Ii][Nn][Uu][Ss]|[Ee][Qq][Uu][Aa][Ll]|[Qq][Uu][Oo][Tt][Ee]|[Cc][Oo][Mm][Mm][Aa]|[Ss][Ll][Aa][Ss][Hh]|[Ll][Ee][Ff][Tt]|[Dd][Oo][Ww][Nn]|[Hh][Oo][Mm][Ee]|[Ff]10|[Ff]11|[Ff]12|[Ff]13|[Ff]14|[Ff]15|[Ff]16|[Ff]17|[Ff]18|[Ff]19|[Ff]20|[Ff]21|[Ff]22|[Ff]23|[Ff]24|[Tt][Aa][Bb]|[Ee][Nn][Dd]|[Ff]1|[Ff]2|[Ff]3|[Ff]4|[Ff]5|[Ff]6|[Ff]7|[Ff]8|[Ff]9|[Uu][Pp]|[Aa]|[Bb]|[Cc]|[Dd]|[Ee]|[Ff]|[Gg]|[Hh]|[Ii]|[Jj]|[Kk]|[Ll]|[Mm]|[Nn]|[Oo]|[Pp]|[Qq]|[Rr]|[Ss]|[Tt]|[Uu]|[Vv]|[Ww]|[Xx]|[Yy]|[Zz]|0|1|2|3|4|5|6|7|8|9)(?:\\s+(?:(?:[Cc][Oo][Nn][Tt][Rr][Oo][Ll]|[Cc][Tt][Rr][Ll]|[Oo][Pp][Tt][Ii][Oo][Nn]|[Oo][Pp][Tt]|[Aa][Ll][Tt]|[Ss][Hh][Ii][Ff][Tt]|[Cc][Oo][Mm][Mm][Aa][Nn][Dd]|[Cc][Mm][Dd]|[Pp][Rr][Ii][Mm][Aa][Rr][Yy]|[Hh][Yy][Pp][Ee][Rr]|[Mm][Ee][Hh]|[Cc][Aa][Gg]|[⇧⌃⌘⌥]+)\\+)*[⇧⌃⌘⌥]*(?:[Rr][Ii][Gg][Hh][Tt][Bb][Rr][Aa][Cc][Kk][Ee][Tt]|[Ll][Ee][Ff][Tt][Bb][Rr][Aa][Cc][Kk][Ee][Tt]|[Bb][Aa][Cc][Kk][Ss][Pp][Aa][Cc][Ee]|[Bb][Aa][Cc][Kk][Ss][Ll][Aa][Ss][Hh]|[Ss][Ee][Mm][Ii][Cc][Oo][Ll][Oo][Nn]|[Pp][Aa][Gg][Ee][Dd][Oo][Ww][Nn]|[Dd][Ee][Ll][Ee][Tt][Ee]|[Ee][Ss][Cc][Aa][Pp][Ee]|[Pp][Aa][Gg][Ee][Uu][Pp]|[Pp][Ee][Rr][Ii][Oo][Dd]|[Ss][Pp][Aa][Cc][Ee]|[Ee][Nn][Tt][Ee][Rr]|[Rr][Ii][Gg][Hh][Tt]|[Gg][Rr][Aa][Vv][Ee]|[Mm][Ii][Nn][Uu][Ss]|[Ee][Qq][Uu][Aa][Ll]|[Qq][Uu][Oo][Tt][Ee]|[Cc][Oo][Mm][Mm][Aa]|[Ss][Ll][Aa][Ss][Hh]|[Ll][Ee][Ff][Tt]|[Dd][Oo][Ww][Nn]|[Hh][Oo][Mm][Ee]|[Ff]10|[Ff]11|[Ff]12|[Ff]13|[Ff]14|[Ff]15|[Ff]16|[Ff]17|[Ff]18|[Ff]19|[Ff]20|[Ff]21|[Ff]22|[Ff]23|[Ff]24|[Tt][Aa][Bb]|[Ee][Nn][Dd]|[Ff]1|[Ff]2|[Ff]3|[Ff]4|[Ff]5|[Ff]6|[Ff]7|[Ff]8|[Ff]9|[Uu][Pp]|[Aa]|[Bb]|[Cc]|[Dd]|[Ee]|[Ff]|[Gg]|[Hh]|[Ii]|[Jj]|[Kk]|[Ll]|[Mm]|[Nn]|[Oo]|[Pp]|[Qq]|[Rr]|[Ss]|[Tt]|[Uu]|[Vv]|[Ww]|[Xx]|[Yy]|[Zz]|0|1|2|3|4|5|6|7|8|9))*\\s*$",
             "type" : "string"
           },
+          "list" : {
+            "description" : "Spec v18. Makes this menu a list: the app fills it when it opens, so it has no entries under it and no action.",
+            "oneOf" : [
+              {
+                "additionalProperties" : false,
+                "properties" : {
+                  "count" : {
+                    "default" : 9,
+                    "description" : "The most items. Keys 1 to 9 on each page, and 0 for More.",
+                    "maximum" : 99,
+                    "minimum" : 1,
+                    "type" : "integer"
+                  },
+                  "hidden" : {
+                    "default" : true,
+                    "description" : "Mac only. Include the windows of hidden apps.",
+                    "type" : "boolean"
+                  },
+                  "minimized" : {
+                    "default" : true,
+                    "description" : "Include minimized windows.",
+                    "type" : "boolean"
+                  },
+                  "scope" : {
+                    "default" : "all",
+                    "description" : "all: every display. display: only the focused window's display.",
+                    "enum" : [
+                      "all",
+                      "display"
+                    ]
+                  },
+                  "spaces" : {
+                    "default" : "all",
+                    "description" : "all: windows on every Space or desktop. current: only the current one of each display.",
+                    "enum" : [
+                      "all",
+                      "current"
+                    ]
+                  },
+                  "type" : {
+                    "const" : "windows.recent",
+                    "description" : "Recent Windows: the windows used last, most recent first."
+                  }
+                },
+                "required" : [
+                  "type"
+                ],
+                "type" : "object"
+              }
+            ]
+          },
           "title" : {
             "minLength" : 1,
             "type" : "string"

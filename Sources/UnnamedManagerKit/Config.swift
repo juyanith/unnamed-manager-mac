@@ -117,13 +117,48 @@ public struct Config: Sendable, Equatable {
         public var icon: String?
         /// On a leader: its menus are held menus (spec v18).
         public var hold: Bool
-        public init(keys: String, title: String, action: String? = nil, icon: String? = nil, hold: Bool = false) {
+        /// Makes the menu a list the app fills when it opens (spec v18).
+        public var list: List?
+        public init(keys: String, title: String, action: String? = nil, icon: String? = nil, hold: Bool = false,
+                    list: List? = nil) {
             self.keys = keys
             self.title = title
             self.action = action
             self.icon = icon
             self.hold = hold
+            self.list = list
         }
+    }
+
+    /// What a list holds (spec v18, Lists). Values stay as written, so the
+    /// validator can name a wrong one.
+    public struct List: Sendable, Equatable {
+        public static let recentWindows = "windows.recent"
+        public static let countRange = 1...99
+
+        public var type: String
+        public var count: Int
+        public var minimized: Bool
+        public var hidden: Bool
+        /// `all` or `current`.
+        public var spaces: String
+        /// `all` or `display`.
+        public var scope: String
+
+        public init(type: String = Self.recentWindows, count: Int = 9, minimized: Bool = true, hidden: Bool = true,
+                    spaces: String = "all", scope: String = "all") {
+            self.type = type
+            self.count = count
+            self.minimized = minimized
+            self.hidden = hidden
+            self.spaces = spaces
+            self.scope = scope
+        }
+
+        /// Only the current Space of each display.
+        public var currentSpaceOnly: Bool { spaces == "current" }
+        /// Only the focused window's display.
+        public var displayOnly: Bool { scope == "display" }
     }
 
     public struct Context: Sendable, Equatable {
@@ -304,12 +339,27 @@ extension Config.Entry: Decodable {
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: AnyKey.self)
         let keys: String = try c.value("keys", default: "")
-        try c.rejectUnknown(allowed: ["keys", "title", "action", "icon", "hold"], at: keys.isEmpty ? "an entry" : "entry “\(keys)”")
+        try c.rejectUnknown(allowed: ["keys", "title", "action", "icon", "hold", "list"], at: keys.isEmpty ? "an entry" : "entry “\(keys)”")
         self.keys = try c.required("keys")
         title = try c.required("title")
         action = try c.decodeIfPresent(String.self, forKey: AnyKey("action"))
         icon = try c.decodeIfPresent(String.self, forKey: AnyKey("icon")).flatMap { $0.isEmpty ? nil : $0 }
         hold = try c.value("hold", default: false)
+        list = try c.decodeIfPresent(Config.List.self, forKey: AnyKey("list"))
+    }
+}
+
+extension Config.List: Decodable {
+    public init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: AnyKey.self)
+        try c.rejectUnknown(allowed: ["type", "count", "minimized", "hidden", "spaces", "scope"], at: "a list")
+        let d = Self()
+        type = try c.required("type")
+        count = try c.value("count", default: d.count)
+        minimized = try c.value("minimized", default: d.minimized)
+        hidden = try c.value("hidden", default: d.hidden)
+        spaces = try c.value("spaces", default: d.spaces)
+        scope = try c.value("scope", default: d.scope)
     }
 }
 

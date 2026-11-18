@@ -121,6 +121,47 @@ final class AXWindowSystem: WindowSystem {
         return WindowInfo(ref: ref, frame: frame, pid: window.pid, app: app.bundleIdentifier)
     }
 
+    func listed(_ ref: WindowRef) -> ListedWindow? {
+        guard let window = ref.id.base as? Element,
+              let app = NSRunningApplication(processIdentifier: window.pid), !app.isTerminated else { return nil }
+        AXUIElementSetMessagingTimeout(window.element, Self.timeout)
+        return listed(window, app: app)
+    }
+
+    /// Titles come from Accessibility, never the window server, so no
+    /// Screen Recording permission is needed.
+    private func listed(_ window: Element, app: NSRunningApplication) -> ListedWindow? {
+        let subrole: String? = value(window.element, kAXSubroleAttribute)
+        let ref = WindowRef(id: window)
+        guard subrole == kAXStandardWindowSubrole, let frame = frame(of: ref) else { return nil }
+        return ListedWindow(info: WindowInfo(ref: ref, frame: frame, pid: window.pid, app: app.bundleIdentifier),
+                            title: value(window.element, kAXTitleAttribute),
+                            appName: app.localizedName ?? app.bundleIdentifier ?? "App",
+                            isMinimized: value(window.element, kAXMinimizedAttribute) ?? false,
+                            isHidden: app.isHidden)
+    }
+
+    func allWindows() -> [ListedWindow] {
+        let own = ProcessInfo.processInfo.processIdentifier
+        return NSWorkspace.shared.runningApplications
+            .filter { $0.activationPolicy == .regular && $0.processIdentifier != own && !$0.isTerminated }
+            .flatMap { app -> [ListedWindow] in
+                let element = AXUIElementCreateApplication(app.processIdentifier)
+                AXUIElementSetMessagingTimeout(element, Self.timeout)
+                let windows: [AXUIElement] = value(element, kAXWindowsAttribute) ?? []
+                return windows.compactMap { listed(Element(element: $0, pid: app.processIdentifier), app: app) }
+            }
+    }
+
+    func restore(_ window: ListedWindow) async throws(PlanError) {
+        guard let element = window.info.ref.id.base as? Element else { return }
+        if window.isHidden { NSRunningApplication(processIdentifier: element.pid)?.unhide() }
+        if window.isMinimized {
+            AXUIElementSetAttributeValue(element.element, kAXMinimizedAttribute as CFString, kCFBooleanFalse)
+        }
+        try await focus(window.info)
+    }
+
     func watchFocus(_ changed: @escaping (WindowRef) -> Void) {
         watcher = FocusWatcher { element, pid in changed(WindowRef(id: Element(element: element, pid: pid))) }
     }

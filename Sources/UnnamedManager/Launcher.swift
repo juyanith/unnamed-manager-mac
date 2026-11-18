@@ -52,6 +52,15 @@ final class Launcher {
     @ObservationIgnored var heldModifiers: @MainActor () -> Modifiers = {
         Modifiers(CGEventSource.flagsState(.combinedSessionState))
     }
+    /// The windows Recent Windows lists and goes to (S-092): the ones the
+    /// window actions use, so they share the focus history. The self-test
+    /// replaces it.
+    @ObservationIgnored lazy var windows: WindowControl? = (runner.performer as? SystemPerformer)?.context.windows
+    /// The window of each item in the lists shown this sequence, by item id.
+    @ObservationIgnored private var listed: [Int: WindowRef] = [:]
+    @ObservationIgnored private var nextItemID = 1
+    /// While a list is up, checks that its items' windows are still open.
+    @ObservationIgnored private var listWatch: Task<Void, Never>?
     @ObservationIgnored private var permissionTimer: Timer?
     /// False in snapshots and the self-test, which never touch the keyboard.
     @ObservationIgnored private var capturesKeys = false
@@ -190,15 +199,76 @@ final class Launcher {
         }
     }
 
+    /// Fills a list that just opened (S-092): Recent Windows, from the
+    /// windows the app finds now, then shows it and replays the keys
+    /// pressed meanwhile.
+    private func fill(_ menu: BindingNode) {
+        var items: [ListItem] = [], front: ListItem?
+        // Only the list just opened can be chosen from.
+        listed = [:]
+        if let list = menu.list, let windows {
+            let found = windows.recentWindows(list)
+            func item(_ window: WindowControl.RecentWindow) -> ListItem {
+                let id = nextItemID
+                nextItemID += 1
+                listed[id] = window.window.info.ref
+                return ListItem(id: id, title: window.title, app: window.window.info.app, marks: window.marks)
+            }
+            front = found.front.map(item)
+            items = found.items.map(item)
+            GuideIcons.shared.load(Set(([front].compactMap { $0 } + items).compactMap { $0.app.map(IconSource.app) }))
+        }
+        for effect in engine.fill(items, front: front) { apply(effect) }
+        watchList()
+    }
+
+    /// Every 250 ms while a list is up, takes out the items whose windows closed.
+    private func watchList() {
+        guard listWatch == nil else { return }
+        listWatch = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(250))
+                guard let self, let windows else { break }
+                let items = engine.listItems
+                guard !items.isEmpty else { break }
+                for item in items {
+                    guard let ref = listed[item.id], !windows.exists(ref) else { continue }
+                    if let effect = engine.removeItem(id: item.id) { apply(effect) }
+                }
+            }
+            self?.listWatch = nil
+        }
+    }
+
+    /// Goes to the window of a list's item (S-092).
+    private func choose(_ item: ListItem, title: String) {
+        guard let ref = listed[item.id], let windows else { return }
+        Task {
+            do throws(PlanError) {
+                try await windows.choose(ref)
+            } catch {
+                report(error.message, title: title, alerts: error.alerts)
+            }
+        }
+    }
+
     /// Feeds one engine effect to the schedule, then runs the action if any.
     func apply(_ effect: SequenceEffect) {
         perform(schedule.handle(effect, at: Self.nowMs))
         armScheduleTimer()
-        if case .showHeld = effect { watchHold() }
+        switch effect {
+        case .showHeld: watchHold()
+        case let .fillList(menu, _, _): fill(menu)
+        default: break
+        }
         guard let config = store.loaded, case let .run(binding, frontApp) = effect else { return }
         if !hasRunSequence {
             hasRunSequence = true
             if !Store.isOverridden { UserDefaults.standard.set(true, forKey: "ranSequence") }
+        }
+        if let item = binding.item {
+            choose(item, title: binding.title)
+            return
         }
         guard let id = binding.action, let chosen = config.config.action(named: id),
               let action = ContextResolver.resolve(chosen, frontApp: frontApp, contexts: config.config.contexts)

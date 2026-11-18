@@ -105,6 +105,7 @@ public enum ConfigSchema {
                                      "description": "Its icon in the Guide: an SF Symbol name such as \"terminal\", or a path starting with / or ~ for that file's icon. Without one, apps and Open targets show their own icon."],
                             "hold": ["type": "boolean",
                                      "description": "Spec v18. Leaders only: true makes this leader's menu, and every menu under it, a held menu. Hold the modifiers, move the highlight with the key that opened the menu (Shift goes back), and let go to choose. The leader needs at least one modifier."],
+                            "list": listSchema,
                         ],
                     ],
                 ],
@@ -127,6 +128,26 @@ public enum ConfigSchema {
         ]
         let data = try! JSONSerialization.data(withJSONObject: schema, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])
         return String(decoding: data, as: UTF8.self) + "\n"
+    }
+
+    /// An entry's `list` (spec v18), as the spec's schema has it.
+    private static var listSchema: [String: Any] {
+        let recent: [String: Any] = [
+            "type": "object", "additionalProperties": false, "required": ["type"],
+            "properties": [
+                "type": ["const": Config.List.recentWindows, "description": "Recent Windows: the windows used last, most recent first."],
+                "count": ["type": "integer", "minimum": Config.List.countRange.lowerBound, "maximum": Config.List.countRange.upperBound,
+                          "default": 9, "description": "The most items. Keys 1 to 9 on each page, and 0 for More."],
+                "minimized": ["type": "boolean", "default": true, "description": "Include minimized windows."],
+                "hidden": ["type": "boolean", "default": true, "description": "Mac only. Include the windows of hidden apps."],
+                "spaces": ["enum": ["all", "current"], "default": "all",
+                           "description": "all: windows on every Space or desktop. current: only the current one of each display."],
+                "scope": ["enum": ["all", "display"], "default": "all",
+                          "description": "all: every display. display: only the focused window's display."],
+            ] as [String: Any],
+        ]
+        return ["description": "Spec v18. Makes this menu a list: the app fills it when it opens, so it has no entries under it and no action.",
+                "oneOf": [recent]]
     }
 
     private static func actionVariants(allowingContextual: Bool, registry: ActionRegistry) -> [[String: Any]] {

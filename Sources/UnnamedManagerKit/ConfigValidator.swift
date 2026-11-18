@@ -32,9 +32,27 @@ public struct BindingNode: Sendable, Equatable {
     public var icon: String? = nil
     /// A leader whose menus are held menus (spec v18).
     public var hold = false
+    /// A list the app fills when it opens (spec v18). Its children are its items once filled.
+    public var list: Config.List? = nil
+    /// One item of a filled list: the window it goes to.
+    public var item: ListItem? = nil
+    /// In a filled list, the focused window, which Cancel shows (spec v18).
+    public var front: ListItem? = nil
     public var children: [BindingNode]
 
-    public var isMenu: Bool { action == nil }
+    /// A list's item has no action but runs, like a binding.
+    public var isMenu: Bool { action == nil && item == nil }
+
+    /// A list filled with `items`, keys 1 to 9 in order. Later pages come with More (S-093).
+    public func filled(with items: [ListItem], front: ListItem?) -> BindingNode {
+        var node = self
+        node.front = front
+        node.children = zip(KeyName.itemKeys, items).map { key, item in
+            BindingNode(path: KeySequence(leader: path.leader, steps: path.steps + [Chord(modifiers: [], key: key)]),
+                        title: item.title, action: nil, item: item, children: [])
+        }
+        return node
+    }
 
     /// The key that opened this menu: the leader chord's key, or its own
     /// step key. In a held menu it moves the highlight (spec v18).
@@ -43,6 +61,34 @@ public struct BindingNode: Sendable, Equatable {
     /// The child selected by a step key, if any.
     public func child(for key: KeyName) -> BindingNode? {
         children.first { $0.path.lastStep?.key == key }
+    }
+}
+
+/// One item of a list, as the app found it when the list opened (spec v18).
+public struct ListItem: Sendable, Equatable {
+    /// How the app finds the window again.
+    public var id: Int
+    /// The window's title, or its app's name when it has none.
+    public var title: String
+    /// Its app's bundle id, for the icon.
+    public var app: String?
+    public var marks: Marks
+
+    public init(id: Int, title: String, app: String? = nil, marks: Marks = []) {
+        self.id = id
+        self.title = title
+        self.app = app
+        self.marks = marks
+    }
+
+    /// What the Guide marks on an item.
+    public struct Marks: OptionSet, Sendable, Hashable {
+        public let rawValue: Int
+        public init(rawValue: Int) { self.rawValue = rawValue }
+        public static let minimized = Marks(rawValue: 1)
+        public static let hidden = Marks(rawValue: 2)
+        public static let otherSpace = Marks(rawValue: 4)
+        public static let otherDisplay = Marks(rawValue: 8)
     }
 }
 
@@ -141,6 +187,8 @@ public enum ConfigValidator {
                 }
                 if parentEntry.action != nil {
                     error(.parentIsBinding, "\(name) “\(path)” is under “\(parent)”, which is a binding. Only menus can have keys under them.", path.description)
+                } else if parentEntry.list != nil {
+                    error(.listHasChildren, "\(name) “\(path)” is under “\(parent)”, which is a list. The app fills a list itself, so remove this entry.", path.description)
                 }
                 childCount[parent, default: 0] += 1
                 if let step = path.lastStep {
@@ -166,8 +214,13 @@ public enum ConfigValidator {
             if let action = entry.action, config.action(named: action) == nil {
                 error(.undefinedAction, "Binding “\(path)” uses action “\(action)”, which isn't defined or built in.", path.description)
             }
+            if let list = entry.list {
+                checkList(list, at: path, hasAction: entry.action != nil,
+                          held: byPath[KeySequence(leader: path.leader)]?.hold == true, error)
+            }
         }
-        for (entry, path) in parsed where entry.action == nil && childCount[path, default: 0] == 0 {
+        // A list is never empty: the app fills it.
+        for (entry, path) in parsed where entry.action == nil && entry.list == nil && childCount[path, default: 0] == 0 {
             error(.emptyMenu, "Menu “\(path)” has no keys under it. Add a binding or remove the menu.", path.description)
         }
 
@@ -213,12 +266,40 @@ public enum ConfigValidator {
                                      backKey: backKey, warnings: warnings))
     }
 
+    /// A list's own rules (spec v18, Lists).
+    private static func checkList(_ list: Config.List, at path: KeySequence, hasAction: Bool, held: Bool,
+                                  _ error: (ConfigRule, String, String?) -> Void) {
+        let subject = path.description
+        if hasAction {
+            error(.conflictingFields, "Entry “\(path)” has both an action and a list. Use one: an action runs, a list is a menu the app fills.", subject)
+        }
+        guard list.type == Config.List.recentWindows else {
+            error(.unknownListType, "Entry “\(path)” has a list of type “\(list.type)”, which isn't one the app knows. Use \(Config.List.recentWindows).", subject)
+            return
+        }
+        let counts = Config.List.countRange
+        if !counts.contains(list.count) {
+            error(.badListValue, "The list of “\(path)” has count \(list.count). Use a number from \(counts.lowerBound) to \(counts.upperBound).", subject)
+        }
+        if !["all", "current"].contains(list.spaces) {
+            error(.badListValue, "The list of “\(path)” has spaces “\(list.spaces)”. Use all or current.", subject)
+        }
+        if !["all", "display"].contains(list.scope) {
+            error(.badListValue, "The list of “\(path)” has scope “\(list.scope)”. Use all or display.", subject)
+        }
+        // The digits are the items' keys, so a held list can't be opened by one.
+        let repeatKey = path.lastStep?.key ?? path.leader.key
+        if held, repeatKey.isDigit {
+            error(.stepIsRepeatKey, "The held list “\(path)” is opened by \(repeatKey.name), which is also one of its items' keys. Choose a key that isn't a digit.", subject)
+        }
+    }
+
     /// Builds the tree, keeping file order at every level.
     private static func tree(_ parsed: [(entry: Config.Entry, path: KeySequence)]) -> [BindingNode] {
         func node(_ item: (entry: Config.Entry, path: KeySequence)) -> BindingNode {
             let children = parsed.filter { $0.path.parent == item.path }.map(node)
             return BindingNode(path: item.path, title: item.entry.title, action: item.entry.action,
-                               icon: item.entry.icon, hold: item.entry.hold, children: children)
+                               icon: item.entry.icon, hold: item.entry.hold, list: item.entry.list, children: children)
         }
         return parsed.filter { $0.path.isLeader }.map(node)
     }

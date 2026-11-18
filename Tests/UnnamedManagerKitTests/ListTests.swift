@@ -1,0 +1,172 @@
+import Foundation
+import Testing
+@testable import UnnamedManagerKit
+
+private let cag: Modifiers = [.control, .option, .command]
+
+private let entries = """
+{ "keys": "CAG+H", "title": "Recent Windows", "hold": true, "list": { "type": "windows.recent" } },
+{ "keys": "Hyper+W", "title": "Windows" },
+{ "keys": "Hyper+W R", "title": "Recent", "list": { "type": "windows.recent", "count": 5, "spaces": "current" } },
+{ "keys": "Hyper+W F", "title": "Fill", "action": "window-fill" }
+"""
+
+private func engine() throws -> SequenceEngine {
+    SequenceEngine(config: try load(json(entries: entries)).get())
+}
+
+private func down(_ key: KeyName, _ modifiers: Modifiers = cag) -> KeyEvent {
+    .down(keyCode: key.keyCode!, modifiers: modifiers, isRepeat: false)
+}
+
+private let items = [ListItem(id: 10, title: "Notes"), ListItem(id: 11, title: "Safari"), ListItem(id: 12, title: "Terminal")]
+private let front = ListItem(id: 1, title: "Zed")
+
+/// The highlight a held effect shows, with its menu's item titles.
+private func held(_ effect: SequenceEffect?) -> (titles: [String], highlight: Int)? {
+    guard case let .showHeld(menu, highlight, _, _) = effect else { return nil }
+    return (menu.children.map(\.title), highlight)
+}
+
+private func ranItem(_ effect: SequenceEffect?) -> Int? {
+    guard case let .run(node, _) = effect else { return nil }
+    return node.item?.id
+}
+
+@Suite("Lists (S-092, spec v18)")
+struct ListTests {
+    @Test("A list reads and writes, with its defaults left out")
+    func roundTrip() throws {
+        let config = try load(json(entries: entries)).get().config
+        #expect(config.entries[0].list == Config.List())
+        #expect(config.entries[2].list == Config.List(count: 5, spaces: "current"))
+        let text = ConfigWriter.write(config, actionOrder: [])
+        #expect(text.contains(#""list": { "type": "windows.recent" }"#))
+        #expect(text.contains(#""list": { "type": "windows.recent", "count": 5, "spaces": "current" }"#))
+        #expect(try load(text).get().config == config)
+    }
+
+    @Test("A list's rules", arguments: [
+        (#"{ "keys": "CAG+H", "title": "R", "list": { "type": "windows.recent" } }, { "keys": "CAG+H F", "title": "F", "action": "window-fill" }"#, "list-has-children CAG+H F"),
+        (#"{ "keys": "CAG+H", "title": "R", "action": "window-fill", "list": { "type": "windows.recent" } }"#, "conflicting-fields CAG+H"),
+        (#"{ "keys": "CAG+H", "title": "R", "list": { "type": "apps.running" } }"#, "unknown-list-type CAG+H"),
+        (#"{ "keys": "CAG+H", "title": "R", "list": { "type": "windows.recent", "count": 0 } }"#, "bad-list-value CAG+H"),
+        (#"{ "keys": "CAG+H", "title": "R", "list": { "type": "windows.recent", "scope": "space" } }"#, "bad-list-value CAG+H"),
+        (#"{ "keys": "CAG+1", "title": "R", "hold": true, "list": { "type": "windows.recent" } }"#, "step-is-repeat-key CAG+1"),
+    ])
+    func rules(_ entries: String, _ rule: String) {
+        switch load(json(entries: entries)) {
+        case .success: Issue.record("\(entries) loaded")
+        case let .failure(errors): #expect(errors.issues.map { "\($0.rule?.rawValue ?? "") \($0.subject ?? "")" } == [rule])
+        }
+    }
+
+    @Test("A list without a type is a missing field, and a list is never an empty menu")
+    func missingAndEmpty() throws {
+        guard case let .failure(errors) = load(json(entries: #"{ "keys": "CAG+H", "title": "R", "list": { "count": 5 } }"#)) else {
+            Issue.record("loaded")
+            return
+        }
+        #expect(errors.issues.map(\.rule) == [.missingField])
+        // A list that isn't held can have a digit for its key.
+        _ = try load(json(entries: #"{ "keys": "CAG+1", "title": "R", "list": { "type": "windows.recent" } }"#)).get()
+    }
+
+    @Test("Opening a held list asks for its items, then shows them with the first highlighted")
+    func fills() throws {
+        var e = try engine()
+        guard case .fillList = e.handle(down(.h)).effect else { Issue.record("no fill"); return }
+        #expect(e.isFilling && !e.isHeld)
+        let effects = e.fill(items, front: front)
+        #expect(effects.count == 1)
+        #expect(held(effects[0])! == (["Notes", "Safari", "Terminal"], 1))
+        guard case let .showHeld(menu, _, _, _) = effects[0] else { return }
+        #expect(menu.children.map { $0.path.lastStep!.key } == [.d1, .d2, .d3])
+        #expect(menu.front == front)
+    }
+
+    @Test("Keys pressed before the items come are replayed: a fast CAG+H 2 and letting go")
+    func replays() throws {
+        var e = try engine()
+        _ = e.handle(down(.h))
+        #expect(e.handle(down(.d2)).consume)
+        #expect(!e.handle(.flags([])).consume)
+        let effects = e.fill(items, front: front)
+        #expect(effects.count == 3)
+        #expect(held(effects[1])?.highlight == 2)
+        #expect(ranItem(effects[2]) == 11)
+        #expect(!e.isActive)
+    }
+
+    @Test("The repeat key and letting go choose an item")
+    func chooses() throws {
+        var e = try engine()
+        _ = e.handle(down(.h))
+        _ = e.fill(items, front: front)
+        #expect(held(e.handle(down(.h)).effect)?.highlight == 2)
+        #expect(ranItem(e.handle(.flags([])).effect) == 11)
+    }
+
+    @Test("A held list with no items has only Cancel, and letting go cancels")
+    func empty() throws {
+        var e = try engine()
+        _ = e.handle(down(.h))
+        #expect(held(e.fill([], front: front).first)! == ([], 0))
+        #expect(e.handle(.flags([])).effect == .cancelled)
+    }
+
+    @Test("A list in a menu that isn't held runs an item by its key")
+    func notHeld() throws {
+        var e = try engine()
+        _ = e.handle(down(.w, .hyper))
+        guard case .fillList = e.handle(down(.r, [])).effect else { Issue.record("no fill"); return }
+        guard case let .showMenu(menu, path, _) = e.fill(items, front: nil).first else { Issue.record("no menu"); return }
+        #expect(menu.children.count == 3 && path == ["Windows", "Recent"])
+        #expect(ranItem(e.handle(down(.d3, [])).effect) == 12)
+    }
+
+    @Test("When an item's window closes, the keys after it move up and the highlight moves on")
+    func removes() throws {
+        var e = try engine()
+        _ = e.handle(down(.h))
+        _ = e.fill(items, front: front)
+        _ = e.handle(down(.h))
+        // The highlighted Safari goes: the next item, Terminal, takes its key and the highlight.
+        let next = e.removeItem(id: 11)
+        #expect(held(next)! == (["Notes", "Terminal"], 2))
+        guard case let .showHeld(menu, _, _, _) = next else { return }
+        #expect(menu.children.map { $0.path.lastStep!.key } == [.d1, .d2])
+        // The last one goes: the one before.
+        #expect(held(e.removeItem(id: 12))! == (["Notes"], 1))
+        // An item before the highlight would move it up; the only one left goes: Cancel.
+        #expect(held(e.removeItem(id: 10))! == ([], 0))
+        #expect(e.removeItem(id: 99) == nil)
+    }
+
+    @Test("An item before the highlight moves the highlight up with its item")
+    func removesBefore() throws {
+        var e = try engine()
+        _ = e.handle(down(.h))
+        _ = e.fill(items, front: front)
+        _ = e.handle(down(.d3))
+        #expect(held(e.removeItem(id: 10))! == (["Safari", "Terminal"], 2))
+    }
+
+    @Test("Recent Windows: the history first, then the others front first, without the focused window, filtered, at most count")
+    func order() {
+        let items = RecentWindows.items(history: ["A", "B", "C", "X"], front: ["D", "A", "E"], found: ["F", "E", "D", "B"],
+                                        focused: "A", count: 4) { $0 != "C" }
+        // C is filtered; D and E are in front, F after; X came from the history.
+        #expect(items == ["B", "X", "D", "E"])
+        #expect(RecentWindows.items(history: [], front: [], found: ["F"], focused: nil, count: 9) { _ in true } == ["F"])
+        #expect(FocusHistory<Int>.limit >= 30)
+    }
+
+    @Test("At most nine items get keys until pages come (S-093)")
+    func nine() throws {
+        var e = try engine()
+        _ = e.handle(down(.h))
+        let many = (0..<12).map { ListItem(id: $0, title: "W\($0)") }
+        #expect(held(e.fill(many, front: nil).first)?.titles.count == 9)
+    }
+}

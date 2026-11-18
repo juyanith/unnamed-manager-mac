@@ -69,6 +69,19 @@ public enum ConfigWriter {
         if let action = entry.action { fields.append(("action", quote(action))) }
         if let icon = entry.icon { fields.append(("icon", quote(icon))) }
         if entry.hold { fields.append(("hold", "true")) }
+        if let list = entry.list { fields.append(("list", self.list(list))) }
+        return object(fields)
+    }
+
+    /// A list with its defaults left out.
+    private static func list(_ list: Config.List) -> String {
+        let d = Config.List()
+        var fields = [("type", quote(list.type))]
+        if list.count != d.count { fields.append(("count", "\(list.count)")) }
+        if list.minimized != d.minimized { fields.append(("minimized", "\(list.minimized)")) }
+        if list.hidden != d.hidden { fields.append(("hidden", "\(list.hidden)")) }
+        if list.spaces != d.spaces { fields.append(("spaces", quote(list.spaces))) }
+        if list.scope != d.scope { fields.append(("scope", quote(list.scope))) }
         return object(fields)
     }
 

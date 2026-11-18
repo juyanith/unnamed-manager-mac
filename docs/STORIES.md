@@ -1165,7 +1165,9 @@ UX:
 - Glossary: "Recent Windows", "Cancel". A window with no title shows its app's name.
 - Titles come from Accessibility (`kAXTitle`), never `kCGWindowName`, so no Screen Recording.
 - The starter config doesn't add a list. The user's own CAG+H becomes one by hand, or in S-094.
-Status: todo
+- Marks are the row's note: "minimized", "hidden", "on another Space", "on another display", and "on another Space and display" for both. Cancel keeps its ✕ and shows the window in front beside it; VoiceOver says "Cancel, <title>". A list that isn't held with no items says "No recent windows".
+Status: done
+Verified: the list's fields, rules and the 9 spec-v18 fixtures (none pending now), the item order (`RecentWindows.items`), filling with keys pressed meanwhile replayed, closed items leaving with the highlight moving on, at most 9 items until S-093 (unit, 318 tests); against `FakeWindowSystem`: the order, Cancel as the window in front, keys and icons, marks, a minimized and a hidden window brought back, back and forth with no focus change reported, the filters, a window closing while the list is up, and only Cancel with no sound (self-test, 254 checks); hud-recent in light and dark. A list asks the engine to wait while the app reads the windows on the main thread, and the keys pressed in that time are replayed, so a fast CAG+H 2 works. Not yet tried by hand: the manual line, and how long reading every app's windows takes with many apps open.
 
 ### S-093 Page through more than 9 recent windows with More
 As the user, with more than 9 windows in Recent Windows, I press 0 for More to see the next 9, numbered 1 to 9 again, and the repeat key keeps going across pages.

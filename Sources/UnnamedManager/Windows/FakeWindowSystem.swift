@@ -17,7 +17,13 @@ final class FakeWindowSystem: WindowSystem {
         var app: String?
         /// Its Space (S-083); only the current Space's windows show.
         var space = 1
+        var title: String?
+        /// Its app is hidden (S-092).
+        var isHidden = false
     }
+
+    /// Each window Recent Windows restored, in order (S-092).
+    private(set) var restored: [String] = []
 
     var app: FrontApp? = FrontApp(pid: 1, name: "TextEdit")
     var windows: [String: Window] = [:]
@@ -66,7 +72,7 @@ final class FakeWindowSystem: WindowSystem {
 
     func focusableWindows() -> [WindowInfo] {
         func depth(_ id: String) -> Int { stacking.firstIndex(of: id) ?? stacking.count }
-        return windows.filter { !$0.value.isMinimized && $0.value.space == currentSpace }
+        return windows.filter { !$0.value.isMinimized && !$0.value.isHidden && $0.value.space == currentSpace }
             .sorted { (depth($0.key), $0.key) < (depth($1.key), $1.key) }
             .map { info($0.key, $0.value) }
     }
@@ -82,8 +88,32 @@ final class FakeWindowSystem: WindowSystem {
     }
 
     func window(_ ref: WindowRef) -> WindowInfo? {
-        guard let id = ref.id.base as? String, let window = windows[id], !window.isMinimized else { return nil }
+        guard let id = ref.id.base as? String, let window = windows[id], !window.isMinimized, !window.isHidden else { return nil }
         return info(id, window)
+    }
+
+    func listed(_ ref: WindowRef) -> ListedWindow? {
+        guard let id = ref.id.base as? String, let window = windows[id] else { return nil }
+        // "com.apple.Terminal" is Terminal.
+        let appName = window.app.flatMap { $0.split(separator: ".").last.map(String.init) } ?? "App"
+        return ListedWindow(info: info(id, window), title: window.title, appName: appName,
+                            isMinimized: window.isMinimized, isHidden: window.isHidden)
+    }
+
+    /// As the real one: the current Space's windows, and minimized and hidden ones.
+    func allWindows() -> [ListedWindow] {
+        windows.keys.sorted().filter { id in
+            let window = windows[id]!
+            return window.space == currentSpace || window.isMinimized || window.isHidden
+        }.compactMap { listed(WindowRef(id: $0)) }
+    }
+
+    func restore(_ window: ListedWindow) async throws(PlanError) {
+        guard let id = window.info.ref.id.base as? String else { return }
+        windows[id]?.isMinimized = false
+        windows[id]?.isHidden = false
+        restored.append(id)
+        raise(id)
     }
 
     func watchFocus(_ changed: @escaping (WindowRef) -> Void) {

@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "entries": [
+    { "keys": "CAG+H", "title": "Recent Windows", "hold": true, "list": { "type": "windows.recent" } },
+    { "keys": "Hyper+H", "title": "Recent Windows Here", "hold": true, "list": { "type": "windows.recent", "count": 20, "minimized": false, "spaces": "current", "scope": "display" } },
+    { "keys": "CAG+A", "title": "Apps", "hold": true },
+    { "keys": "CAG+A T", "title": "Fill", "action": "window-fill" },
+    { "keys": "CAG+A Down", "title": "Minimize", "action": "window-minimize" },
+    { "keys": "CAG+A W", "title": "Windows" },
+    { "keys": "CAG+A W A", "title": "Arrange", "action": "window-arrange" },
+    { "keys": "CAG+A W H", "title": "Recent", "list": { "type": "windows.recent", "count": 5 } },
+    { "keys": "CAG+D", "title": "Window" },
+    { "keys": "CAG+D D", "title": "Center", "action": "window-place-center" },
+    { "keys": "CAG+D R", "title": "Recent", "list": { "type": "windows.recent" } }
+  ]
+}

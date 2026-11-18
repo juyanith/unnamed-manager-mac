@@ -16,6 +16,9 @@ public enum SequenceEffect: Sendable, Equatable {
     /// A held menu opened, or its highlight moved (spec v18). `highlight`
     /// is 0 for Cancel, and 1 for the menu's first child.
     case showHeld(BindingNode, highlight: Int, path: [String], frontApp: String?)
+    /// A list opened (spec v18): fill it with `fill(_:front:)`, which shows
+    /// it. Keys wait until then.
+    case fillList(BindingNode, path: [String], frontApp: String?)
     /// Back from a leader's menu opened Home (S-050). Show it.
     case showHome(Home, path: [String], frontApp: String?)
     /// A binding was selected, or a direct binding's chord was pressed: run its
@@ -63,6 +66,11 @@ public struct SequenceEngine: Sendable {
     public private(set) var highlight: Int?
     /// The held leader's modifiers. Letting go of any of them chooses.
     private var holdModifiers: Modifiers = []
+    /// While a list waits for its items, the keys and modifier changes
+    /// since it opened, replayed once it's filled. nil otherwise.
+    private var pending: [KeyEvent]?
+    /// The list waiting for its items opens held.
+    private var pendingHeld = false
 
     public init(config: LoadedConfig) {
         self.config = config
@@ -84,6 +92,7 @@ public struct SequenceEngine: Sendable {
         home = nil
         viaHome = false
         highlight = nil
+        pending = nil
     }
 
     /// The bundle id of the app in front. Call it whenever that changes.
@@ -98,9 +107,54 @@ public struct SequenceEngine: Sendable {
         viaHome = false
         heldLeaderModifiers = []
         highlight = nil
+        pending = nil
+    }
+
+    /// True while a list waits for its items.
+    public var isFilling: Bool { pending != nil }
+
+    /// Fills the list that's waiting with its items, shows it, and replays
+    /// the keys pressed since it opened. Returns every effect, in order.
+    public mutating func fill(_ items: [ListItem], front: ListItem?) -> [SequenceEffect] {
+        guard var queued = pending, let list = stack.last, list.list != nil else { return [] }
+        pending = nil
+        let filled = list.filled(with: items, front: front)
+        stack[stack.count - 1] = filled
+        var effects = [pendingHeld ? openHeld(filled) : .showMenu(filled, path: path, frontApp: sequenceFrontApp)]
+        while !queued.isEmpty, isActive {
+            let event = queued.removeFirst()
+            if case .flags = event {
+                if let effect = handle(event).effect { effects.append(effect) }
+            } else if case let .down(keyCode, modifiers, _) = event, let effect = press(keyCode: keyCode, modifiers: modifiers).effect {
+                effects.append(effect)
+            }
+            // Another list opened: the rest waits for it.
+            if pending != nil {
+                pending! += queued
+                break
+            }
+        }
+        return effects
+    }
+
+    /// An item's window went away while its list is up (spec v18): it
+    /// leaves the list, the keys after it move up, and a highlight on it
+    /// goes to the next item, else the one before, else Cancel.
+    public mutating func removeItem(id: Int) -> SequenceEffect? {
+        guard pending == nil, let list = stack.last, list.list != nil,
+              let index = list.children.firstIndex(where: { $0.item?.id == id }) else { return nil }
+        var items = list.children.compactMap(\.item)
+        items.remove(at: index)
+        let filled = list.filled(with: items, front: list.front)
+        stack[stack.count - 1] = filled
+        guard let highlight else { return .showMenu(filled, path: path, frontApp: sequenceFrontApp) }
+        let position = index + 1
+        self.highlight = highlight == position ? min(position, items.count) : highlight > position ? highlight - 1 : highlight
+        return .showHeld(filled, highlight: self.highlight!, path: path, frontApp: sequenceFrontApp)
     }
 
     public mutating func handle(_ event: KeyEvent) -> SequenceOutput {
+        if pending != nil, let output = wait(event) { return output }
         switch event {
         case let .flags(modifiers):
             // Once a leader modifier is released it stops being ignored.
@@ -119,9 +173,42 @@ public struct SequenceEngine: Sendable {
             }
             consumedKeys.insert(keyCode)
             if isRepeat { return .consumed() }
-            if let home { return pick(in: home, keyCode: keyCode, modifiers: modifiers) }
-            return step(keyCode: keyCode, modifiers: modifiers)
+            return press(keyCode: keyCode, modifiers: modifiers)
         }
+    }
+
+    /// A key during a sequence, once its key-up is known to be consumed.
+    private mutating func press(keyCode: UInt16, modifiers: Modifiers) -> SequenceOutput {
+        if let home { return pick(in: home, keyCode: keyCode, modifiers: modifiers) }
+        return step(keyCode: keyCode, modifiers: modifiers)
+    }
+
+    /// While a list waits for its items: key-downs are consumed and kept,
+    /// modifier changes kept and let through. nil lets a key-up go on as usual.
+    private mutating func wait(_ event: KeyEvent) -> SequenceOutput? {
+        switch event {
+        case .up:
+            return nil
+        case .flags:
+            pending?.append(event)
+            return .pass
+        case let .down(keyCode, _, isRepeat):
+            consumedKeys.insert(keyCode)
+            if !isRepeat { pending?.append(event) }
+            return .consumed()
+        }
+    }
+
+    /// Shows a menu that's just become the current one: held, or not. A
+    /// list asks to be filled first.
+    private mutating func open(_ menu: BindingNode, held: Bool) -> SequenceEffect {
+        guard menu.list == nil else {
+            pending = []
+            pendingHeld = held
+            highlight = nil
+            return .fillList(menu, path: path, frontApp: sequenceFrontApp)
+        }
+        return held ? openHeld(menu) : .showMenu(menu, path: path, frontApp: sequenceFrontApp)
     }
 
     private mutating func idle(keyCode: UInt16, modifiers: Modifiers, isRepeat: Bool) -> SequenceOutput {
@@ -143,11 +230,9 @@ public struct SequenceEngine: Sendable {
         heldLeaderModifiers = modifiers
         sequenceFrontApp = frontApp
         stack = [leader]
-        if leader.hold && !modifiers.isEmpty {
-            holdModifiers = modifiers
-            return .consumed(openHeld(leader))
-        }
-        return .consumed(.showMenu(leader, path: path, frontApp: sequenceFrontApp))
+        let held = leader.hold && !modifiers.isEmpty
+        if held { holdModifiers = modifiers }
+        return .consumed(open(leader, held: held))
     }
 
     /// Puts the highlight on a held menu's first child, or on Cancel when
@@ -177,7 +262,7 @@ public struct SequenceEngine: Sendable {
             let child = menu.children[index]
             if child.isMenu {
                 stack.append(child)
-                return .consumed(openHeld(child))
+                return .consumed(open(child, held: true))
             }
             highlight = index + 1
             return .consumed(.showHeld(menu, highlight: index + 1, path: path, frontApp: sequenceFrontApp))
@@ -201,7 +286,7 @@ public struct SequenceEngine: Sendable {
         let child = menu.children[index - 1]
         if child.isMenu {
             stack.append(child)
-            return .showMenu(child, path: path, frontApp: sequenceFrontApp)
+            return open(child, held: false)
         }
         guard config.isAvailable(child, frontApp: sequenceFrontApp) else {
             return .unavailable(child, path: path)
@@ -248,7 +333,7 @@ public struct SequenceEngine: Sendable {
         }
         if child.isMenu {
             stack.append(child)
-            return .consumed(.showMenu(child, path: path, frontApp: sequenceFrontApp))
+            return .consumed(open(child, held: false))
         }
         guard config.isAvailable(child, frontApp: sequenceFrontApp) else {
             return .consumed(.unavailable(child, path: path))
@@ -274,7 +359,7 @@ public struct SequenceEngine: Sendable {
             self.home = nil
             heldLeaderModifiers = modifiers
             stack = [entry]
-            return .consumed(.showMenu(entry, path: path, frontApp: sequenceFrontApp))
+            return .consumed(open(entry, held: false))
         }
         guard config.isAvailable(entry, frontApp: sequenceFrontApp) else {
             return .consumed(.unavailable(entry, path: path))

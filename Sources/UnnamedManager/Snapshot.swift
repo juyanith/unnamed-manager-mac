@@ -149,16 +149,19 @@ enum Snapshot {
                     try? await Task.sleep(for: .seconds(0.3))
                 }
             }
-            if only == nil || only?.contains("hud-held") == true {
-                // S-091: a held menu, with Cancel and the highlight.
+            if only == nil || only?.contains("hud-held") == true || only?.contains("hud-recent") == true {
+                // S-091: a held menu, with Cancel and the highlight. S-092: Recent Windows.
                 let guide = model.launcher.guide
-                for mode in ["light", "dark"] {
-                    NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
-                    guide.show(SeedData.heldContent)
-                    try? await Task.sleep(for: .seconds(0.8))
-                    capture(to: "\(dir)/hud-held-\(mode).png", window: guide.window)
-                    guide.hide()
-                    try? await Task.sleep(for: .seconds(0.3))
+                for (name, content) in [("hud-held", SeedData.heldContent), ("hud-recent", SeedData.recentContent)]
+                where only == nil || only?.contains(name) == true {
+                    for mode in ["light", "dark"] {
+                        NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
+                        guide.show(content)
+                        try? await Task.sleep(for: .seconds(0.8))
+                        capture(to: "\(dir)/\(name)-\(mode).png", window: guide.window)
+                        guide.hide()
+                        try? await Task.sleep(for: .seconds(0.3))
+                    }
                 }
             }
             if only == nil || only?.contains("hud") == true {

@@ -21,6 +21,8 @@ extension LoadedConfig {
     /// included.
     public func iconSource(_ binding: BindingNode, home: URL = FileManager.default.homeDirectoryForCurrentUser) -> IconSource? {
         if let icon = binding.icon { return IconSource(icon, home: home) }
+        // A list's item shows its window's app (spec v18).
+        if let item = binding.item { return item.app.map(IconSource.app) }
         guard let id = binding.action else { return .menu }
         switch config.action(named: id) {
         case let .family(value):

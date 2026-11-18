@@ -217,6 +217,24 @@ nonisolated final class EngineBox: Sendable {
         engine.withLock { $0?.isHeld ?? false }
     }
 
+    /// Fills the list that's waiting and replays the keys pressed meanwhile (S-092).
+    func fill(_ items: [ListItem], front: ListItem?) -> [SequenceEffect] {
+        engine.withLock { $0?.fill(items, front: front) ?? [] }
+    }
+
+    /// An item's window closed while its list is up (S-092).
+    func removeItem(id: Int) -> SequenceEffect? {
+        engine.withLock { $0?.removeItem(id: id) }
+    }
+
+    /// The items of the list the sequence is in, if it's in one.
+    var listItems: [ListItem] {
+        engine.withLock { engine in
+            guard let menu = engine?.stack.last, menu.list != nil, engine?.isFilling == false else { return [] }
+            return menu.children.compactMap(\.item)
+        }
+    }
+
     /// The app in front, for Context Aware (S-013).
     func setFrontApp(_ bundleId: String?) {
         engine.withLock { engine in

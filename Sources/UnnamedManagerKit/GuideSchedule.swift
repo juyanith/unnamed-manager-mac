@@ -65,6 +65,10 @@ public struct GuideSchedule: Sendable, Equatable {
             holding = false
             return show(.showHome(home, path: path, frontApp: frontApp), at: now)
 
+        case .fillList:
+            // The show that follows once it's filled starts the delay.
+            return []
+
         case .run, .cancelled:
             let wasVisible = isVisible
             clear()

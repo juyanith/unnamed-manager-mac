@@ -52,6 +52,7 @@ enum SelfTest {
             spacesChecks(model)
             await spaceSwitchChecks()
             await heldChecks(model)
+            await recentChecks(model)
             await frontChecks(model)
 
             print(failures == 0 ? "SELFTEST PASS \(count) checks" : "SELFTEST FAIL \(failures) of \(count) checks")

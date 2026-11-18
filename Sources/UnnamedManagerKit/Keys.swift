@@ -17,6 +17,12 @@ public enum KeyName: String, CaseIterable, Sendable, Hashable {
         self.init(rawValue: text.lowercased())
     }
 
+    /// The digits 1 to 9, the keys of a list's items, in order (spec v18).
+    public static let itemKeys: [KeyName] = [.d1, .d2, .d3, .d4, .d5, .d6, .d7, .d8, .d9]
+
+    /// 0 to 9.
+    public var isDigit: Bool { rawValue.count == 1 && rawValue.first!.isNumber }
+
     /// The canonical spelling used in the config file and the Guide.
     public var name: String {
         switch self {

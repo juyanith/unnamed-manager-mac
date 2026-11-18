@@ -1,8 +1,9 @@
 /// The windows that had focus, the most recent first, each once (S-083,
 /// spec v13). Focus Window's and Swap Window's `recent` target reads it.
 public struct FocusHistory<Window: Hashable> {
-    /// The spec asks for at least 10.
-    public static var limit: Int { 10 }
+    /// The spec asks for at least 10; Recent Windows needs 30, so 9 items
+    /// are left once its filters drop some (S-092).
+    public static var limit: Int { 30 }
 
     public private(set) var windows: [Window] = []
 

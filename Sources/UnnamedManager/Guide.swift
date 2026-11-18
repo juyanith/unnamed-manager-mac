@@ -39,6 +39,8 @@ struct GuideContent: Equatable {
     /// In a held menu, the highlighted row: 0 is Cancel (S-091). nil in
     /// any other menu.
     var highlight: Int?
+    /// What an empty list says in place of rows (S-092).
+    var empty: String?
 
     /// A held menu when `highlight` is set: Cancel first, then the menu's rows.
     init(menu: BindingNode, path: [String], config: LoadedConfig, frontApp: String?, frontAppName: String? = nil,
@@ -49,7 +51,13 @@ struct GuideContent: Equatable {
         var rows = menu.children.compactMap { child in
             child.path.lastStep.map { Self.row(child, key: $0.key, config: config, frontApp: frontApp, appName: appName) }
         }
-        if highlight != nil { rows.insert(Row(key: "", title: "Cancel", isMenu: false, isCancel: true), at: 0) }
+        if highlight != nil {
+            // In Recent Windows, Cancel is the window in front: choosing it changes nothing (spec v18).
+            let front = menu.front
+            rows.insert(Row(key: "", title: front?.title ?? "Cancel", isMenu: false,
+                            icon: front?.app.map(IconSource.app), isCancel: true), at: 0)
+        }
+        if rows.isEmpty, menu.list != nil { empty = "No recent windows" }
         sections = [Section(rows: rows)]
         cancelKey = Self.footerLabel(config.cancelKey)
         backKey = config.backKey.map(Self.footerLabel)
@@ -71,9 +79,21 @@ struct GuideContent: Equatable {
 
     private static func row(_ node: BindingNode, key: KeyName, config: LoadedConfig, frontApp: String?, appName: String) -> Row {
         let available = node.isMenu || config.isAvailable(node, frontApp: frontApp)
+        let note = available ? node.item.flatMap { Self.note($0.marks) } : "not available in \(appName)"
         return Row(key: key.name, title: node.title, isMenu: node.isMenu,
-                   isAvailable: available, note: available ? nil : "not available in \(appName)",
+                   isAvailable: available, note: note,
                    icon: config.iconSource(node))
+    }
+
+    /// How a list's item is marked (S-092): "minimized, on another display".
+    static func note(_ marks: ListItem.Marks) -> String? {
+        // Both places in one phrase, so the note fits the column.
+        let place: (ListItem.Marks, String) = marks.isSuperset(of: [.otherSpace, .otherDisplay])
+            ? ([.otherSpace, .otherDisplay], "on another Space and display")
+            : marks.contains(.otherSpace) ? (.otherSpace, "on another Space") : (.otherDisplay, "on another display")
+        let words: [(ListItem.Marks, String)] = [(.minimized, "minimized"), (.hidden, "hidden"), place]
+        let note = words.filter { marks.contains($0.0) }.map(\.1).joined(separator: ", ")
+        return note.isEmpty ? nil : note
     }
 
     /// Every row, in order.
@@ -140,6 +160,7 @@ struct GuideContent: Equatable {
     /// menu says its highlighted row too: "Apps, Terminal, 1 of 4".
     var announcement: String {
         if let highlighted = highlightAnnouncement { return "\(path.last ?? ""), \(highlighted)" }
+        if let empty { return "\(path.last ?? ""), \(empty)" }
         return "\(path.last ?? ""), \(rows.count) \(rows.count == 1 ? "key" : "keys")"
     }
 
@@ -148,7 +169,8 @@ struct GuideContent: Equatable {
     var highlightAnnouncement: String? {
         guard let highlight, rows.indices.contains(highlight) else { return nil }
         let items = rows.count - 1
-        return highlight == 0 ? "Cancel" : "\(rows[highlight].title), \(highlight) of \(items)"
+        guard highlight > 0 else { return rows[0].title == "Cancel" ? "Cancel" : "Cancel, \(rows[0].title)" }
+        return "\(rows[highlight].title), \(highlight) of \(items)"
     }
 }
 
@@ -165,7 +187,11 @@ struct GuideView: View {
             if let failure = content.failure {
                 failureRow(failure)
             } else {
-                menuRows
+                if let empty = content.empty {
+                    Text(empty).foregroundStyle(.secondary)
+                } else {
+                    menuRows
+                }
                 Divider()
                 footer
             }
@@ -272,7 +298,7 @@ struct GuideView: View {
         }
         .opacity(row.isAvailable ? 1 : Surfaces.unavailableOpacity)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(row.isCancel ? "Cancel"
+        .accessibilityLabel(row.isCancel ? (row.title == "Cancel" ? "Cancel" : "Cancel, \(row.title)")
                             : "\(row.key), \(row.title)\(row.isMenu ? ", menu" : "")\(row.note.map { ", \($0)" } ?? "")")
         .accessibilityAddTraits(highlighted ? .isSelected : [])
     }

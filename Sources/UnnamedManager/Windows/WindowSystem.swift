@@ -18,6 +18,18 @@ struct WindowInfo {
     func isExcluded(by apps: Set<String>) -> Bool { app.map(apps.contains) ?? false }
 }
 
+/// A window Recent Windows can list (S-092): minimized, a hidden app's, or
+/// on another Space too.
+struct ListedWindow {
+    let info: WindowInfo
+    /// nil or empty when the window has none.
+    let title: String?
+    let appName: String
+    let isMinimized: Bool
+    /// Its app is hidden.
+    let isHidden: Bool
+}
+
 /// The app in front, which window actions work on.
 struct FrontApp: Equatable {
     let pid: pid_t
@@ -51,6 +63,16 @@ protocol WindowSystem: AnyObject {
     func watchFocus(_ changed: @escaping (WindowRef) -> Void)
     /// Goes to the Space to the left or right on a display, with no slide (S-088).
     func switchSpace(_ direction: SpaceDirection, on screen: WindowGeometry.Screen)
+    /// A window seen before, when it still exists: minimized, hidden or on
+    /// another Space too (S-092).
+    func listed(_ ref: WindowRef) -> ListedWindow?
+    /// Every standard window of every app that can be found now, minimized
+    /// ones and hidden apps' too, without this app's own (S-092). Windows on
+    /// other Spaces only when the app's window list has them.
+    func allWindows() -> [ListedWindow]
+    /// Brings back a minimized window and shows a hidden app, then focuses
+    /// the window, moving to its Space (S-092).
+    func restore(_ window: ListedWindow) async throws(PlanError)
 }
 
 /// Carries out window commands on the focused window of the app in front,
@@ -185,6 +207,73 @@ final class WindowControl {
         try await system.focus(window)
         history.record(window.ref)
     }
+
+    /// A window as Recent Windows lists it (S-092): its title, or its app's
+    /// name, and what the Guide marks.
+    struct RecentWindow {
+        let window: ListedWindow
+        let title: String
+        let marks: ListItem.Marks
+    }
+
+    /// Recent Windows (S-092, spec v18): the focused window, which Cancel
+    /// shows, and the items: the windows Focus Window could pick for the
+    /// list's filters, without the focused one, in the history's order,
+    /// then the windows the history doesn't hold, the one in front first.
+    /// At most `count`, and never a window of an app left out of Focus Window.
+    func recentWindows(_ list: Config.List) -> (front: RecentWindow?, items: [RecentWindow]) {
+        guard system.canControlWindows else { return (nil, []) }
+        let focused = system.frontApp().flatMap { system.focusedWindow(of: $0) }
+        if let focused { history.record(focused) }
+        let here = system.focusableWindows(), screens = system.screens(), excluded = settings().leftOut(of: \.focus)
+        let onSpace = Set(here.map(\.ref))
+        let all = system.allWindows()
+        let found = Dictionary(all.map { ($0.info.ref, $0) }, uniquingKeysWith: { first, _ in first })
+        let front = focused.flatMap { found[$0] ?? system.listed($0) }
+        let display = (front?.info.frame ?? here.first?.frame).flatMap { WindowGeometry.screen(for: $0, among: screens) }
+        func recent(_ window: ListedWindow) -> RecentWindow {
+            var marks: ListItem.Marks = []
+            if window.isMinimized { marks.insert(.minimized) }
+            if window.isHidden { marks.insert(.hidden) }
+            if !window.isMinimized && !window.isHidden && !onSpace.contains(window.info.ref) { marks.insert(.otherSpace) }
+            if let display, WindowGeometry.screen(for: window.info.frame, among: screens) != display { marks.insert(.otherDisplay) }
+            let title = window.title.flatMap { $0.isEmpty ? nil : $0 } ?? window.appName
+            return RecentWindow(window: window, title: title, marks: marks)
+        }
+        // History entries that closed are left out here, so they never take an item's place.
+        var listed = found
+        let used = history.windows.filter { ref in
+            if listed[ref] == nil { listed[ref] = system.listed(ref) }
+            return listed[ref] != nil
+        }
+        var items: [WindowRef: RecentWindow] = [:]
+        let refs = RecentWindows.items(history: used, front: here.map(\.ref), found: all.map(\.info.ref),
+                                       focused: focused, count: list.count) { ref in
+            guard let window = listed[ref], !window.info.isExcluded(by: excluded) else { return false }
+            let item = recent(window)
+            if !list.minimized && item.marks.contains(.minimized) { return false }
+            if !list.hidden && item.marks.contains(.hidden) { return false }
+            if list.currentSpaceOnly && item.marks.contains(.otherSpace) { return false }
+            if list.displayOnly && item.marks.contains(.otherDisplay) { return false }
+            items[ref] = item
+            return true
+        }
+        return (front.map(recent), refs.compactMap { items[$0] })
+    }
+
+    /// Goes to a window chosen in Recent Windows (S-092). It's first in the
+    /// history at once, before macOS reports the focus change, so the list
+    /// opened right away has the window before it first.
+    func choose(_ window: WindowRef) async throws(PlanError) {
+        guard let listed = system.listed(window) else {
+            throw PlanError("That window has closed.", alerts: true)
+        }
+        history.record(window)
+        try await system.restore(listed)
+    }
+
+    /// False once a listed window has closed or its app has quit.
+    func exists(_ window: WindowRef) -> Bool { system.listed(window) != nil }
 
     /// Focus Window (S-068, S-069, S-072, S-073, S-078, S-079, S-082, S-083).
     /// Finding no window plays the alert sound (spec v10).

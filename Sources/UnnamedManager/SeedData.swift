@@ -100,6 +100,22 @@ enum SeedData {
                             frontApp: "com.apple.Notes", frontAppName: "Notes", highlight: 2)
     }
 
+    /// Recent Windows, held, with a window of each kind the Guide marks (S-092).
+    static var recentContent: GuideContent {
+        let json = #"{ "version": 1, "entries": [{ "keys": "CAG+H", "title": "Recent Windows", "hold": true, "list": { "type": "windows.recent" } }] }"#
+        let config = try! ConfigLoader.load(Data(json.utf8)).get()
+        let items = [
+            ListItem(id: 1, title: "Apple", app: "com.apple.Safari"),
+            ListItem(id: 2, title: "Weekly planning", app: "com.apple.Notes", marks: .otherSpace),
+            ListItem(id: 3, title: "Terminal", app: "com.apple.Terminal", marks: .hidden),
+            ListItem(id: 4, title: "Draft of the quarterly report for the team", app: "com.apple.TextEdit", marks: .minimized),
+            ListItem(id: 5, title: "Inbox", app: "com.apple.mail", marks: [.otherSpace, .otherDisplay]),
+        ]
+        let list = config.leaders[0].filled(with: items, front: ListItem(id: 0, title: "UnnamedManager — Zed", app: "dev.zed.Zed"))
+        GuideIcons.shared.load(Set(([list.front!] + items).compactMap { $0.app.map(IconSource.app) }))
+        return GuideContent(menu: list, path: [list.title], config: config, frontApp: nil, highlight: 1)
+    }
+
     /// The Windows menu under Commands (S-070).
     static var windowsContent: GuideContent {
         let config = fixture

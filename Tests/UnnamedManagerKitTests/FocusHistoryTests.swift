@@ -4,13 +4,13 @@ import Testing
 
 @Suite("Focus or swap with the window used before, and leave apps out (S-083, spec v13)")
 struct FocusHistoryTests {
-    @Test("A window goes first each time it gets focus, once, and the history keeps 10")
+    @Test("A window goes first each time it gets focus, once, and the history keeps 30 (S-092)")
     func record() {
         var history = FocusHistory<Int>()
         for window in [1, 2, 3, 2] { history.record(window) }
         #expect(history.windows == [2, 3, 1])
-        for window in 10..<25 { history.record(window) }
-        #expect(history.windows == Array((15..<25).reversed()))
+        for window in 10..<45 { history.record(window) }
+        #expect(history.windows == Array((15..<45).reversed()))
     }
 
     @Test("The window used before is the first that isn't the focused one and still counts")
