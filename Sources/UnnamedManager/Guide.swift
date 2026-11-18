@@ -14,7 +14,9 @@ struct GuideContent: Equatable {
         var note: String?
         /// Where its icon comes from: an app, a file or a URL (S-054, S-055).
         var icon: IconSource?
-        var id: String { key }
+        /// A held menu's first row, which has no key (S-091).
+        var isCancel = false
+        var id: String { isCancel ? "cancel" : key }
     }
 
     /// A group of rows: in Home, the entries on one set of modifiers under
@@ -34,13 +36,20 @@ struct GuideContent: Equatable {
     var backKey: String?
     /// Why an action failed (S-015). When set, the Guide shows only this.
     var failure: String?
+    /// In a held menu, the highlighted row: 0 is Cancel (S-091). nil in
+    /// any other menu.
+    var highlight: Int?
 
-    init(menu: BindingNode, path: [String], config: LoadedConfig, frontApp: String?, frontAppName: String? = nil) {
+    /// A held menu when `highlight` is set: Cancel first, then the menu's rows.
+    init(menu: BindingNode, path: [String], config: LoadedConfig, frontApp: String?, frontAppName: String? = nil,
+         highlight: Int? = nil) {
         self.path = path
+        self.highlight = highlight
         let appName = frontAppName ?? frontApp.flatMap(Self.appName) ?? "this app"
-        let rows = menu.children.compactMap { child in
+        var rows = menu.children.compactMap { child in
             child.path.lastStep.map { Self.row(child, key: $0.key, config: config, frontApp: frontApp, appName: appName) }
         }
+        if highlight != nil { rows.insert(Row(key: "", title: "Cancel", isMenu: false, isCancel: true), at: 0) }
         sections = [Section(rows: rows)]
         cancelKey = Self.footerLabel(config.cancelKey)
         backKey = config.backKey.map(Self.footerLabel)
@@ -121,9 +130,25 @@ struct GuideContent: Equatable {
     /// Home side by side: a vertical divider after the first group's column.
     var dividesColumns: Bool { isHome && columns.count > 1 }
 
-    /// What VoiceOver says when the Guide opens or changes menu.
+    /// True for the highlighted row of a held menu.
+    func isHighlighted(_ row: Row) -> Bool {
+        guard let highlight else { return false }
+        return rows.firstIndex(of: row) == highlight
+    }
+
+    /// What VoiceOver says when the Guide opens or changes menu. A held
+    /// menu says its highlighted row too: "Apps, Terminal, 1 of 4".
     var announcement: String {
-        "\(path.last ?? ""), \(rows.count) \(rows.count == 1 ? "key" : "keys")"
+        if let highlighted = highlightAnnouncement { return "\(path.last ?? ""), \(highlighted)" }
+        return "\(path.last ?? ""), \(rows.count) \(rows.count == 1 ? "key" : "keys")"
+    }
+
+    /// What VoiceOver says when only the highlight moves: "Browser, 2 of 4".
+    /// Cancel isn't counted.
+    var highlightAnnouncement: String? {
+        guard let highlight, rows.indices.contains(highlight) else { return nil }
+        let items = rows.count - 1
+        return highlight == 0 ? "Cancel" : "\(rows[highlight].title), \(highlight) of \(items)"
     }
 }
 
@@ -145,6 +170,7 @@ struct GuideView: View {
                 footer
             }
         }
+        .backgroundPreferenceValue(HighlightBounds.self) { anchors in highlightFill(anchors) }
         .padding(Space.margin)
         .fixedSize()
         .background { background }
@@ -208,33 +234,71 @@ struct GuideView: View {
     }
 
     private func rowView(_ row: GuideContent.Row, icons: Bool) -> some View {
-        GridRow {
-            Keycap(label: row.key)
-                .gridColumnAlignment(.leading)
+        let highlighted = content.isHighlighted(row)
+        // On the highlight, text is on the accent; elsewhere, Cancel is secondary.
+        let primary: AnyShapeStyle = highlighted ? AnyShapeStyle(Palette.onAccent) : row.isCancel ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary)
+        let secondary: AnyShapeStyle = highlighted ? AnyShapeStyle(Palette.onAccent) : AnyShapeStyle(.secondary)
+        return GridRow {
+            Group {
+                if row.isCancel {
+                    Image(systemName: "xmark")
+                        .foregroundStyle(secondary)
+                        .frame(minWidth: Layout.keycapMinWidth)
+                } else {
+                    Keycap(label: row.key)
+                }
+            }
+            .gridColumnAlignment(.leading)
+            .highlightBounds(highlighted)
             if icons { EntryIcon(source: row.icon) }
             VStack(alignment: .leading, spacing: 0) {
                 Text(row.title)
                     .lineLimit(1)
                     .truncationMode(.tail)
+                    .foregroundStyle(primary)
                 if let note = row.note {
                     Text(note)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(secondary)
                         .lineLimit(1)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .highlightBounds(highlighted)
             Text("›")
-                .foregroundStyle(.secondary)
+                .foregroundStyle(secondary)
                 .opacity(row.isMenu ? 1 : 0)
+                .highlightBounds(highlighted)
         }
         .opacity(row.isAvailable ? 1 : Surfaces.unavailableOpacity)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(row.key), \(row.title)\(row.isMenu ? ", menu" : "")\(row.note.map { ", \($0)" } ?? "")")
+        .accessibilityLabel(row.isCancel ? "Cancel"
+                            : "\(row.key), \(row.title)\(row.isMenu ? ", menu" : "")\(row.note.map { ", \($0)" } ?? "")")
+        .accessibilityAddTraits(highlighted ? .isSelected : [])
+    }
+
+    /// The highlight of a held menu: one fill behind its row's cells, a
+    /// step of air around them, like a selected menu item (S-091). In one
+    /// column it spans the Guide, which the footer can make wider than the
+    /// column; in more, the cells already span their column.
+    private func highlightFill(_ anchors: [Anchor<CGRect>]) -> some View {
+        GeometryReader { proxy in
+            if let first = anchors.first {
+                let cells = anchors.dropFirst().reduce(proxy[first]) { $0.union(proxy[$1]) }
+                let row = content.columns.count == 1
+                    ? CGRect(x: 0, y: cells.minY, width: proxy.size.width, height: cells.height) : cells
+                let rect = row.insetBy(dx: -Space.sm, dy: -Space.xs)
+                RoundedRectangle(cornerRadius: Radius.row)
+                    .fill(Palette.accent)
+                    .frame(width: rect.width, height: rect.height)
+                    .position(x: rect.midX, y: rect.midY)  // grid: ok measured from the row's cells, not a number
+            }
+        }
     }
 
     private var footer: some View {
         HStack(spacing: Space.lg) {
+            if content.highlight != nil { Text("Let go to choose") }
             footerKey(content.cancelKey, "Cancel")
             if let back = content.backKey { footerKey(back, "Back") }
         }
@@ -258,6 +322,22 @@ struct GuideView: View {
         } else {
             Color.clear.glassEffect(.regular, in: .rect(cornerRadius: Radius.guide))
         }
+    }
+}
+
+/// The frames of the highlighted row's cells, so the Grid can draw one
+/// fill behind the whole row (S-091).
+private struct HighlightBounds: PreferenceKey {
+    static let defaultValue: [Anchor<CGRect>] = []
+    static func reduce(value: inout [Anchor<CGRect>], nextValue: () -> [Anchor<CGRect>]) {
+        value += nextValue()
+    }
+}
+
+private extension View {
+    /// Reports this cell's frame when its row is highlighted.
+    func highlightBounds(_ on: Bool) -> some View {
+        anchorPreference(key: HighlightBounds.self, value: .bounds) { on ? [$0] : [] }
     }
 }
 

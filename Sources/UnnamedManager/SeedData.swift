@@ -92,6 +92,14 @@ enum SeedData {
                             frontApp: "com.apple.Notes", frontAppName: "Notes")
     }
 
+    /// The leader as a held menu, with the highlight on its second item (S-091).
+    static var heldContent: GuideContent {
+        let config = fixture
+        let leader = config.leaders[0]
+        return GuideContent(menu: leader, path: [leader.title], config: config,
+                            frontApp: "com.apple.Notes", frontAppName: "Notes", highlight: 2)
+    }
+
     /// The Windows menu under Commands (S-070).
     static var windowsContent: GuideContent {
         let config = fixture

@@ -218,10 +218,9 @@ final class Launcher {
             case let .show(menu, path, frontApp):
                 guard let config = store.loaded else { continue }
                 guide.show(GuideContent(menu: menu, path: path, config: config, frontApp: frontApp))
-            case let .showHeld(menu, _, path, frontApp):
-                // S-091 draws the highlight and Cancel.
+            case let .showHeld(menu, highlight, path, frontApp):
                 guard let config = store.loaded else { continue }
-                guide.show(GuideContent(menu: menu, path: path, config: config, frontApp: frontApp))
+                guide.show(GuideContent(menu: menu, path: path, config: config, frontApp: frontApp, highlight: highlight))
             case let .showHome(home, path, frontApp):
                 guard let config = store.loaded else { continue }
                 guide.show(GuideContent(home: home, path: path, config: config, frontApp: frontApp))

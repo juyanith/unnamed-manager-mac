@@ -1138,9 +1138,16 @@ Acceptance:
 - [self] Letting go before `hudDelayMs` chooses with the Guide never shown; each key press restarts the delay, as in any sequence.
 - [manual] The highlight never lags a key press, and a fast tap and release shows no flash.
 UX:
-- Use the `ux-design` skill for the highlight and the Cancel row before building; the highlight uses `Palette.accent` like a selected row, not a new color.
-- VoiceOver reads the highlighted item's title when it changes.
-Status: todo
+- Flow: hold the leader → (after `hudDelayMs`) the Guide with the first item highlighted → the repeat key, Shift, Down, Up or an item's key move it → let go chooses; Escape cancels, Back goes up.
+- Surface: the Guide itself, the HUD the sequence already uses (changes one value on screen: which row is highlighted).
+- The highlight: the whole row, keycap to `›`, filled with `Palette.accent` in `Radius.row`, like a selected menu item. Title, note and `›` in `Palette.onAccent`; the keycap keeps its own fill. The Guide's second use of the accent (DESIGN-SYSTEM.md). It's a shape, not only a color, so it reads with Differentiate Without Color and Increase Contrast.
+- Cancel: the first row, an `xmark` symbol in the keycap's column in `.secondary` and the title "Cancel" in `.secondary`; highlighted, it takes the accent like any row.
+- States: one item (Cancel and the item); only Cancel (highlighted); an unavailable item highlighted keeps its "not available in Notes" note, in `onAccent`.
+- Words: footer "Let go to choose" first, then esc Cancel and delete Back. Glossary: Held menu, Highlight, Repeat key, Cancel.
+- Motion: none. The highlight moves in the same frame as the key, with no animation, so Reduce Motion needs nothing.
+- VoiceOver: opening a held menu says "Apps, Terminal, 1 of 4"; each move says only the item, "Browser, 2 of 4".
+Status: done
+Verified: Cancel first with no key, the announcements, the highlight following the repeat key, Shift and Up, Back highlighting the menu you came from, a chosen menu shown as ordinary, and letting go before the delay with the Guide never shown (self-test, 243 checks); hud-held in light and dark, every other page unchanged, grid checks. The highlight spans the Guide in one column, since the footer can make the Guide wider than the column. Not yet tried by hand: the manual line, and VoiceOver.
 
 ### S-092 Go back to any recent window with Recent Windows
 As the user, I hold CAG and press H to see my recent windows, most recent first, then press H again or a number and let go to go to that window, even when it's minimized, hidden, or on another Space; a quick CAG+H goes back to the window I used before, as before, and right back again.

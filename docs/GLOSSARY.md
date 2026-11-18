@@ -29,7 +29,13 @@ One name per idea. Use these words in the UI, the docs, the log and VoiceOver la
 | Guide | The small panel that shows where you are in a sequence and which keys come next (HUD in the code). | HUD, overlay, popup, palette, cheat sheet |
 | Path | The breadcrumb row at the top of the guide: "Commands › Applications". | breadcrumbs, trail, location |
 | Back | Go up one menu (Backspace by default). | up, previous, return |
-| Cancel | End the sequence without running anything (Escape by default). | close, abort, exit, dismiss |
+| Cancel | End the sequence without running anything (Escape by default). In a held menu, also its first row, which has no key. | close, abort, exit, dismiss |
+| Held menu | A menu that works while you hold its leader's modifiers, and chooses the highlighted item when you let go, as ⌘Tab does (spec v18). Turned on with Hold on a leader. | switcher mode, sticky menu, hold mode |
+| Highlight | The row of a held menu that letting go chooses. The repeat key, Shift, Down and Up move it. | selection, cursor, focus |
+| Repeat key | The key that opened a held menu. Pressed again, it moves the highlight to the next row, as Tab does in ⌘Tab. | cycle key, Tab key, next key |
+| List | A menu the app fills when it opens, such as Recent Windows (spec v18). | generated menu, dynamic menu, auto menu |
+| More | Key 0 in a list with more than 9 items: go to the next page of 9. | Next, page down, show more |
+| Recent Windows | The list of the windows used last, most recent first. | window switcher, MRU, history |
 | Config file | `~/.config/unnamed-manager/config.json`, the one source of truth for bindings and settings. | settings file, preferences, profile, keymap |
 | Starter config | The config file the app writes on first launch when there is none: one leader, two bindings and Show Help. | default config, template, sample |
 | Unnamed Launcher | The app Unnamed Manager grew out of. Named only when copying its config or when it's running alongside. | the launcher, the old app, v1 |

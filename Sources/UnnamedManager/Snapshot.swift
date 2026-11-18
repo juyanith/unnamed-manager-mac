@@ -149,6 +149,18 @@ enum Snapshot {
                     try? await Task.sleep(for: .seconds(0.3))
                 }
             }
+            if only == nil || only?.contains("hud-held") == true {
+                // S-091: a held menu, with Cancel and the highlight.
+                let guide = model.launcher.guide
+                for mode in ["light", "dark"] {
+                    NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
+                    guide.show(SeedData.heldContent)
+                    try? await Task.sleep(for: .seconds(0.8))
+                    capture(to: "\(dir)/hud-held-\(mode).png", window: guide.window)
+                    guide.hide()
+                    try? await Task.sleep(for: .seconds(0.3))
+                }
+            }
             if only == nil || only?.contains("hud") == true {
                 // S-070: the Windows menu, with each window action's symbol.
                 let guide = model.launcher.guide

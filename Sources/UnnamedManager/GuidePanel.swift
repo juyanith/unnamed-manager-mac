@@ -84,6 +84,8 @@ final class GuideController {
     func show(_ content: GuideContent) {
         let (panel, host) = parts
         let wasVisible = isVisible
+        // In the same held menu, only the highlight moved: say just that (S-091).
+        let onlyHighlight = wasVisible && self.content?.highlight != nil && self.content?.path == content.path
         isShown = true
         self.content = content
         model.content = content
@@ -104,8 +106,9 @@ final class GuideController {
             panel.orderFrontRegardless()
             fade(to: 1)
         }
+        let announcement = onlyHighlight ? content.highlightAnnouncement ?? content.announcement : content.announcement
         NSAccessibility.post(element: panel, notification: .announcementRequested,
-                             userInfo: [.announcement: content.announcement, .priority: NSAccessibilityPriorityLevel.high.rawValue])
+                             userInfo: [.announcement: announcement, .priority: NSAccessibilityPriorityLevel.high.rawValue])
     }
 
     /// Outlines the Guide in the accent for a moment (S-018).

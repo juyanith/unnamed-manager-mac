@@ -5,7 +5,7 @@ Which token to use, and when. The tokens are in `Sources/UnnamedManager/UI/`. Ap
 ## Theme.swift: accent
 - **The app follows the Mac's accent** (`ThemeStore.defaultID = "system"`), and there's no picker. `APP_ACCENT=<id>` is only for comparing snapshots.
 - **Read the accent through `.tint`, `Palette.accent`, `Palette.accentText` or `Palette.onAccent`.** Never hard-code a hex.
-- **The Guide uses the accent once**, on the outline that flashes for an unbound key. Everything else in the Guide is `.primary` or `.secondary`.
+- **The Guide uses the accent twice:** on the outline that flashes for an unbound key, and on the highlight of a held menu (S-091), a row filled with `Palette.accent` in `Radius.row` with its text in `Palette.onAccent`, like a selected menu item. Everything else in the Guide is `.primary` or `.secondary`.
 - **A custom color needs four values:** light, dark and both high-contrast versions, via `Color(light:dark:highContrastLight:highContrastDark:)`.
 - **Never copy or redefine a semantic color.**
 
