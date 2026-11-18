@@ -200,15 +200,16 @@ Stable letters already exist here: they are your app bindings. So the recent-win
 13. **Considered, not taken: commit a direct pick on the key press.** Two tracks suggested it. You chose commit-on-release for consistency.
     - "CAG+H 2" then letting go is still a single motion, so the cost is near zero.
 
+14. **Held menus are opt-in: `"hold": true` on a menu** (decided 2026-11-18). The switcher has it on by default. Menus without it work as today, so you can press `CAG+D`, let go, and then press a key. The rule that a child key can't equal its menu's repeat key applies only to held menus.
+15. **↓ and ↑ move the highlight forward and back in a held menu, unless an item uses that key; then the item wins** (decided 2026-11-18). ← and → are unbound for now. A held arrow moves one item per press, like the repeat key.
+
 ## Open questions
 
-- **Which menus are held menus?** This is the biggest one. Today you can press `CAG+D`, let go, then press `S`. If every menu committed on release, `CAG+D` alone would run its first item. Options:
-  - **(a) Opt in per menu**, for example `"hold": true`. The switcher has it on by default. The repeat-key rule then only applies to held menus, so `CAG+D D` stays valid unless `CAG+D` is held.
-  - **(b) Every menu.** A release with nothing highlighted beyond item 0 leaves the menu open, as today. That means a quick tap can't go to item 1, which is what Alt+Tab does.
-  - **(c) Hold time.** Decide by how long the chord was held. This adds a timing guess, which the rest of the design avoids.
+- **Releasing on a highlighted submenu:**
+  - (a) Opens it as an ordinary menu, so the sequence continues without modifiers.
+  - (b) Cancels.
   - Recommended: (a).
 - **What does a Cancel item mean in an ordinary menu?** Item 0 is drawn as "Cancel", and the first real item is highlighted.
-- **Do arrow keys move the highlight?** NAV gives you arrows on J/K/L/;, so the highlight could follow them. But in a menu those letters are menu keys, and arrows only come through NAV with Space held.
 - **Labels for more than 9 items** (letters after 9?). Or keep the cap at 9.
 - **[U] Can `flagsState` be read without extra permission** from the event tap's thread, and is it current right after a tap re-enable?
 - **[U] Does a hidden app's `kAXWindows` list only its minimized windows on macOS 27?** Test with TextEdit hidden.
