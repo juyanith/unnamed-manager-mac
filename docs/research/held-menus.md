@@ -203,14 +203,17 @@ Stable letters already exist here: they are your app bindings. So the recent-win
 14. **Held menus are opt-in: `"hold": true` on a menu** (decided 2026-11-18). The switcher has it on by default. Menus without it work as today, so you can press `CAG+D`, let go, and then press a key. The rule that a child key can't equal its menu's repeat key applies only to held menus.
 15. **↓ and ↑ move the highlight forward and back in a held menu, unless an item uses that key; then the item wins** (decided 2026-11-18). ← and → are unbound for now. A held arrow moves one item per press, like the repeat key.
 
+16. **Releasing on a highlighted submenu opens it as an ordinary menu** (decided 2026-11-18). The sequence continues without modifiers, the way `CAG+D` works today.
+17. **More than 9 items in a generated menu go on pages** (decided 2026-11-18):
+    - A page holds 9 items, numbered 1–9. Key `0` is "More", which opens the next page, numbered 1–9 again. That page has its own `0` when more remain.
+    - The repeat key and ↓ go past item 9 onto the next page, so cycling still reaches every window. At the end they wrap back to Cancel.
+    - `count` caps the total, not the page size.
+    - Cancel (item 0, the window in front) has no number key. You reach it with Escape, or by moving the highlight back.
+    - The name is "More", not "Next", because Next is already Focus Next and Swap Next in the glossary.
+
 ## Open questions
 
-- **Releasing on a highlighted submenu:**
-  - (a) Opens it as an ordinary menu, so the sequence continues without modifiers.
-  - (b) Cancels.
-  - Recommended: (a).
 - **What does a Cancel item mean in an ordinary menu?** Item 0 is drawn as "Cancel", and the first real item is highlighted.
-- **Labels for more than 9 items** (letters after 9?). Or keep the cap at 9.
 - **[U] Can `flagsState` be read without extra permission** from the event tap's thread, and is it current right after a tap re-enable?
 - **[U] Does a hidden app's `kAXWindows` list only its minimized windows on macOS 27?** Test with TextEdit hidden.
 - **[U] Does AXRaise plus activate switch Spaces** when the app also has a window on the current Space? S-083 tried two Safari windows; try two apps.
