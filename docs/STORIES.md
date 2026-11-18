@@ -1045,7 +1045,7 @@ UX:
 - Focus moves through Focus Window's Window Used Before (S-083), in the launcher's window actions, which keep the history. Nothing sounds when there's no window to go to.
 - Off in snapshots and the self-test, so a test config never quits your apps.
 Status: done
-Verified: the setting, the rule, `wrong-type`, every keep and quit case and helper apps (unit tests, `QuitOnCloseTests`, the spec-v16 fixtures); saving and undo (self-test); windows and windows-bottom in light and dark, grid checks. Not yet tried by hand.
+Verified: the setting, the rule, `wrong-type`, every keep and quit case and helper apps (unit tests, `QuitOnCloseTests`, the spec-v16 fixtures); saving and undo (self-test); windows and windows-bottom in light and dark, grid checks. Tried by hand (2026-11-18): TextEdit quits when its last window closes, and Finder hands focus to the window used before.
 
 ## Later
 - Pick a window from an overlay: `"target": "pick"` on Focus Window and Swap Window labels the visible windows in order and waits for one key (numbers or home-row letters), Escape cancels.
