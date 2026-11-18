@@ -80,6 +80,8 @@ public struct ConfigDocument: Sendable, Equatable {
         case notFound
         case idTaken(String)
         case inUse([String])
+        /// The key moves the highlight in the held menu it's in (spec v18).
+        case repeatKey(String)
     }
 
     /// Adds a menu (action nil) or a binding at the end of `parent`'s
@@ -151,6 +153,18 @@ public struct ConfigDocument: Sendable, Equatable {
         config.entries[i].icon = trimmed.isEmpty ? nil : trimmed
     }
 
+    /// Hold to Choose on a leader (spec v18). Off is left out of the file.
+    public mutating func setHold(_ path: KeySequence, _ hold: Bool) {
+        guard let i = index(of: path) else { return }
+        config.entries[i].hold = hold
+    }
+
+    /// Makes a menu a list, or one with keys you add for nil (spec v18).
+    public mutating func setList(_ path: KeySequence, _ list: Config.List?) {
+        guard let i = index(of: path) else { return }
+        config.entries[i].list = list
+    }
+
     public mutating func setAction(_ path: KeySequence, _ action: String?) {
         guard let i = index(of: path) else { return }
         config.entries[i].action = action
@@ -170,6 +184,11 @@ public struct ConfigDocument: Sendable, Equatable {
         let renamed = path.replacingLast(with: newKey)
         if renamed != path, children(of: parent).contains(renamed) {
             return .keyTaken(renamed.description)
+        }
+        // In a held menu, the key that opened it moves the highlight.
+        if let parent, entry(KeySequence(leader: path.leader))?.hold == true,
+           newKey.key == (parent.lastStep?.key ?? parent.leader.key) {
+            return .repeatKey(parent.description)
         }
         return nil
     }

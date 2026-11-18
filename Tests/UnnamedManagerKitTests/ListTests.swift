@@ -218,3 +218,22 @@ struct ListTests {
         #expect(ranItem(e.handle(down(.d2, [])).effect) == 10)
     }
 }
+
+@Suite("Hold to Choose and Contents in the editor (S-094)")
+struct HoldEditingTests {
+    @Test("Hold and a list set and clear, and a held menu's repeat key is refused as a key")
+    func edits() throws {
+        var d = ConfigDocument(config: try load(json(entries: """
+        { "keys": "CAG+N", "title": "Next" },
+        { "keys": "CAG+N X", "title": "Other", "action": "window-fill" },
+        { "keys": "CAG+R", "title": "Recent", "list": { "type": "windows.recent" } }
+        """)).get().config)
+        let next = KeySequence(parsing: "CAG+N")!, other = KeySequence(parsing: "CAG+N X")!
+        #expect(d.keyProblem(for: other, newKey: Chord(key: .n)) == nil)
+        d.setHold(next, true)
+        #expect(d.entry(next)?.hold == true)
+        #expect(d.keyProblem(for: other, newKey: Chord(key: .n)) == .repeatKey("CAG+N"))
+        d.setList(KeySequence(parsing: "CAG+R")!, nil)
+        #expect(d.entry(KeySequence(parsing: "CAG+R")!)?.list == nil)
+    }
+}

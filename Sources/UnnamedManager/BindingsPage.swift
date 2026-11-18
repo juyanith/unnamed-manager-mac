@@ -120,7 +120,7 @@ private struct OutlineRow: View {
     var body: some View {
         let editor = model.editor
         let children = editor.draft.children(of: path)
-        if editor.draft.entry(path)?.action == nil && !editor.needsAction.contains(path) {
+        if editor.draft.entry(path)?.action == nil && !editor.needsAction.contains(path) && !editor.isList(path) {
             DisclosureGroup(isExpanded: $isExpanded) {
                 ForEach(children, id: \.self) { child in
                     OutlineRow(path: child)
@@ -158,6 +158,8 @@ private struct OutlineCells: View {
                     Text(id).help(action.map { "\($0.displayName): \(id)" } ?? id)
                 } else if model.editor.needsAction.contains(path) {
                     Text("Choose an action").foregroundStyle(Surfaces.warning)
+                } else if entry?.list != nil {
+                    Text("Recent Windows")
                 } else {
                     Text("Menu")
                 }
@@ -181,7 +183,7 @@ private struct OutlineMenu: View {
 
     var body: some View {
         let editor = model.editor
-        let isMenu = editor.draft.entry(path)?.action == nil && !editor.needsAction.contains(path)
+        let isMenu = editor.draft.entry(path)?.action == nil && !editor.needsAction.contains(path) && !editor.isList(path)
         ForEach(OutlineCommand.forRow(isMenu: isMenu)) { command in
             if command == .delete { Divider() }
             Button(command.title, role: command == .delete ? .destructive : nil) {
@@ -210,6 +212,12 @@ private struct IssuesBanner: View {
                         .multilineTextAlignment(.leading)
                         .disabled(issue.subject == nil)
                         .help(issue.subject == nil ? "" : "Select the entry this is about")
+                    if issue.rule == .stepIsRepeatKey, issue.subject != nil {
+                        // The fix: record another key for that row (S-094).
+                        Button("Change the Key") { model.editor.show(issue) }
+                            .buttonStyle(.link)
+                            .help("Select the row and record a new key for it")
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

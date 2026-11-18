@@ -27,7 +27,6 @@ struct EntryEditor: View {
                 } footer: {
                     Text(footer(path, isBinding: entry.action != nil || editor.needsAction.contains(path)))
                 }
-                iconSection(path)
                 if entry.action != nil || editor.needsAction.contains(path) {
                     Section {
                         actionPicker(path, entry)
@@ -36,11 +35,11 @@ struct EntryEditor: View {
                         Text("What this binding does: one of your actions, or a built-in action that needs no setup. Edit your actions on the Actions tab.")
                     }
                 } else {
-                    Section {
-                        LabeledContent("Kind", value: path.isLeader ? "Leader" : "Menu")
-                        LabeledContent("Keys under it", value: "\(editor.draft.children(of: path).count)")
-                    }
+                    if path.isLeader { holdSection(path, entry) }
+                    contentsSection(path, entry)
+                    if let list = entry.list { listSection(path, list) }
                 }
+                iconSection(path)
             }
             .formStyle(.grouped)
             .onAppear { title = entry.title; icon = entry.icon ?? "" }
@@ -54,6 +53,60 @@ struct EntryEditor: View {
         } else {
             ContentUnavailableView("No Selection", systemImage: "keyboard",
                                    description: Text("Select a binding or menu to edit it."))
+        }
+    }
+
+    /// Hold to Choose (S-094), on leaders only.
+    private func holdSection(_ path: KeySequence, _ entry: Config.Entry) -> some View {
+        Section {
+            Toggle("Hold to Choose", isOn: Binding(get: { entry.hold }, set: { editor.setHold(path, $0, undo: undo) }))
+        } footer: {
+            Text("Hold the modifiers to keep this leader's menus open. The key that opened a menu moves the highlight, Shift moves it back, and letting go chooses.")
+        }
+    }
+
+    /// Contents (S-094): keys you add, or Recent Windows, which the app fills.
+    private func contentsSection(_ path: KeySequence, _ entry: Config.Entry) -> some View {
+        let keys = editor.draft.children(of: path).count
+        return Section {
+            LabeledContent("Kind", value: path.isLeader ? "Leader" : "Menu")
+            Picker("Contents", selection: Binding(
+                get: { entry.list == nil ? 0 : 1 },
+                set: { editor.setList(path, $0 == 0 ? nil : Config.List(), undo: undo) })) {
+                Text("Keys You Add").tag(0)
+                Text("Recent Windows").tag(1).selectionDisabled(keys > 0 && entry.list == nil)
+            }
+            if entry.list == nil { LabeledContent("Keys under it", value: "\(keys)") }
+        } footer: {
+            if entry.list == nil && keys > 0 {
+                Text("Remove the keys under this menu to make it Recent Windows.")
+            } else if entry.list != nil {
+                Text("The app fills this menu with the windows you used last, keys 1 to 9. With more, 0 goes to the next 9.")
+            }
+        }
+    }
+
+    /// Recent Windows' options (S-094).
+    private func listSection(_ path: KeySequence, _ list: Config.List) -> some View {
+        func set(_ change: (inout Config.List) -> Void) {
+            var changed = list
+            change(&changed)
+            editor.setList(path, changed, undo: undo)
+        }
+        return Section("Recent Windows") {
+            Stepper("Up to \(list.count) \(list.count == 1 ? "Window" : "Windows")",
+                    value: Binding(get: { list.count }, set: { count in set { $0.count = count } }),
+                    in: Config.List.countRange)
+            Toggle("Include Minimized Windows", isOn: Binding(get: { list.minimized }, set: { on in set { $0.minimized = on } }))
+            Toggle("Include Hidden Apps", isOn: Binding(get: { list.hidden }, set: { on in set { $0.hidden = on } }))
+            Picker("Spaces", selection: Binding(get: { list.spaces }, set: { value in set { $0.spaces = value } })) {
+                Text("All Spaces").tag("all")
+                Text("Current Space").tag("current")
+            }
+            Picker("Displays", selection: Binding(get: { list.scope }, set: { value in set { $0.scope = value } })) {
+                Text("All Displays").tag("all")
+                Text("This Display").tag("display")
+            }
         }
     }
 

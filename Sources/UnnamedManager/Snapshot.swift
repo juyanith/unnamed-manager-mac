@@ -81,6 +81,10 @@ enum Snapshot {
                     try? await Task.sleep(for: .seconds(1.2))
                     capture(to: "\(dir)/help-builtin-\(mode).png", window: SelfTest.window(WindowID.help))
                     model.openBuiltIns = []
+                    // S-094: the Held Menus section.
+                    model.revealBuiltIn = HelpContent.heldMenusID
+                    try? await Task.sleep(for: .seconds(1.2))
+                    capture(to: "\(dir)/help-held-\(mode).png", window: SelfTest.window(WindowID.help))
                     SelfTest.window(WindowID.help)?.close()
                 }
                 if only?.contains("bindings") ?? true {
@@ -98,6 +102,26 @@ enum Snapshot {
                     try? await Task.sleep(for: .seconds(0.8))
                     capture(to: "\(dir)/bindings-builtin-\(mode).png")
                 }
+            }
+            if only == nil || !(only ?? []).isDisjoint(with: ["bindings-hold", "bindings-list"]) {
+                // S-094: Hold to Choose on a leader, and a menu that's Recent Windows.
+                var document = ConfigDocument(config: SeedData.fixture.config)
+                let leader = KeySequence(parsing: "Hyper+Space")!, recent = KeySequence(parsing: "Hyper+Space R")!
+                document.setHold(leader, true)
+                let at = document.config.entries.firstIndex { $0.keys == "Hyper+Space N" }!
+                document.config.entries.insert(Config.Entry(keys: recent.description, title: "Recent Windows",
+                                                            list: Config.List(count: 20, minimized: false, spaces: "current")), at: at)
+                model.editor.preview(document)
+                model.tab = .bindings
+                for mode in ["light", "dark"] {
+                    NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
+                    for (name, path) in [("bindings-hold", leader), ("bindings-list", recent)] {
+                        model.editor.selection = path
+                        try? await Task.sleep(for: .seconds(0.8))
+                        capture(to: "\(dir)/\(name)-\(mode).png")
+                    }
+                }
+                model.editor.endPreview()
             }
             if only == nil || only?.contains("empty") == true {
                 // S-042: each page with nothing in it.

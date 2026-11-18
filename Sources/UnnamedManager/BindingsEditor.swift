@@ -101,7 +101,9 @@ final class BindingsEditor {
     /// The menu new entries go into: the selected menu, or a selected binding's menu.
     var targetMenu: KeySequence? {
         guard let selection else { return draft.children(of: nil).first }
-        return draft.entry(selection)?.action == nil && !needsAction.contains(selection) ? selection : selection.parent
+        // A list has no keys you add: new entries go next to it.
+        return draft.entry(selection)?.action == nil && !needsAction.contains(selection) && !isList(selection)
+            ? selection : selection.parent
     }
 
     /// New Binding (⌘N): at the end of the target menu, with its key recorder
@@ -161,6 +163,22 @@ final class BindingsEditor {
                                 "camera", "photo", "gearshape", "star", "bolt", "keyboard", "magnifyingglass",
                                 "hammer", "house"]
 
+    /// Hold to Choose on a leader (S-094).
+    func setHold(_ path: KeySequence, _ hold: Bool, undo: UndoManager?) {
+        guard draft.entry(path)?.hold != hold else { return }
+        change(hold ? "Turn On Hold to Choose" : "Turn Off Hold to Choose", undo: undo) { $0.setHold(path, hold) }
+    }
+
+    /// A menu's Contents, or one of its list's options (S-094).
+    func setList(_ path: KeySequence, _ list: Config.List?, undo: UndoManager?) {
+        guard draft.entry(path)?.list != list else { return }
+        let name = (draft.entry(path)?.list == nil) != (list == nil) ? "Change Contents" : "Change Recent Windows"
+        change(name, undo: undo) { $0.setList(path, list) }
+    }
+
+    /// True for a menu the app fills, such as Recent Windows.
+    func isList(_ path: KeySequence) -> Bool { draft.entry(path)?.list != nil }
+
     func setAction(_ path: KeySequence, _ action: String, undo: UndoManager?) {
         change("Change Action", undo: undo) { $0.setAction(path, action) }
     }
@@ -184,6 +202,7 @@ final class BindingsEditor {
         case let .keyTaken(other): return "\(key) is already used by “\(draft.entry(KeySequence(parsing: other)!)?.title ?? other)”."
         case let .reservedKey(name): return "\(name) is the \(name == draft.config.runtime.cancelKey ? "cancel" : "back") key."
         case let .keptByMacOS(chord): return "macOS keeps \(chord) for its diagnostics, so Unnamed Manager never sees it."
+        case .repeatKey: return "\(key.key.name) moves the highlight in this held menu. Choose another key."
         default: return nil
         }
     }
@@ -246,7 +265,7 @@ final class BindingsEditor {
     func accessibilityLabel(for path: KeySequence) -> String {
         let entry = draft.entry(path)
         let key = (path.lastStep ?? path.leader).description
-        let action = entry?.action ?? (needsAction.contains(path) ? "no action yet" : "menu")
+        let action = entry?.action ?? (needsAction.contains(path) ? "no action yet" : entry?.list != nil ? "Recent Windows" : "menu")
         return "\(key), \(entry?.title ?? ""), \(action)"
     }
 

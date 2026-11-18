@@ -31,6 +31,8 @@ One name per idea. Use these words in the UI, the docs, the log and VoiceOver la
 | Back | Go up one menu (Backspace by default). | up, previous, return |
 | Cancel | End the sequence without running anything (Escape by default). In a held menu, also its first row, which has no key. | close, abort, exit, dismiss |
 | Held menu | A menu that works while you hold its leader's modifiers, and chooses the highlighted item when you let go, as ⌘Tab does (spec v18). Turned on with Hold on a leader. | switcher mode, sticky menu, hold mode |
+| Hold to Choose | The switch on a leader that makes its menus held menus (`"hold": true`). | Hold, Hold Mode, Sticky |
+| Contents | What a menu holds: Keys You Add, or Recent Windows, which the app fills (`list`). | Fills Itself, Source, Type |
 | Highlight | The row of a held menu that letting go chooses. The repeat key, Shift, Down and Up move it. | selection, cursor, focus |
 | Repeat key | The key that opened a held menu. Pressed again, it moves the highlight to the next row, as Tab does in ⌘Tab. | cycle key, Tab key, next key |
 | List | A menu the app fills when it opens, such as Recent Windows (spec v18). | generated menu, dynamic menu, auto menu |

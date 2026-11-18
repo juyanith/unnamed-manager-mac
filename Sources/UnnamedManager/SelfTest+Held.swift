@@ -212,6 +212,69 @@ extension SelfTest {
         store.reload()
     }
 
+    /// S-094: Hold to Choose and a list's fields in the Bindings tab save and undo.
+    static func bindingsHoldChecks(_ model: AppModel) async {
+        let store = model.store, editor = model.editor
+        let good = try? String(contentsOf: store.url, encoding: .utf8)
+        try? Data("""
+        { "version": 1, "entries": [
+          { "keys": "CAG+M", "title": "Menu" },
+          { "keys": "CAG+M M", "title": "Same Key", "action": "noop" },
+          { "keys": "CAG+N", "title": "Next" },
+          { "keys": "CAG+N X", "title": "Other", "action": "noop" }
+        ] }
+        """.utf8).write(to: store.url)
+        store.reload()
+        editor.reloadFromStore()
+        let undo = UndoManager()
+        undo.groupsByEvent = false
+        func step(_ body: () -> Void) { undo.beginUndoGrouping(); body(); undo.endUndoGrouping() }
+        func file() -> String { (try? String(contentsOf: store.url, encoding: .utf8)) ?? "" }
+        let menu = KeySequence(parsing: "CAG+M")!, next = KeySequence(parsing: "CAG+N")!
+
+        step { editor.setHold(next, true, undo: undo) }
+        check("S-094 Hold to Choose saves", file().contains(#"{ "keys": "CAG+N", "title": "Next", "hold": true }"#))
+        undo.undo()
+        check("S-094 Hold to Choose undoes", !file().contains(#""hold""#) && editor.draft.entry(next)?.hold == false)
+        undo.redo()
+        check("S-094 a key that's the held menu's repeat key is refused in the recorder",
+              editor.keyProblem(KeySequence(parsing: "CAG+N X")!, Chord(key: .n))?.contains("moves the highlight") == true)
+
+        let saved = file()
+        step { editor.setHold(menu, true, undo: undo) }
+        let issue = editor.draftErrors.first
+        check("S-094 Hold over a key that's the repeat key shows that error on the key, unsaved",
+              issue?.rule == .stepIsRepeatKey && issue?.subject == "CAG+M M" && file() == saved, "\(editor.draftErrors.map(\.message))")
+        if let issue { editor.show(issue) }
+        check("S-094 the error's fix records a new key for that row",
+              editor.selection == KeySequence(parsing: "CAG+M M") && editor.recording == editor.selection)
+        editor.stopRecording()
+        undo.undo()
+        check("S-094 undoing that Hold clears the error", editor.draftErrors.isEmpty)
+
+        // A new leader with no keys under it becomes Recent Windows.
+        editor.selection = nil
+        step { editor.addMenu(undo: undo) }
+        editor.stopRecording()
+        guard let list = editor.selection else { check("S-094 a new menu is selected", false); return }
+        step { editor.setList(list, Config.List(), undo: undo) }
+        check("S-094 Contents set to Recent Windows saves, and the menu has no keys to add",
+              file().contains(#""list": { "type": "windows.recent" }"#) && editor.isList(list) && editor.targetMenu != list)
+        step { editor.setList(list, Config.List(count: 20, minimized: false, hidden: false, spaces: "current", scope: "display"), undo: undo) }
+        check("S-094 each of Recent Windows' options saves",
+              file().contains(#""list": { "type": "windows.recent", "count": 20, "minimized": false, "hidden": false, "spaces": "current", "scope": "display" }"#))
+        undo.undo()
+        check("S-094 an option undoes", file().contains(#""list": { "type": "windows.recent" }"#))
+        step { editor.setList(next, Config.List(), undo: undo) }
+        check("S-094 a menu with keys under it can't become Recent Windows, and isn't saved",
+              editor.draftErrors.contains { $0.rule == .listHasChildren } && !file().contains(#""keys": "CAG+N", "title": "Next", "hold": true, "list""#))
+        undo.undo()
+
+        try? good?.write(to: store.url, atomically: true, encoding: .utf8)
+        store.reload()
+        editor.reloadFromStore()
+    }
+
     /// A held leader on CAG+F19, a key no keyboard sends by accident, with
     /// a binding and a menu.
     private static func heldConfig(delay: Int) -> String {

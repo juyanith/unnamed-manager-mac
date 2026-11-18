@@ -43,6 +43,8 @@ struct HelpContent: Equatable {
     /// True when Back in a leader's menu opens Home (S-050).
     var hasHome: Bool
 
+    /// The Held Menus section, to scroll to (S-094).
+    static let heldMenusID = "Held Menus"
     static let readme = URL(string: "https://github.com/juyanith/unnamed-manager-mac#readme")!
     static let issues = URL(string: "https://github.com/juyanith/unnamed-manager-mac/issues")!
 
@@ -108,6 +110,7 @@ struct HelpPage: View {
                 yourKeys(content)
             }
             inASequence(content)
+            heldMenus
             builtIns(content)
             words
             more
@@ -174,6 +177,22 @@ struct HelpPage: View {
         } footer: {
             Text("Change the Cancel and Back keys and when the Guide appears in Settings › General (⌘,).")
         }
+    }
+
+    /// Held menus (S-094): how a leader with Hold to Choose works.
+    private var heldMenus: some View {
+        Section {
+            described(Text("Hold"), "Keep the leader's modifiers down. The Guide shows the menu with its first item highlighted.")
+            described(Text("Repeat key"), "Press the key that opened the menu again to move the highlight, as Tab does in ⌘Tab. Down and Up move it too.")
+            described(Text("Shift"), "Hold Shift with the repeat key to move the highlight back.")
+            described(Text("Let go"), "Let go of a modifier to choose the highlighted item. Press an item's key to highlight it at once.")
+            described(Text("Cancel"), "The first row. Let go on it, or press \(GuideContent.footerLabel(model.store.loaded?.cancelKey ?? .escape)), to choose nothing.")
+        } header: {
+            Text("Held Menus")
+        } footer: {
+            Text("Turn on Hold to Choose for a leader on Settings' Bindings tab. A menu whose Contents is Recent Windows lists the windows you used last.")
+        }
+        .id(HelpContent.heldMenusID)
     }
 
     /// Built-in actions (S-081): a row for a kind with one, and a list to open for a kind with several.

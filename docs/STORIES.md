@@ -1193,8 +1193,16 @@ Acceptance:
 - [self] Hold and each list field save and undo; turning Hold on where a key equals its repeat key shows that error on the key, with a fix it can offer ("Change the key"), and doesn't save a config that won't load.
 - [snap] The Help page has a short Held Menus section: hold, repeat key, Shift, let go, Cancel.
 UX:
-- Run the `ux-design` skill for the names first. "Fills Itself" is a working name.
-Status: todo
+- Flow: select a leader → Hold to Choose on (undo with ⌘Z); select a menu with no keys under it → Contents: Recent Windows → its options show at once → each change saves, ⌘Z undoes.
+- Surface: inline, in the editor pane's Form (each changes one value of the selected row).
+- Hold to Choose: a switch in its own section, on leaders only. Footer: "Hold the modifiers to keep this leader's menus open. The key that opened a menu moves the highlight, Shift moves it back, and letting go chooses."
+- Contents: a picker on menus, "Keys You Add" or "Recent Windows". "Fills Itself" is dropped: Contents names what's in the menu. With keys under it, Recent Windows is disabled and the footer says "Remove the keys under this menu to make it Recent Windows."
+- Recent Windows options: "Up to 9 Windows" (a stepper, 1 to 99), "Include Minimized Windows", "Include Hidden Apps", Spaces "All Spaces" or "Current Space", Displays "All Displays" or "This Display". Footer: "The app fills this menu with the windows you used last, keys 1 to 9. With more, 0 goes to the next 9."
+- Outline: a list's Action column says "Recent Windows", it has no disclosure triangle, and its right-click menu has no New Binding or New Menu; with it selected, New Binding adds next to it.
+- Errors: recording a key that's the held menu's repeat key is refused in the recorder: "D moves the highlight in this held menu. Choose another key." Turning Hold on over such a key shows the error in the banner with a "Change the Key" link that starts the recorder on that row.
+- Help: a "Held Menus" section, five short lines.
+Status: done
+Verified: Hold to Choose and every Recent Windows option save and undo; a repeat key is refused in the recorder; Hold over a repeat key shows the error unsaved, and its "Change the Key" fix records a new key for that row; a menu with keys under it can't become Recent Windows (self-test, 265 checks; unit, 322 tests); bindings-hold, bindings-list and help-held in light and dark, grid checks. The editor pane puts Hold and Contents before Icon so a list's options fit without scrolling. Not yet tried by hand: VoiceOver on the new controls.
 
 ## Later
 - Pick a window from an overlay: `"target": "pick"` on Focus Window and Swap Window labels the visible windows in order and waits for one key (numbers or home-row letters), Escape cancels.
