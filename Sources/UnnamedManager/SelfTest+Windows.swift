@@ -654,4 +654,27 @@ extension SelfTest {
         while undo.canUndo { undo.undo() }
         check("S-070 Undo restores the file", file() == before)
     }
+
+    /// S-087, against test domains: the real Dock and Spaces settings never change.
+    static func spacesChecks(_ model: AppModel) {
+        let spaces = model.spaces
+        let prefs = spaces.preferences
+        check("S-087 the self-test reads and writes test domains, not com.apple.dock",
+              prefs.domain(.rearrangeByRecentUse) != "com.apple.dock" && prefs.domain(.separateSpaces) != "com.apple.spaces")
+        check("S-087 unset, Rearrange is on and suggested off, Separate Spaces on as suggested",
+              spaces.unsuggested == [.rearrangeByRecentUse], "\(spaces.unsuggested)")
+        let restarts = spaces.dockRestarts
+        spaces.set(.rearrangeByRecentUse, isOn: false)
+        check("S-087 turning Rearrange off writes mru-spaces false and restarts the Dock once",
+              prefs.stored(.rearrangeByRecentUse) == false && spaces.dockRestarts == restarts + 1 && spaces.unsuggested.isEmpty)
+        spaces.set(.separateSpaces, isOn: false)
+        check("S-087 turning Separate Spaces off writes spans-displays true, restarts nothing, and waits for log out",
+              prefs.stored(.separateSpaces) == true && spaces.dockRestarts == restarts + 1 && spaces.waitsForLogOut
+                  && spaces.unsuggested == [.separateSpaces])
+        spaces.set(.separateSpaces, isOn: true)
+        check("S-087 turning it back on writes spans-displays false and no longer waits",
+              prefs.stored(.separateSpaces) == false && !spaces.waitsForLogOut)
+        SpacesSetting.allCases.forEach(prefs.remove)
+        spaces.refresh()
+    }
 }

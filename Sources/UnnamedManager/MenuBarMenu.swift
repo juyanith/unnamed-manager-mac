@@ -104,6 +104,11 @@ struct MenuBarMenu: View {
                 Button("Open Config File") { model.store.openFile() }
             }
         }
+        if !model.spaces.unsuggested.isEmpty {
+            Section("Suggested") {
+                Button("Review Spaces Settings…") { model.showSettings(.windows) }
+            }
+        }
         Divider()
         Toggle("Enabled", isOn: $launcher.isEnabled)
         Divider()

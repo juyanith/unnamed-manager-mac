@@ -4,13 +4,15 @@ import UnnamedManagerKit
 
 /// The General and Windows tabs of Settings: a grouped Form each, at most
 /// 600 pt wide in the window every tab shares. General has Guide, Keys, Feedback and Startup; Windows has
-/// Windows, Focus and Swap, Quit on Close, and Apps (S-032, S-036, S-082, S-084, S-085, S-086).
+/// Windows, Focus and Swap, Quit on Close, Apps, and Spaces (S-032, S-036, S-082, S-084, S-085, S-086, S-087).
 /// Changes are written to the config file at once, like every other edit.
 struct SettingsForm: View {
     let tab: SettingsTab
     @Environment(AppModel.self) private var model
     @Environment(\.undoManager) private var undo
     @State private var opensAtLogin = SMAppService.mainApp.status == .enabled
+    /// Rearrange's new value while asking before the Dock restarts.
+    @State private var pendingRearrange: Bool?
 
     private var editor: BindingsEditor { model.editor }
     private var runtime: Config.Runtime { editor.draft.config.runtime }
@@ -114,6 +116,35 @@ struct SettingsForm: View {
                     Text("Apps")
                 } footer: {
                     Text("Uncheck what an app's windows stay out of. Focus: Focus Window never picks them, Window Used Before too. Swap: Swap Window never moves them. Arrange: Arrange Windows never counts or moves them. Their windows still hide the ones behind them. Quit: Quit on Close never quits the app.")
+                }
+
+                Section {
+                    ForEach(SpacesSetting.allCases) { setting in
+                        Toggle(isOn: spacesBinding(setting)) {
+                            Text(setting.title)
+                            if model.spaces.isOn[setting] != setting.suggestedIsOn {
+                                Text(setting.suggestion)
+                            }
+                        }
+                    }
+                    if model.spaces.waitsForLogOut {
+                        Label("Displays Have Separate Spaces changes when you log out and back in.", systemImage: "info.circle")
+                            .foregroundStyle(.secondary)
+                    }
+                    Button("Open Desktop & Dock Settings…") { NSWorkspace.shared.open(SpacesSettingsStore.systemSettingsURL) }
+                } header: {
+                    Text("Spaces")
+                } footer: {
+                    Text("Suggestions for using window actions with Spaces. These are macOS settings, the same as in System Settings › Desktop & Dock, so they aren't in the config file. Changing Rearrange restarts the Dock.")
+                }
+                .onAppear { model.spaces.refresh() }
+                .confirmationDialog("Restart the Dock?", isPresented: Binding(get: { pendingRearrange != nil }, set: { if !$0 { pendingRearrange = nil } })) {
+                    Button("Restart Dock") {
+                        if let isOn = pendingRearrange { model.spaces.set(.rearrangeByRecentUse, isOn: isOn) }
+                        pendingRearrange = nil
+                    }
+                } message: {
+                    Text("The Dock reads this setting when it starts. The Dock and desktop disappear for a moment while it restarts.")
                 }
             default:
                 Section {
@@ -261,6 +292,13 @@ struct SettingsForm: View {
         Binding(get: { editor.draft.config.windows[keyPath: key] }, set: { value in
             guard editor.draft.config.windows[keyPath: key] != value else { return }
             editor.edit(name, undo: undo) { $0.config.windows[keyPath: key] = value }
+        })
+    }
+
+    /// A Spaces setting (S-087). Rearrange asks first, since it restarts the Dock.
+    private func spacesBinding(_ setting: SpacesSetting) -> Binding<Bool> {
+        Binding(get: { model.spaces.isOn[setting] ?? true }, set: { isOn in
+            if setting == .rearrangeByRecentUse { pendingRearrange = isOn } else { model.spaces.set(setting, isOn: isOn) }
         })
     }
 

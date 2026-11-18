@@ -1047,6 +1047,23 @@ UX:
 Status: done
 Verified: the setting, the rule, `wrong-type`, every keep and quit case and helper apps (unit tests, `QuitOnCloseTests`, the spec-v16 fixtures); saving and undo (self-test); windows and windows-bottom in light and dark, grid checks. Tried by hand (2026-11-18): TextEdit quits when its last window closes, and Finder hands focus to the window used before.
 
+### S-087 Get reminded of the Spaces settings window actions suit
+As the user, I see on Settings' Windows tab, and in the menu bar menu, when "Automatically rearrange Spaces based on most recent use" is on or "Displays have separate Spaces" is off, and I change them there without looking for them in System Settings.
+Screens: windows-bottom
+Depends: S-085
+Acceptance:
+- [unit] Both are on when their key isn't set; `mru-spaces` in com.apple.dock is Rearrange, and `spans-displays` in com.apple.spaces is the opposite of Separate Spaces; a test domain prefix reads and writes its own domain.
+- [self] Turning Rearrange off writes `mru-spaces` false and restarts the Dock once; turning Separate Spaces off writes `spans-displays` true, restarts nothing, and says it waits for log out; both in test domains.
+- [snap] A Spaces section ends the Windows tab with both switches, a suggestion under each one that isn't as suggested, and Open Desktop & Dock Settings….
+- [manual] Turning Rearrange off asks before restarting the Dock, then System Settings shows it off. With either one not as suggested, the menu bar menu has Suggested › Review Spaces Settings…, which opens the Windows tab.
+UX:
+- Suggestions, not requirements: the menu bar icon gets no badge, and nothing else changes when they're left as they are.
+- Words: System Settings' own names in title case. "Suggested off, so each Space keeps its place…", "Suggested on, so each display has its own Spaces…". Separate Spaces changes when you log out, and the section says so until then.
+- These are macOS settings, not the config file, so there's no undo and nothing in `spec/`.
+- Snapshots and the self-test use test domains (`net.unnamed.manager.test.`) and never restart the Dock.
+Status: done
+Verified: the keys and their meaning (unit tests, `SpacesSettingsTests`); writing, the Dock restart and the log-out note (self-test); windows-bottom in light and dark, grid checks. Not yet tried by hand: the manual line.
+
 ## Later
 - Pick a window from an overlay: `"target": "pick"` on Focus Window and Swap Window labels the visible windows in order and waits for one key (numbers or home-row letters), Escape cancels.
 - Import and export a single menu as a JSON snippet.

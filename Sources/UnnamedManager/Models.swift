@@ -63,6 +63,8 @@ final class AppModel {
     /// Quits apps whose last window closed (S-086). Never in snapshots or
     /// the self-test, whose configs mustn't quit the apps you're using.
     @ObservationIgnored private var quitOnClose: QuitOnCloseWatcher?
+    /// The Spaces settings the Windows tab suggests (S-087).
+    let spaces: SpacesSettingsStore
     /// The selected action and context on their pages.
     var actionSelection: String?
     var contextSelection: String?
@@ -86,6 +88,7 @@ final class AppModel {
                                                                           home: URL.homeDirectory))
         migration.start()
         editor = BindingsEditor(store: store)
+        spaces = SpacesSettingsStore(isTest: SelfTest.requested || isSnapshot)
         editor.onRecordingChange = { [launcher] in launcher.setRecording($0) }
         if !SelfTest.requested && !isSnapshot {
             // Through the launcher's window actions, which keep the focus history.
