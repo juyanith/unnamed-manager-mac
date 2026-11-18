@@ -1054,6 +1054,7 @@ Verified: the setting, the rule, `wrong-type`, every keep and quit case and help
 - Move a window to another display or Space; save and restore window layouts.
 - New action families on the registry (S-060): volume, display resolution.
 - Double-tap modifier leaders, such as tapping ⌥ twice.
+- The green button fills a window instead of going full screen, as an option, with a per-app rule. Plan and risks: `docs/research/green-button-fill.md`. Put off: the button is rarely clicked.
 
 ## Dropped
 Unnamed Manager's main jobs map to M1 and S-048 (job 1, run bindings), M11 (job 2, manage windows), M4 and S-070 (job 3, Bindings window), and S-002, S-008, S-009 and S-058 (job 4, menu bar status). The Windows app is its own repo, `unnamed-manager-windows`.
