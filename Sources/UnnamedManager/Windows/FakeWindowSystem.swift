@@ -28,6 +28,10 @@ final class FakeWindowSystem: WindowSystem {
                                           usable: CGRect(x: 0, y: 25, width: 1440, height: 875))]
     var canControlWindows = true
     var currentSpace = 1
+    /// Spaces go from 1 to this one, left to right (S-088).
+    var lastSpace = 3
+    /// Each Switch Space, with the display it went to.
+    var spaceSwitches: [(direction: SpaceDirection, screen: CGRect)] = []
     private var focusChanged: ((WindowRef) -> Void)?
 
     func frontApp() -> FrontApp? { app }
@@ -84,6 +88,12 @@ final class FakeWindowSystem: WindowSystem {
 
     func watchFocus(_ changed: @escaping (WindowRef) -> Void) {
         focusChanged = changed
+    }
+
+    /// Stops at the first and last Space, as the Dock does.
+    func switchSpace(_ direction: SpaceDirection, on screen: WindowGeometry.Screen) {
+        spaceSwitches.append((direction, screen.frame))
+        currentSpace = min(max(currentSpace + (direction == .right ? 1 : -1), 1), lastSpace)
     }
 
     /// A click on a window: it takes focus, as reported to `watchFocus`.

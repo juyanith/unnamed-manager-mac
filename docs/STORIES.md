@@ -1072,7 +1072,7 @@ Acceptance:
 - [unit] `space.switch` reads and writes `"target": "left"` and `"right"`; no target is `missing-field`, any other value `bad-window-value`; `space-switch-left` and `space-switch-right` are built-in actions; the spec-v17 fixtures pass, and its schema's `space.switch` matches the app's.
 - [unit] The quick switch builds a Began, Changed and Ended dock swipe, each paired with a gesture event; on macOS 27 and later each carries the raw input payload, and Ended has the high velocity for its direction.
 - [self] Switch Space is in the Actions page's Type picker, alphabetically, with a Direction picker (Left, Right); it saves `target` and undoes.
-- [self] Running it posts the swipe for its direction, through a fake event poster: nothing reaches the real Dock in the self-test.
+- [self] Running it switches through the window system seam (`WindowSystem.switchSpace`), so the self-test's `FakeWindowSystem` takes it and nothing reaches the real Dock.
 - [self] It switches the focused window's display, the one with the largest part of it, wherever the pointer is; with no focused window nothing is posted; neither that nor the last Space is a failure or plays a sound.
 - [snap] The Switch Space form, the Guide row on the sample Windows menu, and the Help window's Built-In Actions list.
 - [manual] With five Spaces, Switch Space Right then Left moves one Space each way with no slide, in under 100 ms (the 2026-11-18 test took about 40 ms on macOS 27.2.1); held down, it moves one Space per press; with Displays Have Separate Spaces on and the pointer on the other display, the focused window's display switches and the pointer ends where it was.
@@ -1083,7 +1083,8 @@ UX:
 - Which display: a swipe switches the display macOS picks, likely the one with the pointer (to check first). If so, the app moves the pointer to the focused window's display for the swipe and puts it back after (CGWarpMouseCursorPosition), and when the pointer is already there it doesn't move it.
 - How: the same events a fast three- or four-finger swipe sends, posted with CGEventPost at the session tap, as in joshuarli/iss (ISC). It needs only Accessibility, which the app has. On macOS 27, events without the raw input payload (field 4205) are ignored.
 - Risk: the event fields and the payload are undocumented, so a macOS update can bring back the slide or stop the switch. The app can't tell when the Dock ignores the events (macOS 27 reports the active Space late), so there's no failure to show. A [manual] check on each new macOS release, and Control-Left and Control-Right as the fallback, written in the form's help.
-Status: planned. The spec change (spec v17) is drafted and not yet tagged.
+Status: done
+Verified: reading, writing, the rules, built-in names, the swipe's events and payload bytes (unit tests, `SpaceSwitchTests`, the spec-v17 fixtures, 281 in all); left and right on the focused window's display, the last Space, no focused window, no Accessibility, the Type picker and saving (self-test, 231 checks); actions-window-space-right, hud-window and help-builtin in light and dark, grid checks. The swipe itself was tried by hand on 2026-11-18 with a test tool, before the app had it: about 40 ms per switch on macOS 27.2.1. Not yet tried by hand in the app: the manual lines, including whether the leader's held modifiers or the event location change anything.
 
 ## Later
 - Pick a window from an overlay: `"target": "pick"` on Focus Window and Swap Window labels the visible windows in order and waits for one key (numbers or home-row letters), Escape cancels.

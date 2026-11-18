@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "entries": [
+    { "keys": "Meh+S", "title": "Spaces" },
+    { "keys": "Meh+S A", "title": "go-left", "action": "go-left" },
+    { "keys": "Meh+S B", "title": "go-right", "action": "go-right" },
+    { "keys": "Meh+S C", "title": "built-in left", "action": "space-switch-left" },
+    { "keys": "Meh+S D", "title": "built-in right", "action": "space-switch-right" }
+  ],
+  "actions": {
+    "go-left": { "type": "space.switch", "target": "left" },
+    "go-right": { "type": "space.switch", "target": "right" }
+  }
+}

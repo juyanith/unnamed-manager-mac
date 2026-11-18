@@ -49,6 +49,8 @@ protocol WindowSystem: AnyObject {
     func window(_ ref: WindowRef) -> WindowInfo?
     /// Calls `changed` with each window that gets focus, in any app, from now on (S-083).
     func watchFocus(_ changed: @escaping (WindowRef) -> Void)
+    /// Goes to the Space to the left or right on a display, with no slide (S-088).
+    func switchSpace(_ direction: SpaceDirection, on screen: WindowGeometry.Screen)
 }
 
 /// Carries out window commands on the focused window of the app in front,

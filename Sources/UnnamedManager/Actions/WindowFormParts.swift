@@ -59,6 +59,7 @@ extension Config.Action {
         case let arrange as ArrangeAction: arrange.count.displayName
         case let focus as FocusAction: focus.target.displayName
         case let swap as SwapAction: swap.target.displayName
+        case let space as SpaceSwitchAction: space.target.displayName
         default: nil
         }
     }

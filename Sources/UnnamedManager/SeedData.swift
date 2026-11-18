@@ -35,6 +35,8 @@ enum SeedData {
         { "keys": "Hyper+Space W B", "title": "Window Used Before", "action": "focus-recent" },
         { "keys": "Hyper+Space W Left", "title": "Swap Left", "action": "window-swap-left" },
         { "keys": "Hyper+Space W 2", "title": "Swap With Window 2", "action": "swap-2" },
+        { "keys": "Hyper+Space W S", "title": "Space Left", "action": "space-switch-left" },
+        { "keys": "Hyper+Space W D", "title": "Space Right", "action": "space-right" },
         { "keys": "Meh+W", "title": "Workspace" },
         { "keys": "Meh+W 1", "title": "Workspace 1", "action": "workspace-1" },
         { "keys": "CAG+T", "title": "Terminal", "action": "open-terminal" },
@@ -62,6 +64,7 @@ enum SeedData {
         "focus-next": { "type": "window.focus", "target": "next", "scope": "display" },
         "focus-recent": { "type": "window.focus", "target": "recent" },
         "swap-2": { "type": "window.swap", "target": 2, "scope": "display" },
+        "space-right": { "type": "space.switch", "target": "right" },
         "address-bar": { "type": "contextual", "variants": { "browser": { "type": "send", "keys": "Cmd+L" } } },
         "find": {
           "type": "contextual",

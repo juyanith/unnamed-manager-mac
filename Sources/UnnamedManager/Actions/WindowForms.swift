@@ -233,3 +233,15 @@ extension ResizeAction: EditableAction {
         }
     }
 }
+
+extension SpaceSwitchAction: EditableAction {
+    @MainActor static func form(_ value: Binding<SpaceSwitchAction>) -> some View {
+        Section {
+            Picker("Direction", selection: value.target) {
+                ForEach(SpaceDirection.allCases, id: \.self) { Text($0.displayName).tag($0) }
+            }
+        } footer: {
+            Text("Goes to the Space to the left or right on the display of the window in front, without the slide. Full-screen apps count as Spaces. With no window in front, nothing happens. If a macOS update brings the slide back, Control-Left and Control-Right still work.")
+        }
+    }
+}

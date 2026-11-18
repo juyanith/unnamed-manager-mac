@@ -560,7 +560,7 @@ extension SelfTest {
     /// saved as the spec writes it, then undone.
     static func windowEditingChecks(_ model: AppModel) async {
         let names = Config.Action.types(allowsContextAware: true).map { Config.Action.empty(of: $0).displayName }
-        let window = ["Arrange Windows", "Fill", "Focus Window", "Minimize", "Move Window", "Place Window", "Resize Window", "Swap Window"]
+        let window = ["Arrange Windows", "Fill", "Focus Window", "Minimize", "Move Window", "Place Window", "Resize Window", "Swap Window", "Switch Space"]
         check("S-070 the Type picker lists the window actions with the others, alphabetically",
               Set(window).isSubset(of: names) && names == names.sorted { $0.localizedStandardCompare($1) == .orderedAscending }, "\(names)")
         check("S-074 the Type picker offers Fill once, and not under its old name",
@@ -580,6 +580,7 @@ extension SelfTest {
             (.family(AnyActionValue(FocusAction(.next, scope: .display))), #"{ "type": "window.focus", "target": "next", "scope": "display" }"#),
             (.family(AnyActionValue(SwapAction(.number(2), scope: .display))), #"{ "type": "window.swap", "target": 2, "scope": "display" }"#),
             (.family(AnyActionValue(SwapAction(.window(.left)))), #"{ "type": "window.swap", "target": "left" }"#),
+            (.family(AnyActionValue(SpaceSwitchAction(.left))), #"{ "type": "space.switch", "target": "left" }"#),
             (.family(AnyActionValue(FillAction(toggle: false))), #"{ "type": "window.fill", "toggle": false }"#),
             (.family(AnyActionValue(MinimizeAction())), #"{ "type": "window.minimize" }"#),
             (.family(AnyActionValue(MoveAction.by(dx: 40, dy: 0))), #"{ "type": "window.move", "by": { "dx": 40 } }"#),
@@ -676,5 +677,43 @@ extension SelfTest {
               prefs.stored(.separateSpaces) == false && !spaces.waitsForLogOut)
         SpacesSetting.allCases.forEach(prefs.remove)
         spaces.refresh()
+    }
+
+    /// S-088, against FakeWindowSystem: nothing reaches the real Dock.
+    static func spaceSwitchChecks() async {
+        let fake = FakeWindowSystem()
+        let main = CGRect(x: 0, y: 0, width: 1440, height: 900), other = CGRect(x: 1440, y: 0, width: 1920, height: 1080)
+        fake.displays = [.init(frame: main, usable: main), .init(frame: other, usable: other)]
+        fake.windows = ["a": .init(frame: CGRect(x: 1500, y: 100, width: 800, height: 600))]
+        fake.focused = "a"
+        let runner = ActionRunner(performer: SystemPerformer(context: StepContext(windows: WindowControl(system: fake))))
+        func run(_ name: String) async -> PlanError? {
+            guard let action = BuiltInAction.action(named: name) else { return PlanError("No \(name)") }
+            do throws(PlanError) {
+                try await runner.run(action, id: name)
+                return nil
+            } catch {
+                return error
+            }
+        }
+        let right = await run("space-switch-right")
+        check("S-088 space-switch-right switches once, to the right, on the focused window's display",
+              right == nil && fake.spaceSwitches.count == 1 && fake.spaceSwitches.first?.direction == .right
+                  && fake.spaceSwitches.first?.screen == other && fake.currentSpace == 2,
+              "\(String(describing: right)) \(fake.spaceSwitches)")
+        _ = await run("space-switch-right")
+        let pastTheEnd = await run("space-switch-right")
+        check("S-088 at the last Space it isn't a failure", pastTheEnd == nil && fake.currentSpace == 3)
+        _ = await run("space-switch-left")
+        check("S-088 space-switch-left goes back one Space", fake.spaceSwitches.last?.direction == .left && fake.currentSpace == 2)
+        fake.focused = nil
+        let count = fake.spaceSwitches.count
+        let none = await run("space-switch-left")
+        check("S-088 with no focused window, nothing is posted and it isn't a failure",
+              none == nil && fake.spaceSwitches.count == count)
+        fake.focused = "a"
+        fake.canControlWindows = false
+        let denied = await run("space-switch-left")
+        check("S-088 without Accessibility it fails and says so", denied?.message.contains("Accessibility") == true && fake.spaceSwitches.count == count)
     }
 }
