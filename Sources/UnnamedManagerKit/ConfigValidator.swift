@@ -30,9 +30,15 @@ public struct BindingNode: Sendable, Equatable {
     public var action: String?
     /// The entry's own icon (S-056).
     public var icon: String? = nil
+    /// A leader whose menus are held menus (spec v18).
+    public var hold = false
     public var children: [BindingNode]
 
     public var isMenu: Bool { action == nil }
+
+    /// The key that opened this menu: the leader chord's key, or its own
+    /// step key. In a held menu it moves the highlight (spec v18).
+    public var repeatKey: KeyName { path.lastStep?.key ?? path.leader.key }
 
     /// The child selected by a step key, if any.
     public func child(for key: KeyName) -> BindingNode? {
@@ -144,6 +150,17 @@ public enum ConfigValidator {
                     if step.key == cancelKey || step.key == backKey {
                         error(.stepIsRuntimeKey, "\(name) “\(path)” uses \(step.key.name), which is the \(step.key == cancelKey ? "cancel" : "back") key.", path.description)
                     }
+                    let repeatKey = parent.lastStep?.key ?? parent.leader.key
+                    if byPath[KeySequence(leader: path.leader)]?.hold == true, step.key == repeatKey {
+                        error(.stepIsRepeatKey, "\(name) “\(path)” uses \(step.key.name), which moves the highlight in the held menu “\(parent)”. Choose another key.", path.description)
+                    }
+                }
+            }
+            if entry.hold {
+                if !path.isLeader || entry.action != nil {
+                    error(.holdNotLeader, "\(name) “\(path)” has Hold, but only a leader can have it.", path.description)
+                } else if path.leader.modifiers.isEmpty {
+                    error(.holdNoModifiers, "Leader “\(path)” has Hold but no modifiers, so there's nothing to let go of. Add a modifier, or turn Hold off.", path.description)
                 }
             }
             if let action = entry.action, config.action(named: action) == nil {
@@ -201,7 +218,7 @@ public enum ConfigValidator {
         func node(_ item: (entry: Config.Entry, path: KeySequence)) -> BindingNode {
             let children = parsed.filter { $0.path.parent == item.path }.map(node)
             return BindingNode(path: item.path, title: item.entry.title, action: item.entry.action,
-                               icon: item.entry.icon, children: children)
+                               icon: item.entry.icon, hold: item.entry.hold, children: children)
         }
         return parsed.filter { $0.path.isLeader }.map(node)
     }

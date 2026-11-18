@@ -103,6 +103,8 @@ public enum ConfigSchema {
                             "action": ["type": "string", "description": "An id in actions. Without one, the entry is a menu."],
                             "icon": ["type": "string", "minLength": 1,
                                      "description": "Its icon in the Guide: an SF Symbol name such as \"terminal\", or a path starting with / or ~ for that file's icon. Without one, apps and Open targets show their own icon."],
+                            "hold": ["type": "boolean",
+                                     "description": "Spec v18. Leaders only: true makes this leader's menu, and every menu under it, a held menu. Hold the modifiers, move the highlight with the key that opened the menu (Shift goes back), and let go to choose. The leader needs at least one modifier."],
                         ],
                     ],
                 ],

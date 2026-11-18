@@ -37,7 +37,19 @@ struct SpecFixtureTests {
     /// Fixtures from a newer spec the app doesn't pass yet, with the story
     /// that builds each (spec v2's window fixtures came off in S-062 to S-068). A pending fixture must still fail, so
     /// one that starts passing fails the test until it's taken off here.
-    static let pending: [String: String] = [:]
+    static let pending: [String: String] = [
+        // Spec v18's lists. invalid/list-unknown-field.json already fails
+        // the right way, since `list` itself is still an unknown field.
+        "valid/held-menus.json": "S-092",
+        "invalid/list-repeat-key-digit.json": "S-092",
+        "invalid/list-has-children.json": "S-092",
+        "invalid/list-with-action.json": "S-092",
+        "invalid/list-type-unknown.json": "S-092",
+        "invalid/list-type-missing.json": "S-092",
+        "invalid/list-count-zero.json": "S-092",
+        "invalid/list-count-too-big.json": "S-092",
+        "invalid/list-spaces.json": "S-092",
+    ]
 
     @Test("Every pending fixture is in the manifest")
     func pendingExist() {
@@ -116,6 +128,18 @@ struct SpecSchemaTests {
         }
         let spec = try windows(Data(contentsOf: SpecFixtureTests.folder.deletingLastPathComponent().appending(path: "config.schema.json")))
         let app = try windows(Data(ConfigSchema.json.utf8))
+        #expect(spec != nil && spec == app)
+    }
+
+    @Test("An entry's hold is described as the spec describes it (spec v18)")
+    func hold() throws {
+        func hold(_ json: Data) throws -> NSDictionary? {
+            let root = try #require(JSONSerialization.jsonObject(with: json) as? [String: Any])
+            let entries = (root["properties"] as? [String: Any])?["entries"] as? [String: Any]
+            return ((entries?["items"] as? [String: Any])?["properties"] as? [String: Any])?["hold"] as? NSDictionary
+        }
+        let spec = try hold(Data(contentsOf: SpecFixtureTests.folder.deletingLastPathComponent().appending(path: "config.schema.json")))
+        let app = try hold(Data(ConfigSchema.json.utf8))
         #expect(spec != nil && spec == app)
     }
 

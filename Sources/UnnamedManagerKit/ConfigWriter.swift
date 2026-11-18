@@ -68,6 +68,7 @@ public enum ConfigWriter {
         var fields = [("keys", quote(entry.keys)), ("title", quote(entry.title))]
         if let action = entry.action { fields.append(("action", quote(action))) }
         if let icon = entry.icon { fields.append(("icon", quote(icon))) }
+        if entry.hold { fields.append(("hold", "true")) }
         return object(fields)
     }
 

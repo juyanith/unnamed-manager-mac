@@ -45,6 +45,13 @@ final class Launcher {
     /// When the Guide shows, times out and flashes (S-016 to S-018, S-021).
     @ObservationIgnored private(set) var schedule = GuideSchedule(runtime: .init(), ui: .init())
     @ObservationIgnored private var scheduleTimer: Task<Void, Never>?
+    /// While a held menu is open, checks that its modifiers are still held,
+    /// so a missed key-up never leaves it open (spec v18).
+    @ObservationIgnored private var holdWatch: Task<Void, Never>?
+    /// The modifiers held right now. The self-test replaces it.
+    @ObservationIgnored var heldModifiers: @MainActor () -> Modifiers = {
+        Modifiers(CGEventSource.flagsState(.combinedSessionState))
+    }
     @ObservationIgnored private var permissionTimer: Timer?
     /// False in snapshots and the self-test, which never touch the keyboard.
     @ObservationIgnored private var capturesKeys = false
@@ -157,10 +164,37 @@ final class Launcher {
     /// Milliseconds on a clock that never jumps, for the schedule.
     private static var nowMs: Double { ProcessInfo.processInfo.systemUptime * 1_000 }
 
+    /// Runs one key event through the engine as the tap would, for the
+    /// self-test, which never touches the keyboard.
+    func handleForTesting(_ event: KeyEvent) {
+        if let effect = engine.handle(event).effect { apply(effect) }
+    }
+
+    /// True while a held menu waits for its modifiers to be let go.
+    var sequenceIsHeld: Bool { engine.isHeld }
+
+    /// Every 100 ms while a held menu is open, compares the modifiers held
+    /// with the engine's, and chooses if a key-up was missed.
+    private func watchHold() {
+        guard holdWatch == nil else { return }
+        holdWatch = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(100))
+                guard let self, engine.isHeld else { break }
+                if let effect = engine.handle(.flags(heldModifiers())).effect {
+                    log.notice("A held menu's key-up was missed; choosing now")
+                    apply(effect)
+                }
+            }
+            self?.holdWatch = nil
+        }
+    }
+
     /// Feeds one engine effect to the schedule, then runs the action if any.
     func apply(_ effect: SequenceEffect) {
         perform(schedule.handle(effect, at: Self.nowMs))
         armScheduleTimer()
+        if case .showHeld = effect { watchHold() }
         guard let config = store.loaded, case let .run(binding, frontApp) = effect else { return }
         if !hasRunSequence {
             hasRunSequence = true
@@ -182,6 +216,10 @@ final class Launcher {
         for command in commands {
             switch command {
             case let .show(menu, path, frontApp):
+                guard let config = store.loaded else { continue }
+                guide.show(GuideContent(menu: menu, path: path, config: config, frontApp: frontApp))
+            case let .showHeld(menu, _, path, frontApp):
+                // S-091 draws the highlight and Cancel.
                 guard let config = store.loaded else { continue }
                 guide.show(GuideContent(menu: menu, path: path, config: config, frontApp: frontApp))
             case let .showHome(home, path, frontApp):

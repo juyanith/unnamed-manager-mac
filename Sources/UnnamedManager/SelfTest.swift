@@ -51,6 +51,7 @@ enum SelfTest {
             await windowEditingChecks(model)
             spacesChecks(model)
             await spaceSwitchChecks()
+            await heldChecks(model)
             await frontChecks(model)
 
             print(failures == 0 ? "SELFTEST PASS \(count) checks" : "SELFTEST FAIL \(failures) of \(count) checks")

@@ -115,11 +115,14 @@ public struct Config: Sendable, Equatable {
         /// An SF Symbol name, or a path starting with / or ~ for that file's
         /// icon (S-056). nil uses the action's icon, if it has one.
         public var icon: String?
-        public init(keys: String, title: String, action: String? = nil, icon: String? = nil) {
+        /// On a leader: its menus are held menus (spec v18).
+        public var hold: Bool
+        public init(keys: String, title: String, action: String? = nil, icon: String? = nil, hold: Bool = false) {
             self.keys = keys
             self.title = title
             self.action = action
             self.icon = icon
+            self.hold = hold
         }
     }
 
@@ -301,11 +304,12 @@ extension Config.Entry: Decodable {
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: AnyKey.self)
         let keys: String = try c.value("keys", default: "")
-        try c.rejectUnknown(allowed: ["keys", "title", "action", "icon"], at: keys.isEmpty ? "an entry" : "entry “\(keys)”")
+        try c.rejectUnknown(allowed: ["keys", "title", "action", "icon", "hold"], at: keys.isEmpty ? "an entry" : "entry “\(keys)”")
         self.keys = try c.required("keys")
         title = try c.required("title")
         action = try c.decodeIfPresent(String.self, forKey: AnyKey("action"))
         icon = try c.decodeIfPresent(String.self, forKey: AnyKey("icon")).flatMap { $0.isEmpty ? nil : $0 }
+        hold = try c.value("hold", default: false)
     }
 }
 

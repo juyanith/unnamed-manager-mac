@@ -1125,7 +1125,8 @@ Acceptance:
 UX:
 - Glossary (spec v18): "Held menu", "Highlight", "Repeat key", "Cancel". The log says "Chose Browser" when letting go runs it.
 - Nothing shows on screen until S-091's Guide; this story is the engine and the tap.
-Status: todo
+Status: done
+Verified: hold, its three rules, the engine's highlight, repeat key, Shift, Down and Up, key repeats, choosing for all six release orders, Cancel, Back and Home, an unavailable binding, the timeout and the Guide's delay (unit tests, `HeldMenuTests`, the spec-v18 fixtures for hold, 305 in all, with the nine list fixtures pending for S-092); the schema's `hold` matches the spec's (`SpecSchemaTests`), and the golden schema was recorded again for it; a missed key-up chooses within 200 ms and is logged, and a disabled tap hands the engine the modifiers held and never a key (self-test, 235 checks). Not yet tried by hand: the manual line.
 
 ### S-091 See the highlight in the Guide
 As the user, when I pause in a held menu, the Guide shows Cancel at the top and which item letting go will choose, and if I know where I'm going and let go first, nothing appears at all.

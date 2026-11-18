@@ -9,13 +9,17 @@ extension SelfTest {
     /// M5: recovering the tap, Secure Event Input, the JSON Schema.
     static func systemChecks(_ model: AppModel) {
         // S-037: a "tap disabled" event turns the tap back on, passes, and is logged.
-        let handled = Mutex(0)
-        let context = TapContext { _ in handled.withLock { $0 += 1 }; return true }
+        let handled = Mutex<[KeyEvent]>([])
+        let context = TapContext { event in handled.withLock { $0.append(event) }; return true }
         var passes = true
         for type in [CGEventType.tapDisabledByTimeout, .tapDisabledByUserInput] {
             passes = passes && !context.handle(RawKeyEvent(type: type, keyCode: 0, isRepeat: false, flags: [], isFromLauncher: false))
         }
-        check("S-037 a disabled-tap event is handled by the tap, not the engine", passes && handled.withLock { $0 } == 0)
+        // The engine only learns which modifiers are held, for a held menu
+        // whose key-up was missed (S-090), never a key.
+        let events = handled.withLock { $0 }
+        check("S-037 a disabled-tap event is handled by the tap, not the engine",
+              passes && events.count == 2 && events.allSatisfy { if case .flags = $0 { true } else { false } })
         check("S-037 turning the tap back on is logged", logContains("turning it back on"))
 
         // S-038: Secure Event Input shows in the menu and badges the icon.

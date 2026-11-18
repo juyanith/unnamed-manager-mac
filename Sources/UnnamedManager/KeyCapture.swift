@@ -79,6 +79,9 @@ nonisolated final class TapContext: Sendable {
             // macOS turned the tap off (S-037). Turn it back on.
             log.notice("macOS turned off the event tap (\(raw.type.rawValue)); turning it back on")
             if let port = tap.withLock({ $0?.port }) { CGEvent.tapEnable(tap: port, enable: true) }
+            // Key-ups may have been missed while it was off: a held menu
+            // learns which modifiers are still held (spec v18).
+            _ = handler(.flags(Modifiers(CGEventSource.flagsState(.combinedSessionState))))
             return false
         case .keyDown:
             return handler(.down(keyCode: raw.keyCode, modifiers: Modifiers(raw.flags), isRepeat: raw.isRepeat))
@@ -207,6 +210,11 @@ nonisolated final class EngineBox: Sendable {
 
     func reset() {
         engine.withLock { $0?.reset() }
+    }
+
+    /// True while a held menu waits for its modifiers to be let go (spec v18).
+    var isHeld: Bool {
+        engine.withLock { $0?.isHeld ?? false }
     }
 
     /// The app in front, for Context Aware (S-013).

@@ -4,6 +4,8 @@ import Foundation
 public enum GuideCommand: Sendable, Equatable {
     /// Show this menu, or update the Guide to it if it's already up.
     case show(BindingNode, path: [String], frontApp: String?)
+    /// Show a held menu with its highlight, or update the Guide to it (spec v18).
+    case showHeld(BindingNode, highlight: Int, path: [String], frontApp: String?)
     /// Show Home, or update the Guide to it (S-050).
     case showHome(Home, path: [String], frontApp: String?)
     case hide
@@ -33,6 +35,8 @@ public struct GuideSchedule: Sendable, Equatable {
     private var showAt: Double?
     /// When the visible Guide times out.
     private var timeoutAt: Double?
+    /// True while a held menu is held: there's no timeout then (spec v18).
+    private var holding = false
 
     public init(runtime: Config.Runtime, ui: Config.UI) {
         delayMs = Double(runtime.hudDelayMs)
@@ -50,9 +54,15 @@ public struct GuideSchedule: Sendable, Equatable {
     public mutating func handle(_ effect: SequenceEffect, at now: Double) -> [GuideCommand] {
         switch effect {
         case let .showMenu(menu, path, frontApp):
+            holding = false
             return show(.show(menu, path: path, frontApp: frontApp), at: now)
 
+        case let .showHeld(menu, highlight, path, frontApp):
+            holding = true
+            return show(.showHeld(menu, highlight: highlight, path: path, frontApp: frontApp), at: now)
+
         case let .showHome(home, path, frontApp):
+            holding = false
             return show(.showHome(home, path: path, frontApp: frontApp), at: now)
 
         case .run, .cancelled:
@@ -61,6 +71,8 @@ public struct GuideSchedule: Sendable, Equatable {
             return wasVisible ? [.hide] : []
 
         case .unbound, .unavailable:
+            // Unavailable only comes once the modifiers are let go.
+            if case .unavailable = effect { holding = false }
             var commands: [GuideCommand] = errorBell ? [.bell] : []
             guard showHud else { return commands }
             if isVisible {
@@ -111,10 +123,11 @@ public struct GuideSchedule: Sendable, Equatable {
 
     /// The timeout runs only while the Guide is visible, from the last key.
     private mutating func restartTimeout(at now: Double) {
-        timeoutAt = timeoutMs > 0 && isVisible ? now + timeoutMs : nil
+        timeoutAt = timeoutMs > 0 && isVisible && !holding ? now + timeoutMs : nil
     }
 
     private mutating func clear() {
+        holding = false
         isVisible = false
         pending = nil
         showAt = nil
