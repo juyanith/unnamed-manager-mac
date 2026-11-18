@@ -148,7 +148,10 @@ extension SelfTest {
         try? await Task.sleep(for: .seconds(1))
         let behind = !NSApp.isActive
         model.showSettings(.windows)
-        try? await Task.sleep(for: .seconds(1))
+        // Coming forward can take longer than a second on CI.
+        for _ in 0..<30 where !(NSApp.isActive && window(WindowID.settings)?.isKeyWindow == true) {
+            try? await Task.sleep(for: .milliseconds(100))
+        }
         let settings = window(WindowID.settings)
         frontCheck("S-085 Settings… brings the app and the Settings window in front of another app",
               behind && NSApp.isActive && settings?.isKeyWindow == true && model.tab == .windows,
