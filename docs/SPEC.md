@@ -34,6 +34,34 @@ This is the source of truth for how sequences, actions and the config file behav
 - **Step keys have no modifiers.** Modifiers that belong to the leader and are still held are ignored, so you can press Hyper+W then 1 whether or not you've let go of Hyper. A step pressed with any other modifier doesn't match.
 - **Keys mean physical positions on the US ANSI layout.** Other keyboard layouts don't change which key a name refers to.
 
+### Held menus
+Spec v18. `"hold": true` on a leader makes its menu, and every menu under it, a held menu: it works while the leader's modifiers stay held, as ⌘Tab does. The full rules are in `spec/CONFIG-SPEC.md`, Held menus. In short:
+
+| While the modifiers are held | Result |
+| --- | --- |
+| Opening a held menu (the leader, or a menu's key) | The highlight goes on the first item after Cancel. Cancel is always the first item, with no key. |
+| The repeat key (the key that opened the menu) | Moves the highlight to the next item, wrapping through Cancel. |
+| Shift with the repeat key | Moves it back, unless Shift is one of the leader's modifiers. |
+| Down, Up | Move it forward and back, unless the menu has an item on that key: then the item wins. |
+| A binding's key | Moves the highlight to it. Nothing runs yet. |
+| A menu's key | Opens that menu at once, held, with its key as the repeat key. |
+| A key repeat | Nothing. One press moves the highlight once. |
+| Cancel, Back, any other key | As in any sequence. Back from the leader's menu opens Home, which isn't held. |
+
+- **Letting go:** the first of the leader's modifiers to come up chooses the highlighted item. Compare the set of modifiers held (the `.flags` event), never the order they come up in, since kanata lets go of ⌃⌥⌘ in one burst. A binding runs. A menu opens as an ordinary menu, and the sequence goes on with no modifiers held. Cancel ends the sequence.
+- **Before the HUD:** letting go before `hudDelayMs` chooses with no HUD, so CAG+H, let go, goes to the window used before with nothing on screen.
+- **No timeout** while the modifiers are held. `timeoutMs` starts once a chosen menu goes on as an ordinary one.
+- **A missed key-up** never leaves a held menu open: while one is open, the app reads `CGEventSource.flagsState(.combinedSessionState)` at least every 200 ms, and after the tap is turned back on, and chooses when the leader's modifiers are gone.
+
+### Lists
+Spec v18. `list` on a menu makes the app fill it when it opens, instead of from entries. The first type is `windows.recent`, **Recent Windows**: the windows used last, most recent first, from the focus history (S-083).
+
+- **Items** are fixed when the list opens, with keys `1` to `9`. With more than 9, pages of 9, and `0` is More. Back goes to the page before. In a held list, the repeat key and Down go on to the next page.
+- **Recent Windows' items:** Focus Window's candidates for the list's `minimized`, `hidden`, `spaces` and `scope`, without the focused window, in history order, then the windows the app can see that the history doesn't hold yet, front first. Apps with `"focus": false` in `windows.apps` are left out. At most `count` (default 9).
+- **In a held list, Cancel is the focused window,** with its title and icon, so choosing it changes nothing.
+- **Choosing** focuses the window as Focus Window's `recent` does: unminimize, unhide, activate, raise, and on another Space, go there. The window goes first in the focus history when it's chosen, not when macOS reports the focus change, so a second quick press goes back.
+- **Other Spaces:** a window on another Space is listed once it has had focus since the app started. Its saved Accessibility element still answers there (S-083). Windows on other Spaces that never had focus aren't found: the app uses no private APIs for this.
+
 ### Home
 Home is the menu above the leaders. It lists every leader and direct binding, so Back can go one level further up than a leader's menu. The global Cancel and Back keys stay as they are.
 
@@ -126,10 +154,15 @@ A config is rejected if any of these are true:
 - An action has the wrong fields for its type.
 - A variant names an undefined context or is itself contextual.
 - Two contexts share an `id`.
+- `hold` is on an entry that isn't a leader, or on a leader with no modifiers (spec v18).
+- Under a held leader, a key is the same as its menu's repeat key, such as `CAG+D D` when `CAG+D` has `hold`, or a held list's own key is a digit (spec v18).
+- An entry is under a list, has both `action` and `list`, or its list has an unknown `type` or a value out of range (spec v18).
 
 Actions or contexts that nothing uses produce a warning, not an error.
 
 ## Gotchas
 - **The event tap callback must stay fast.** macOS turns off slow taps. The sequence engine has to be a small pure state machine (key events and timer fires in, decisions out) that has no AppKit dependency and can be fully unit-tested.
 - **Held leader modifiers leak into `send`.** When sending a chord, set its flags explicitly rather than inheriting the current modifier state.
+- **Held menus break the way other switchers break** (research/held-menus.md): a key repeat that runs the highlight past where you stopped, a fast release that's lost, and a focus order that's stale on the next quick press. Ignore repeats, choose from the modifier set rather than from counting events, and update the focus history when a window is chosen.
+- **Never wait on the window list in the tap's callback.** Recent Windows' items come from the focus history in memory. Titles come from `kAXTitle`, so no Screen Recording.
 - **The HUD must never take focus.** Use an `NSPanel` with `.nonactivatingPanel` that doesn't become key. Keys come from the tap, not from the panel.

@@ -1,6 +1,6 @@
 # Unnamed Manager: stories
 
-Built from [BRIEF.md](BRIEF.md), [SPEC.md](SPEC.md), the shared spec in [../spec/CONFIG-SPEC.md](../spec/CONFIG-SPEC.md) and [research/launchers.md](research/launchers.md). M1 to M8 and the stories after `## Dropped` are Unnamed Launcher's, all done. Unnamed Manager's version one is M9 to M11. There is no reference app, so `Screens:` names the snapshot pages that show each story.
+Built from [BRIEF.md](BRIEF.md), [SPEC.md](SPEC.md), the shared spec in [../spec/CONFIG-SPEC.md](../spec/CONFIG-SPEC.md) and [research/launchers.md](research/launchers.md). M1 to M8 and the stories after `## Dropped` are Unnamed Launcher's, all done. Unnamed Manager's version one is M9 to M11. M12 adds held menus and Recent Windows ([research/held-menus.md](research/held-menus.md)). There is no reference app, so `Screens:` names the snapshot pages that show each story.
 
 **Snapshot pages:**
 
@@ -25,6 +25,9 @@ Built from [BRIEF.md](BRIEF.md), [SPEC.md](SPEC.md), the shared spec in [../spec
 | `actions-window` | The Actions page with each window action's form |
 | `hud-window` | The Guide on a Windows menu with every window action |
 | `settings` | The Settings window, until S-085 split it into General and Windows |
+| `hud-held` | The Guide on a held menu, with Cancel and the highlight (S-091) |
+| `hud-recent`, `hud-recent-more` | The Guide on Recent Windows, with marks, and on its second page (S-092, S-093) |
+| `bindings-hold`, `bindings-list` | A leader with Hold on, and a menu that's a list, in the Bindings tab (S-094) |
 
 **How each acceptance line is checked:** `[snap]` snapshot, `[unit]` unit test, `[self]` self-test, `[manual]` a person must try it.
 
@@ -1085,6 +1088,101 @@ UX:
 - Risk: the event fields and the payload are undocumented, so a macOS update can bring back the slide or stop the switch. The app can't tell when the Dock ignores the events (macOS 27 reports the active Space late), so there's no failure to show. A [manual] check on each new macOS release, and Control-Left and Control-Right as the fallback, written in the form's help.
 Status: done
 Verified: reading, writing, the rules, built-in names, the swipe's events and payload bytes (unit tests, `SpaceSwitchTests`, the spec-v17 fixtures, 281 in all); left and right on the focused window's display, the last Space, no focused window, no Accessibility, the Type picker and saving (self-test, 231 checks); actions-window-space-right, hud-window and help-builtin in light and dark, grid checks. The swipe itself was tried by hand on 2026-11-18 with a test tool, before the app had it: about 40 ms per switch on macOS 27.2.1. Not yet tried by hand in the app: the manual lines, including whether the leader's held modifiers or the event location change anything.
+
+## M12 Held menus
+
+Hold a leader's modifiers to work its menu, as ⌘Tab does, and let go to choose. Then a menu the app fills itself, Recent Windows, gives a ⌘Tab for windows with number keys. The rules are in `spec/CONFIG-SPEC.md`, Held menus and Lists (spec v18), and `SPEC.md`, Held menus and Lists. The research and every decision behind them: `research/held-menus.md`.
+
+Gotchas to respect throughout, from other switchers' worst bugs:
+- One key press moves the highlight once. Key repeats never move it (AltTab #3117).
+- Letting go is read from the set of modifiers held, never from counting events, so kanata's burst and a hand's slow release choose the same item.
+- A missed key-up never leaves a held menu open: check `flagsState` while one is open.
+- A chosen window goes first in the focus history at once (AltTab #5575).
+- Nothing in the tap's callback waits on Accessibility or the window list.
+
+### S-089 Settle held menus and lists in the shared spec
+As the maintainer, I decide held menus and lists in the spec repo, with fixtures, and tag `spec-v18`, so the Mac and Windows apps build the same thing.
+Screens: none (no UI)
+Depends: S-083
+Acceptance:
+- [unit] `spec/CONFIG-SPEC.md` defines `hold` and `list`, the held menu rules, Recent Windows' fields and defaults, and the rule ids `step-is-repeat-key`, `hold-not-leader`, `hold-no-modifiers`, `list-has-children`, `unknown-list-type` and `bad-list-value`.
+- [unit] `fixtures/manifest.json` has `valid/held-menus.json` and one invalid fixture per new rule, 148 in all.
+- [unit] The spec repo is tagged `spec-v18`, and the `spec/` submodule moves to it with the first story that reads it, S-090. `SpecFixtureTests` marks the new fixtures pending until S-090, S-092 and S-093 take them off.
+Status: done
+Verified: spec v18 committed and tagged on 2026-11-18 (`9803aa9`); every fixture parses, and the manifest's paths are real. Not yet pushed.
+
+### S-090 Hold a leader and let go to choose
+As the user, I give a leader Hold, and then I hold its modifiers, press its key again to move along, and let go to run what's highlighted: CAG+A, let go, runs the first item, and CAG+A A A, let go, the third.
+Screens: none (S-091 shows it)
+Depends: S-089
+Acceptance:
+- [unit] `hold` reads and writes on leaders; `hold-not-leader`, `hold-no-modifiers` and `step-is-repeat-key` (with the digit rule for a held list) are reported with their subjects; the spec-v18 fixtures for them pass, and the schema's `hold` matches the app's.
+- [unit] The engine: opening a held menu highlights its first item after Cancel; the repeat key moves on and wraps through Cancel; Shift with it moves back, but not with a Shift leader such as Hyper; Down and Up move unless an item has that key; a binding's key moves the highlight there; a menu's key opens that menu held; key repeats do nothing.
+- [unit] Letting go: the first leader modifier up chooses, for all six orders in which ⌃, ⌥ and ⌘ can come up; a binding runs; a menu goes on as an ordinary menu with no modifiers held; Cancel ends with nothing run and no failure; an unavailable Context Aware binding stays in its menu, now ordinary.
+- [unit] No timeout while held, and `timeoutMs` once a chosen menu goes on. Back from a held leader's menu opens Home, and Home isn't held. A leader without Hold works exactly as before, including `CAG+D`, let go, `S`.
+- [self] A missed key-up: with the tap turned off during a hold, the menu chooses within 200 ms of the modifiers being up (`flagsState` through a seam the self-test fakes).
+- [manual] With kanata's Caps as CAG and a held CAG+A: tap and let go runs the first item; holding and pressing A twice runs the third; holding A down moves once; Escape cancels.
+UX:
+- Glossary (spec v18): "Held menu", "Highlight", "Repeat key", "Cancel". The log says "Chose Browser" when letting go runs it.
+- Nothing shows on screen until S-091's Guide; this story is the engine and the tap.
+Status: todo
+
+### S-091 See the highlight in the Guide
+As the user, when I pause in a held menu, the Guide shows Cancel at the top and which item letting go will choose, and if I know where I'm going and let go first, nothing appears at all.
+Screens: hud-held
+Depends: S-090
+Acceptance:
+- [snap] `hud-held`: a held menu with Cancel first (no keycap), the highlight on an item in the accent, and the other rows as in any menu, in light and dark.
+- [self] The highlight row follows the repeat key, Shift, Down and Up; Back moves the highlight to the menu you came from; a menu chosen by letting go shows as an ordinary menu, with no Cancel and no highlight.
+- [self] Letting go before `hudDelayMs` chooses with the Guide never shown; each key press restarts the delay, as in any sequence.
+- [manual] The highlight never lags a key press, and a fast tap and release shows no flash.
+UX:
+- Use the `ux-design` skill for the highlight and the Cancel row before building; the highlight uses `Palette.accent` like a selected row, not a new color.
+- VoiceOver reads the highlighted item's title when it changes.
+Status: todo
+
+### S-092 Go back to any recent window with Recent Windows
+As the user, I hold CAG and press H to see my recent windows, most recent first, then press H again or a number and let go to go to that window, even when it's minimized, hidden, or on another Space; a quick CAG+H goes back to the window I used before, as before, and right back again.
+Screens: hud-recent
+Depends: S-091
+Acceptance:
+- [unit] `list` with `"type": "windows.recent"` and `count`, `minimized`, `hidden`, `spaces` and `scope` reads and writes, with defaults left out on save; `list-has-children`, `unknown-list-type`, `bad-list-value`, `conflicting-fields` (both `action` and `list`) and `missing-field` (no `type`) are reported; a list is never `empty-menu`; the spec-v18 fixtures for them pass.
+- [unit] The items: the focus history first, then windows it doesn't hold, front first; without the focused window; with the filters and `windows.apps` focus rules; at most `count`. `FocusHistory.limit` is at least 30, so 9 items survive filtering.
+- [unit] Items are fixed when the list opens; when an item's window closes, the keys after it move up, and the highlight goes to the next item, else the one before, else Cancel.
+- [self] Choosing a minimized window unminimizes and focuses it; a hidden app's window unhides it; the chosen window is first in the history before macOS reports the focus change, so two quick presses go A, B, A (against `FakeWindowSystem`).
+- [self] In a held list, Cancel shows the focused window's title and icon; with no other window, only Cancel, and letting go does nothing and plays no sound.
+- [snap] `hud-recent`: items with their window titles and app icons, keys 1 to 9, and marks for minimized, hidden, another Space and another display.
+- [manual] Two apps on two Spaces, each focused once: CAG+H 1 goes to the other Space and back. A window on another Space that never had focus isn't listed. A held list on a menu that isn't held works by number keys.
+UX:
+- Glossary: "Recent Windows", "Cancel". A window with no title shows its app's name.
+- Titles come from Accessibility (`kAXTitle`), never `kCGWindowName`, so no Screen Recording.
+- The starter config doesn't add a list. The user's own CAG+H becomes one by hand, or in S-094.
+Status: todo
+
+### S-093 Page through more than 9 recent windows with More
+As the user, with more than 9 windows in Recent Windows, I press 0 for More to see the next 9, numbered 1 to 9 again, and the repeat key keeps going across pages.
+Screens: hud-recent-more
+Depends: S-092
+Acceptance:
+- [unit] Pages of 9; `0` is More on every page but the last; Back goes to the page before, and from the first page works as in any menu; in a held list, the repeat key and Down go from item 9 onto the next page, and after the last item to Cancel on the first page; the highlight never rests on More.
+- [snap] `hud-recent-more`: the second page, with its path showing the page, and More as a key row, not an item.
+- [self] A `count` of 20 lists 20 windows over three pages.
+UX:
+- Glossary: "More", not "Next" (Focus Next and Swap Next already have it).
+Status: todo
+
+### S-094 Turn on Hold and make a list in the Bindings tab
+As the user, I switch Hold on for a leader and make a menu into Recent Windows in Settings' Bindings tab, with its options, and the Help page tells me how held menus work.
+Screens: bindings-hold, bindings-list, help
+Depends: S-090, S-092
+Acceptance:
+- [snap] `bindings-hold`: a Hold switch on a leader, with one line of help, and none on other menus or bindings.
+- [snap] `bindings-list`: a menu with "Fills Itself" set to Recent Windows, its options (Count, Minimized, Hidden, Spaces, Displays), and no add-key button under it.
+- [self] Hold and each list field save and undo; turning Hold on where a key equals its repeat key shows that error on the key, with a fix it can offer ("Change the key"), and doesn't save a config that won't load.
+- [snap] The Help page has a short Held Menus section: hold, repeat key, Shift, let go, Cancel.
+UX:
+- Run the `ux-design` skill for the names first. "Fills Itself" is a working name.
+Status: todo
 
 ## Later
 - Pick a window from an overlay: `"target": "pick"` on Focus Window and Swap Window labels the visible windows in order and waits for one key (numbers or home-row letters), Escape cancels.

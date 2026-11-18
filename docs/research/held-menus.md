@@ -211,9 +211,11 @@ Stable letters already exist here: they are your app bindings. So the recent-win
     - Cancel (item 0, the window in front) has no number key. You reach it with Escape, or by moving the highlight back.
     - The name is "More", not "Next", because Next is already Focus Next and Swap Next in the glossary.
 
-## Open questions
+18. **Every held menu, not just lists, starts with Cancel**, which has no key, with the highlight on the first item after it (decided 2026-11-18). A quick press and release runs that first item, as in Recent Windows.
 
-- **What does a Cancel item mean in an ordinary menu?** Item 0 is drawn as "Cancel", and the first real item is highlighted.
+The spec that came out of this is spec v18 (`spec/CONFIG-SPEC.md`, Held menus and Lists), and the stories are M12 in `../STORIES.md`.
+
+## Open questions
 - **[U] Can `flagsState` be read without extra permission** from the event tap's thread, and is it current right after a tap re-enable?
 - **[U] Does a hidden app's `kAXWindows` list only its minimized windows on macOS 27?** Test with TextEdit hidden.
 - **[U] Does AXRaise plus activate switch Spaces** when the app also has a window on the current Space? S-083 tried two Safari windows; try two apps.
