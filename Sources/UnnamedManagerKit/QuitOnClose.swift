@@ -29,9 +29,24 @@ public enum QuitOnClose {
 
     /// True when the app should quit. `own` is this app's bundle id.
     public static func shouldQuit(_ app: App, settings: Config.Windows, own: String?) -> Bool {
-        guard settings.quitOnClose, let id = app.bundleIds.first, id != own,
-              !app.isBackground, app.hadWindow, !app.isHidden, app.windows == 0 else { return false }
-        return !app.bundleIds.contains { alwaysKept.contains($0) || settings.apps[$0]?.quit == false }
+        closedLast(app, settings: settings, own: own) && !isKept(app, settings: settings)
+    }
+
+    /// True when the window used before should get focus: the app stays
+    /// open with no window left, as Finder does, and is still in front, so
+    /// focus moves on as if it had quit.
+    public static func focusesBefore(_ app: App, settings: Config.Windows, own: String?, isFrontmost: Bool) -> Bool {
+        isFrontmost && closedLast(app, settings: settings, own: own) && isKept(app, settings: settings)
+    }
+
+    /// With Quit on Close on, the app closed its last window.
+    private static func closedLast(_ app: App, settings: Config.Windows, own: String?) -> Bool {
+        guard settings.quitOnClose, let id = app.bundleIds.first, id != own else { return false }
+        return !app.isBackground && app.hadWindow && !app.isHidden && app.windows == 0
+    }
+
+    private static func isKept(_ app: App, settings: Config.Windows) -> Bool {
+        app.bundleIds.contains { alwaysKept.contains($0) || settings.apps[$0]?.quit == false }
     }
 
     /// Whether Settings' Quit checkbox can change for an app.

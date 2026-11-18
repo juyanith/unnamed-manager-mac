@@ -6,7 +6,8 @@ import UnnamedManagerKit
 /// `windows.quitOnClose` is on, each app with a Dock icon gets an
 /// Accessibility observer for its windows opening and closing.
 /// `windows.quitOnCloseDelayMs` after one closes, the app's windows are counted again, and
-/// `QuitOnClose` decides. Windows on another Space aren't in an app's
+/// `QuitOnClose` decides: quit it, or, when it's kept open and still in
+/// front, focus the window used before. Windows on another Space aren't in an app's
 /// window list, so every window seen is kept, and counts while its
 /// element still answers (as for S-083).
 final class QuitOnCloseWatcher {
@@ -22,13 +23,16 @@ final class QuitOnCloseWatcher {
     private static let timeout: Float = 0.25
 
     private let store: ConfigStore
+    /// Focus Window to the window used before (S-083).
+    private let focusBefore: () async -> Void
     private var watched: [pid_t: Watched] = [:]
     private var checks: [pid_t: Task<Void, Never>] = [:]
     private var tokens: [any NSObjectProtocol] = []
     private var settings: Config.Windows { store.loaded?.config.windows ?? Config.Windows() }
 
-    init(store: ConfigStore) {
+    init(store: ConfigStore, focusBefore: @escaping () async -> Void) {
         self.store = store
+        self.focusBefore = focusBefore
         follow()
     }
 
@@ -145,9 +149,13 @@ final class QuitOnCloseWatcher {
         }
         let facts = QuitOnClose.App(bundleIds: ids, isBackground: Self.isBackground(running.bundleURL),
                                     hadWindow: app.hadWindow, windows: app.windows.count, isHidden: running.isHidden)
-        guard QuitOnClose.shouldQuit(facts, settings: settings, own: Bundle.main.bundleIdentifier) else { return }
-        log.info("Quit on Close: quitting \(running.bundleIdentifier ?? "an app", privacy: .public)")
-        running.terminate()
+        let own = Bundle.main.bundleIdentifier
+        if QuitOnClose.shouldQuit(facts, settings: settings, own: own) {
+            log.info("Quit on Close: quitting \(running.bundleIdentifier ?? "an app", privacy: .public)")
+            running.terminate()
+        } else if QuitOnClose.focusesBefore(facts, settings: settings, own: own, isFrontmost: running.isActive) {
+            Task { await focusBefore() }
+        }
     }
 
     /// A window someone works in: a document or a dialog, minimized or

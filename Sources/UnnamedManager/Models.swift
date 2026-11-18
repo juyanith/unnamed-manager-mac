@@ -87,7 +87,13 @@ final class AppModel {
         migration.start()
         editor = BindingsEditor(store: store)
         editor.onRecordingChange = { [launcher] in launcher.setRecording($0) }
-        if !SelfTest.requested && !isSnapshot { quitOnClose = QuitOnCloseWatcher(store: store) }
+        if !SelfTest.requested && !isSnapshot {
+            // Through the launcher's window actions, which keep the focus history.
+            quitOnClose = QuitOnCloseWatcher(store: store) { [launcher] in
+                let runner = launcher.runner
+                try? await runner.run(.family(AnyActionValue(FocusAction(.recent))), id: "window-focus-recent")
+            }
+        }
         Self.current = self
     }
 

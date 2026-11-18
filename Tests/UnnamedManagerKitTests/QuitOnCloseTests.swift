@@ -79,3 +79,24 @@ extension QuitOnCloseTests {
         #expect(QuitOnClose.containingApps(of: URL(filePath: "/Applications/Preview.app")).isEmpty)
     }
 }
+
+extension QuitOnCloseTests {
+    @Test("An app kept open with no window left, still in front, hands focus to the window used before")
+    func focusesBefore() {
+        let finder = QuitOnClose.App(bundleIds: ["com.apple.finder"])
+        #expect(QuitOnClose.focusesBefore(finder, settings: on, own: nil, isFrontmost: true))
+        #expect(!QuitOnClose.focusesBefore(finder, settings: on, own: nil, isFrontmost: false))
+        #expect(!QuitOnClose.focusesBefore(finder, settings: Config.Windows(), own: nil, isFrontmost: true))
+        var kept = on
+        kept.apps = ["com.apple.Preview": .init(quit: false)]
+        #expect(QuitOnClose.focusesBefore(preview, settings: kept, own: nil, isFrontmost: true))
+        // An app that quits hands focus on by itself.
+        #expect(!QuitOnClose.focusesBefore(preview, settings: on, own: nil, isFrontmost: true))
+        var open = finder
+        open.windows = 1
+        #expect(!QuitOnClose.focusesBefore(open, settings: on, own: nil, isFrontmost: true))
+        open = finder
+        open.hadWindow = false
+        #expect(!QuitOnClose.focusesBefore(open, settings: on, own: nil, isFrontmost: true))
+    }
+}
