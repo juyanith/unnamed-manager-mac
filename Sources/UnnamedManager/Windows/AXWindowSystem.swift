@@ -100,7 +100,13 @@ final class AXWindowSystem: WindowSystem {
         return result
     }
 
-    /// An app's standard windows that aren't minimized.
+    /// Whether Focus Window and Recent Windows take a window of this subrole:
+    /// standard windows and dialogs, which many Settings windows are.
+    private static func takes(_ subrole: String?) -> Bool {
+        subrole == kAXStandardWindowSubrole || subrole == kAXDialogSubrole
+    }
+
+    /// An app's standard windows and dialogs that aren't minimized.
     private func standardWindows(of pid: pid_t) -> [WindowInfo] {
         let app = AXUIElementCreateApplication(pid)
         AXUIElementSetMessagingTimeout(app, Self.timeout)
@@ -109,9 +115,9 @@ final class AXWindowSystem: WindowSystem {
         return windows.compactMap { element in
             let subrole: String? = value(element, kAXSubroleAttribute)
             let minimized: Bool = value(element, kAXMinimizedAttribute) ?? false
-            guard subrole == kAXStandardWindowSubrole, !minimized else { return nil }
+            guard Self.takes(subrole), !minimized else { return nil }
             let ref = WindowRef(id: Element(element: element, pid: pid))
-            return frame(of: ref).map { WindowInfo(ref: ref, frame: $0, pid: pid, app: bundle) }
+            return frame(of: ref).map { WindowInfo(ref: ref, frame: $0, pid: pid, app: bundle, isDialog: subrole == kAXDialogSubrole) }
         }
     }
 
@@ -124,8 +130,8 @@ final class AXWindowSystem: WindowSystem {
         AXUIElementSetMessagingTimeout(window.element, Self.timeout)
         let subrole: String? = value(window.element, kAXSubroleAttribute)
         let minimized: Bool = value(window.element, kAXMinimizedAttribute) ?? false
-        guard subrole == kAXStandardWindowSubrole, !minimized, let frame = frame(of: ref) else { return nil }
-        return WindowInfo(ref: ref, frame: frame, pid: window.pid, app: app.bundleIdentifier)
+        guard Self.takes(subrole), !minimized, let frame = frame(of: ref) else { return nil }
+        return WindowInfo(ref: ref, frame: frame, pid: window.pid, app: app.bundleIdentifier, isDialog: subrole == kAXDialogSubrole)
     }
 
     func listed(_ ref: WindowRef) -> ListedWindow? {
@@ -140,25 +146,43 @@ final class AXWindowSystem: WindowSystem {
     private func listed(_ window: Element, app: NSRunningApplication) -> ListedWindow? {
         let subrole: String? = value(window.element, kAXSubroleAttribute)
         let ref = WindowRef(id: window)
-        guard subrole == kAXStandardWindowSubrole, let frame = frame(of: ref) else { return nil }
-        return ListedWindow(info: WindowInfo(ref: ref, frame: frame, pid: window.pid, app: app.bundleIdentifier),
+        guard Self.takes(subrole), let frame = frame(of: ref) else { return nil }
+        return ListedWindow(info: WindowInfo(ref: ref, frame: frame, pid: window.pid, app: app.bundleIdentifier,
+                                             isDialog: subrole == kAXDialogSubrole),
                             title: value(window.element, kAXTitleAttribute),
                             appName: app.localizedName ?? app.bundleIdentifier ?? "App",
                             isMinimized: value(window.element, kAXMinimizedAttribute) ?? false,
                             isHidden: app.isHidden)
     }
 
-    /// Menu bar apps count too: their Settings windows are standard windows
-    /// that ⌘Tab never lists. Background-only apps have no windows.
+    /// Menu bar apps count too: their Settings windows, which ⌘Tab never
+    /// lists. But only a menu bar app's windows at the normal window level,
+    /// on any Space, and none of the system's own (`MenuBarAgent` calls the
+    /// menu bar a window). Background-only apps have no windows.
     func allWindows() -> [ListedWindow] {
         let own = ProcessInfo.processInfo.processIdentifier
+        let system = "/System/Library/CoreServices/"
+        let info = CGWindowListCopyWindowInfo([.excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
+        var normal: [pid_t: [CGRect]] = [:]
+        for window in info where window[kCGWindowLayer as String] as? Int == 0 {
+            guard let pid = window[kCGWindowOwnerPID as String] as? pid_t,
+                  let bounds = window[kCGWindowBounds as String] as? NSDictionary,
+                  let frame = CGRect(dictionaryRepresentation: bounds) else { continue }
+            normal[pid, default: []].append(frame)
+        }
         return NSWorkspace.shared.runningApplications
             .filter { $0.activationPolicy != .prohibited && $0.processIdentifier != own && !$0.isTerminated }
+            .filter { $0.activationPolicy == .regular || !($0.bundleURL?.path.hasPrefix(system) ?? false) }
             .flatMap { app -> [ListedWindow] in
-                let element = AXUIElementCreateApplication(app.processIdentifier)
+                let pid = app.processIdentifier
+                if app.activationPolicy != .regular && normal[pid] == nil { return [] }
+                let element = AXUIElementCreateApplication(pid)
                 AXUIElementSetMessagingTimeout(element, Self.timeout)
                 let windows: [AXUIElement] = value(element, kAXWindowsAttribute) ?? []
-                return windows.compactMap { listed(Element(element: $0, pid: app.processIdentifier), app: app) }
+                return windows.compactMap { listed(Element(element: $0, pid: pid), app: app) }.filter { window in
+                    app.activationPolicy == .regular
+                        || normal[pid, default: []].contains { WindowGeometry.matches(window.info.frame, $0) }
+                }
             }
     }
 

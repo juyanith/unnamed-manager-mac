@@ -232,6 +232,14 @@ extension SelfTest {
         let asked = ContinuousClock.now
         check("S-047 no window to raise for a process that isn't there",
               !AXWindowSystem.raiseLastFocused(pid: 999_999) && ContinuousClock.now - asked < .seconds(1))
+        // Recent Windows on the real system: never the menu bar, which MenuBarAgent reports as windows.
+        if AXIsProcessTrusted() {
+            let windows = AXWindowSystem().allWindows()
+            let system = windows.filter { NSRunningApplication(processIdentifier: $0.info.pid)?.bundleURL?.path
+                .hasPrefix("/System/Library/CoreServices/") == true && $0.info.app != "com.apple.finder" }
+            check("S-092 Recent Windows never lists the menu bar or other system windows",
+                  system.isEmpty, "\(system.map { "\($0.appName): \($0.title ?? "")" })")
+        }
         let names = Config.Action.types(allowsContextAware: true).map { Config.Action.empty(of: $0).displayName }
         check("S-046 the Type picker is alphabetical",
               names == names.sorted { $0.localizedStandardCompare($1) == .orderedAscending }

@@ -14,8 +14,17 @@ struct WindowInfo {
     let pid: pid_t
     /// Its app's bundle id, which `windows.apps` names (spec v15).
     var app: String?
+    /// A dialog, such as many apps' Settings windows: it takes focus, but
+    /// stays out of Swap Window and Arrange Windows, as a small window does.
+    var isDialog = false
 
     func isExcluded(by apps: Set<String>) -> Bool { app.map(apps.contains) ?? false }
+
+    /// Left out by `windows.apps` for `rule`, or a dialog when the rule
+    /// isn't Focus Window's.
+    func isLeftOut(of rule: KeyPath<Config.Windows.AppRules, Bool>, apps: Set<String>) -> Bool {
+        isExcluded(by: apps) || (isDialog && rule != \Config.Windows.AppRules.focus)
+    }
 }
 
 /// A window Recent Windows can list (S-092): minimized, a hidden app's, or
@@ -152,9 +161,7 @@ final class WindowControl {
             system.setFrame(WindowGeometry.moved(frame, in: screen.usable, move), of: window)
         case let .swap(target, scope):
             // Swap Window never moves a left-out app's window, the focused one included (spec v15).
-            if let bundle = system.window(window)?.app, settings().leftOut(of: \.swap).contains(bundle) {
-                throw PlanError("\(app.name) is left out of Swap Window.", alerts: true)
-            }
+            try checkSwaps(window, app: app)
             try swap(window, at: frame, with: target, scope: scope)
         case .focus, .arrange:
             break
@@ -180,7 +187,7 @@ final class WindowControl {
         let square = CGFloat(settings().minVisible), excluded = settings().leftOut(of: rule)
         let seen = windows.indices.compactMap { index -> Candidate? in
             let window = windows[index]
-            guard !window.isExcluded(by: excluded),
+            guard !window.isLeftOut(of: rule, apps: excluded),
                   window.ref == focused || WindowGeometry.shows(parts[index], square: square) else { return nil }
             return Candidate(info: window, seen: SeenWindow(frame: window.frame, parts: parts[index], owner: window.pid))
         }
@@ -198,7 +205,7 @@ final class WindowControl {
         let here = system.focusableWindows(), screens = system.screens(), excluded = settings().leftOut(of: rule)
         let display = scope == .display ? (anchor ?? here.first?.frame).flatMap { WindowGeometry.screen(for: $0, among: screens) } : nil
         func counts(_ window: WindowInfo) -> Bool {
-            window.ref != focused && !window.isExcluded(by: excluded)
+            window.ref != focused && !window.isLeftOut(of: rule, apps: excluded)
                 && (display == nil || WindowGeometry.screen(for: window.frame, among: screens) == display)
         }
         let onSpace = Set(here.map(\.ref))
@@ -262,7 +269,7 @@ final class WindowControl {
         var items: [WindowRef: RecentWindow] = [:]
         let refs = RecentWindows.items(history: used, front: here.map(\.ref), found: all.map(\.info.ref),
                                        focused: focused, count: list.count) { ref in
-            guard let window = listed[ref], !window.info.isExcluded(by: excluded) else { return false }
+            guard let window = listed[ref], !window.info.isLeftOut(of: rule, apps: excluded) else { return false }
             let item = recent(window)
             if !list.includesMinimized && item.marks.contains(.minimized) { return false }
             if !list.includesHidden && item.marks.contains(.hidden) { return false }
@@ -296,9 +303,7 @@ final class WindowControl {
               let frame = system.frame(of: focused) else {
             throw PlanError("No window to swap with.", alerts: true)
         }
-        if let bundle = system.window(focused)?.app, settings().leftOut(of: \.swap).contains(bundle) {
-            throw PlanError("\(app.name) is left out of Swap Window.", alerts: true)
-        }
+        try checkSwaps(focused, app: app)
         guard let other = system.frame(of: window) else {
             throw PlanError("That window has closed.", alerts: true)
         }
@@ -398,6 +403,16 @@ final class WindowControl {
         }
     }
 
+    /// Swap Window never moves a left-out app's window or a dialog, the
+    /// focused one included (spec v15).
+    private func checkSwaps(_ window: WindowRef, app: FrontApp) throws(PlanError) {
+        guard let info = system.window(window) else { return }
+        if info.isDialog { throw PlanError("A dialog is left out of Swap Window.", alerts: true) }
+        if info.isExcluded(by: settings().leftOut(of: \.swap)) {
+            throw PlanError("\(app.name) is left out of Swap Window.", alerts: true)
+        }
+    }
+
     /// Swap Window (S-077): the focused window and the one `target` names
     /// trade frames, and focus stays. Finding no window plays the alert
     /// sound (spec v10). The window used before must be on this Space (S-083).
@@ -454,7 +469,7 @@ final class WindowControl {
     /// still the one arranged, and the window in front there counts as focused.
     private func arrange(_ action: ArrangeAction, focused: WindowRef?) throws(PlanError) {
         let excluded = settings().leftOut(of: \.arrange)
-        let screens = system.screens(), candidates = system.focusableWindows().filter { !$0.isExcluded(by: excluded) }
+        let screens = system.screens(), candidates = system.focusableWindows().filter { !$0.isLeftOut(of: \.arrange, apps: excluded) }
         guard let anchor = focused.flatMap({ system.frame(of: $0) }) ?? candidates.first?.frame,
               let screen = WindowGeometry.screen(for: anchor, among: screens) else {
             throw PlanError("No window to arrange.")

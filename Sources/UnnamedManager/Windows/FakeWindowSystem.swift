@@ -25,6 +25,8 @@ final class FakeWindowSystem: WindowSystem {
         /// On screen, but missing from the list of every app's windows, as a
         /// menu bar app's Settings window once was.
         var isUnlisted = false
+        /// A dialog, such as a Settings window: it takes focus, but isn't swapped or arranged.
+        var isDialog = false
     }
 
     enum Place { case desktop, fullScreen, everySpace }
@@ -90,7 +92,7 @@ final class FakeWindowSystem: WindowSystem {
     }
 
     private func info(_ id: String, _ window: Window) -> WindowInfo {
-        WindowInfo(ref: WindowRef(id: id), frame: window.frame, pid: window.pid, app: window.app)
+        WindowInfo(ref: WindowRef(id: id), frame: window.frame, pid: window.pid, app: window.app, isDialog: window.isDialog)
     }
 
     /// Focusing raises the window to the front and brings its Space, as the real one does.

@@ -185,10 +185,11 @@ extension SelfTest {
         // A window Focus Window can reach is listed, even one missing from the app list.
         var settings = FakeWindowSystem.Window(frame: frame, pid: 6, app: "com.example.MenuBarApp", title: "Settings")
         settings.isUnlisted = true
+        settings.isDialog = true
         fake.windows["S"] = settings
         fake.stacking = ["A", "S"]
         await open()
-        check("S-092 an on-screen window missing from the app list, such as a menu bar app's Settings, is listed",
+        check("S-092 a menu bar app's Settings dialog, missing from the app list, is listed",
               launcher.guide.content?.rows.dropFirst().map(\.title) == ["Settings"], "\(launcher.guide.content?.rows.map(\.title) ?? [])")
         launcher.handleForTesting(.down(keyCode: KeyName.escape.keyCode!, modifiers: [], isRepeat: false))
         held.value = []
@@ -248,6 +249,7 @@ extension SelfTest {
             "C": .init(frame: right, isMinimized: true, pid: 3, app: "com.apple.TextEdit", title: "Draft"),
             "D": .init(frame: right, pid: 4, app: "com.apple.Mail", space: 2, title: "Inbox"),
             "E": .init(frame: right, pid: 5, app: "com.apple.calculator", title: "Calculator"),
+            "F": .init(frame: right, pid: 6, app: "com.example.MenuBarApp", title: "Settings", isDialog: true),
         ]
         var rules = Config.Windows(gap: 0)
         rules.apps = ["com.apple.calculator": .init(swap: false)]
@@ -268,7 +270,7 @@ extension SelfTest {
         launcher.handleForTesting(.down(keyCode: KeyName.tab.keyCode!, modifiers: cag, isRepeat: false))
         try? await Task.sleep(for: .milliseconds(50))
         let titles = launcher.guide.content?.rows.dropFirst().map(\.title) ?? []
-        check("S-095 a list that swaps holds only shown windows on this Space, without apps left out of Swap Window",
+        check("S-095 a list that swaps holds only shown windows on this Space, without apps left out of Swap Window or dialogs",
               titles == ["Apple"], "\(titles)")
         held.value = []
         launcher.handleForTesting(.flags([]))
