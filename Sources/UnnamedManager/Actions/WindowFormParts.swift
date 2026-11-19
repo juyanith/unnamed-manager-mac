@@ -30,6 +30,15 @@ extension WindowTarget {
     }
 }
 
+extension SpaceTarget {
+    var displayName: String {
+        switch self {
+        case let .side(direction): direction.displayName
+        case let .number(number): "Space \(number)"
+        }
+    }
+}
+
 extension ArrangeCount {
     var displayName: String {
         switch self {
@@ -60,6 +69,7 @@ extension Config.Action {
         case let focus as FocusAction: focus.target.displayName
         case let swap as SwapAction: swap.target.displayName
         case let space as SpaceSwitchAction: space.target.displayName
+        case let send as SpaceSendAction: send.target.displayName
         default: nil
         }
     }

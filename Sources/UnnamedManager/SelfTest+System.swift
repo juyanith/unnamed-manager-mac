@@ -90,9 +90,10 @@ extension SelfTest {
             """.utf8)).get()
         let builtIns = HelpContent(config: overriding).builtIns
         let listed = Set(builtIns.flatMap(\.rows).map(\.name))
-        check("S-081 Help lists every built-in action, kind by kind, with a row for numbered windows",
-              builtIns.count == 10 && BuiltInAction.entries().allSatisfy { listed.contains($0.name) }
-                  && builtIns.first { $0.title == "Focus Window" }?.rows.last?.title == "Window 1, 2, 3…",
+        check("S-081 Help lists every built-in action, kind by kind, with a row for numbered windows and Spaces",
+              builtIns.count == 11 && BuiltInAction.entries().allSatisfy { listed.contains($0.name) }
+                  && builtIns.first { $0.title == "Focus Window" }?.rows.last?.title == "Window 1, 2, 3…"
+                  && builtIns.first { $0.title == "Send to Space" }?.rows.last?.title == "Space 1, 2, 3…",
               builtIns.map(\.title).joined(separator: ", "))
         check("S-081 Help marks a built-in action your config overrides",
               builtIns.flatMap(\.rows).filter(\.isOverridden).map(\.name) == ["window-fill"])

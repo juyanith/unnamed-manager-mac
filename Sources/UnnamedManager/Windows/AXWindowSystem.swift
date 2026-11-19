@@ -60,6 +60,13 @@ final class AXWindowSystem: WindowSystem {
         AXUIElementSetAttributeValue(window.element, kAXSizeAttribute as CFString, sizeValue)
     }
 
+    /// The window server's id for a window, which Send to Space needs (S-096).
+    func windowID(of window: WindowRef) -> CGWindowID? {
+        guard let window = window.id.base as? Element else { return nil }
+        var id: CGWindowID = 0
+        return _AXUIElementGetWindow(window.element, &id) == .success && id != 0 ? id : nil
+    }
+
     func minimize(_ window: WindowRef) {
         guard let window = window.id.base as? Element else { return }
         AXUIElementSetAttributeValue(window.element, kAXMinimizedAttribute as CFString, kCFBooleanTrue)

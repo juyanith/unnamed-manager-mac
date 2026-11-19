@@ -581,6 +581,7 @@ extension SelfTest {
             (.family(AnyActionValue(SwapAction(.number(2), scope: .display))), #"{ "type": "window.swap", "target": 2, "scope": "display" }"#),
             (.family(AnyActionValue(SwapAction(.window(.left)))), #"{ "type": "window.swap", "target": "left" }"#),
             (.family(AnyActionValue(SpaceSwitchAction(.left))), #"{ "type": "space.switch", "target": "left" }"#),
+            (.family(AnyActionValue(SpaceSendAction(.number(2), follow: true))), #"{ "type": "space.send", "target": 2, "follow": true }"#),
             (.family(AnyActionValue(FillAction(toggle: false))), #"{ "type": "window.fill", "toggle": false }"#),
             (.family(AnyActionValue(MinimizeAction())), #"{ "type": "window.minimize" }"#),
             (.family(AnyActionValue(MoveAction.by(dx: 40, dy: 0))), #"{ "type": "window.move", "by": { "dx": 40 } }"#),
@@ -715,5 +716,65 @@ extension SelfTest {
         fake.canControlWindows = false
         let denied = await run("space-switch-left")
         check("S-088 without Accessibility it fails and says so", denied?.message.contains("Accessibility") == true && fake.spaceSwitches.count == count)
+    }
+
+    /// S-096, against FakeWindowSystem: no real window leaves its Space.
+    static func spaceSendChecks() async {
+        let fake = FakeWindowSystem()
+        let left = CGRect(x: 24, y: 48, width: 680, height: 828), right = CGRect(x: 736, y: 48, width: 680, height: 828)
+        fake.windows = ["a": .init(frame: left, pid: 1, app: "com.apple.TextEdit"),
+                        "b": .init(frame: right, pid: 2, app: "com.apple.Safari"),
+                        "c": .init(frame: right, pid: 3, app: "com.apple.Notes", space: 2)]
+        fake.lastSpace = 4
+        let control = WindowControl(system: fake)
+        let runner = ActionRunner(performer: SystemPerformer(context: StepContext(windows: control)))
+        func run(_ action: SpaceSendAction) async -> PlanError? {
+            do throws(PlanError) {
+                try await runner.run(.family(AnyActionValue(action)), id: "send")
+                return nil
+            } catch {
+                return error
+            }
+        }
+        fake.click("b")
+        fake.click("a")
+        let sent = await run(SpaceSendAction(.number(3)))
+        check("S-096 space.send 3 puts the window on Space 3, and you stay",
+              sent == nil && fake.windows["a"]?.space == 3 && fake.currentSpace == 1 && fake.sends.map(\.desktop) == [3],
+              "\(String(describing: sent)) \(fake.sends)")
+        check("S-096 without follow, the window used before on this Space takes focus", fake.focused == "b", "\(String(describing: fake.focused))")
+        let back = await run(SpaceSendAction(.side(.left)))
+        check("S-096 left from Space 1 does nothing, with no sound",
+              back == nil && fake.sends.count == 1 && fake.windows["b"]?.space == 1)
+        let followed = await run(SpaceSendAction(.side(.right), follow: true))
+        check("S-096 right with follow takes the window and you to Space 2, and it keeps focus",
+              followed == nil && fake.windows["b"]?.space == 2 && fake.currentSpace == 2 && fake.focused == "b",
+              "\(String(describing: followed)) space \(fake.currentSpace) focused \(String(describing: fake.focused))")
+        let same = await run(SpaceSendAction(.number(2)))
+        check("S-096 a number for the window's own Space does nothing", same == nil && fake.sends.count == 2)
+        let past = await run(SpaceSendAction(.number(5)))
+        check("S-096 a number past the last Space fails with the sound",
+              past == PlanError("No Space 5. There are 4.", alerts: true) && fake.sends.count == 2, "\(String(describing: past))")
+        let builtIn = BuiltInAction.action(named: "space-send-4")
+        check("S-096 space-send-4 is a built-in action with follow off",
+              builtIn == .family(AnyActionValue(SpaceSendAction(.number(4)))))
+        fake.windows["b"]?.place = .fullScreen
+        let full = await run(SpaceSendAction(.number(1)))
+        check("S-096 a full-screen window can't be sent, with the sound", full?.alerts == true && full?.message.contains("full screen") == true)
+        fake.windows["b"]?.place = .everySpace
+        let every = await run(SpaceSendAction(.number(1)))
+        check("S-096 a window on every Space can't be sent, with the sound", every?.alerts == true && every?.message.contains("every Space") == true)
+        fake.windows["b"]?.place = .desktop
+        fake.refusesSend = true
+        let refused = await run(SpaceSendAction(.number(1)))
+        check("S-096 when macOS refuses, it fails with the sound", refused?.alerts == true && fake.windows["b"]?.space == 2)
+        fake.refusesSend = false
+        fake.focused = nil
+        let none = await run(SpaceSendAction(.number(1)))
+        check("S-096 with no focused window it fails with the sound", none == PlanError("No window to send.", alerts: true))
+        fake.focused = "b"
+        fake.canControlWindows = false
+        let denied = await run(SpaceSendAction(.number(1)))
+        check("S-096 without Accessibility it fails and says so", denied?.message.contains("Accessibility") == true)
     }
 }

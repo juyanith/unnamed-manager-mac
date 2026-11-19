@@ -73,6 +73,42 @@ extension SwapAction: EditableAction {
     }
 }
 
+extension SpaceSendAction: EditableAction {
+    /// The picker's choices: a side, or a number set below it.
+    private enum Choice: Hashable { case side(SpaceDirection), number }
+
+    @MainActor static func form(_ value: Binding<SpaceSendAction>) -> some View {
+        Section {
+            Picker("Send To", selection: Binding<Choice>(
+                get: { if case let .side(direction) = value.wrappedValue.target { .side(direction) } else { .number } },
+                set: { new in
+                    switch new {
+                    case let .side(direction): value.wrappedValue.target = .side(direction)
+                    case .number: if case .side = value.wrappedValue.target { value.wrappedValue.target = .number(1) }
+                    }
+                })) {
+                ForEach(SpaceDirection.allCases, id: \.self) { Text("Space to the \($0.displayName)").tag(Choice.side($0)) }
+                Divider()
+                Text("Space Number").tag(Choice.number)
+            }
+            if case let .number(number) = value.wrappedValue.target {
+                LabeledContent("Number") {
+                    HStack(spacing: Space.sm) {
+                        Text("\(number)").monospacedDigit()
+                        Stepper("Space number", value: Binding(get: { number }, set: { value.wrappedValue.target = .number(max(1, $0)) }),
+                                in: 1...16)
+                            .labelsHidden()
+                            .accessibilityValue("\(number)")
+                    }
+                }
+            }
+            Toggle("Go With the Window", isOn: value.follow)
+        } footer: {
+            Text("Puts the window in front on another Space of its display. Numbers count Spaces as Mission Control shows them, without full-screen apps. With Go With the Window off, you stay, and the window you used before here takes focus. If macOS won't move the window quietly, Unnamed Manager holds its title bar and presses the Switch to Desktop shortcut, which must be on in Keyboard Shortcuts.")
+        }
+    }
+}
+
 /// Focus Window's and Swap Window's target: a picker of the words and
 /// Window Number, with a Number stepper below it for a number (spec v10, v11).
 private struct TargetRows: View {

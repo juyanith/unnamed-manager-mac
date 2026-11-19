@@ -37,7 +37,7 @@ struct SpaceSwitchTests {
         #expect(BuiltInAction.action(named: "space-switch-right") == .family(AnyActionValue(SpaceSwitchAction(.right))))
         #expect(BuiltInAction.action(named: "space-switch-up") == nil)
         #expect(BuiltInAction.action(named: "space-switch") == nil)
-        #expect(BuiltInAction.entries().filter { $0.name.hasPrefix("space-") }.map(\.name) == ["space-switch-left", "space-switch-right"])
+        #expect(BuiltInAction.entries().filter { $0.name.hasPrefix("space-switch") }.map(\.name) == ["space-switch-left", "space-switch-right"])
     }
 
     @Test("It plans a SpaceCommand for its direction")

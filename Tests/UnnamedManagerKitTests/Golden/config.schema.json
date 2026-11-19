@@ -601,6 +601,40 @@
         {
           "additionalProperties" : false,
           "properties" : {
+            "follow" : {
+              "description" : "Go to that Space or desktop with the window. Default false: stay where you are.",
+              "type" : "boolean"
+            },
+            "target" : {
+              "description" : "Where the window goes: the Space or desktop to the left or right of its own, or the one with that number, from 1.",
+              "oneOf" : [
+                {
+                  "enum" : [
+                    "left",
+                    "right"
+                  ]
+                },
+                {
+                  "minimum" : 1,
+                  "type" : "integer"
+                }
+              ]
+            },
+            "type" : {
+              "enum" : [
+                "space.send"
+              ]
+            }
+          },
+          "required" : [
+            "type",
+            "target"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
             "fallback" : {
               "$ref" : "#/$defs/plainAction"
             },
@@ -1212,6 +1246,40 @@
             "type" : {
               "enum" : [
                 "space.switch"
+              ]
+            }
+          },
+          "required" : [
+            "type",
+            "target"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "follow" : {
+              "description" : "Go to that Space or desktop with the window. Default false: stay where you are.",
+              "type" : "boolean"
+            },
+            "target" : {
+              "description" : "Where the window goes: the Space or desktop to the left or right of its own, or the one with that number, from 1.",
+              "oneOf" : [
+                {
+                  "enum" : [
+                    "left",
+                    "right"
+                  ]
+                },
+                {
+                  "minimum" : 1,
+                  "type" : "integer"
+                }
+              ]
+            },
+            "type" : {
+              "enum" : [
+                "space.send"
               ]
             }
           },

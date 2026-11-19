@@ -51,6 +51,7 @@ enum SelfTest {
             await windowEditingChecks(model)
             spacesChecks(model)
             await spaceSwitchChecks()
+            await spaceSendChecks()
             await heldChecks(model)
             await recentChecks(model)
             await swapListChecks(model)

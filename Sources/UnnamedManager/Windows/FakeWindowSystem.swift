@@ -20,7 +20,16 @@ final class FakeWindowSystem: WindowSystem {
         var title: String?
         /// Its app is hidden (S-092).
         var isHidden = false
+        /// In a full-screen Space, or on every Space (S-096).
+        var place: Place = .desktop
     }
+
+    enum Place { case desktop, fullScreen, everySpace }
+
+    /// Each Send to Space: the window, the desktop it went to, and whether you went too (S-096).
+    private(set) var sends: [(id: String, desktop: Int, follow: Bool)] = []
+    /// The platform refuses every send, as macOS may.
+    var refusesSend = false
 
     /// Each window Recent Windows restored, in order (S-092).
     private(set) var restored: [String] = []
@@ -124,6 +133,23 @@ final class FakeWindowSystem: WindowSystem {
     func switchSpace(_ direction: SpaceDirection, on screen: WindowGeometry.Screen) {
         spaceSwitches.append((direction, screen.frame))
         currentSpace = min(max(currentSpace + (direction == .right ? 1 : -1), 1), lastSpace)
+    }
+
+    func desktop(of window: WindowRef) -> DesktopPlace {
+        guard let id = window.id.base as? String, let window = windows[id] else { return .unknown }
+        switch window.place {
+        case .desktop: return .desktop(window.space, of: lastSpace)
+        case .fullScreen: return .fullScreen
+        case .everySpace: return .everySpace
+        }
+    }
+
+    /// The window goes to that desktop; the Space on screen doesn't change.
+    func send(_ window: WindowRef, toDesktop number: Int, from: Int, follow: Bool) async throws(PlanError) {
+        guard !refusesSend else { throw PlanError("macOS didn't move the window.", alerts: true) }
+        guard let id = window.id.base as? String else { return }
+        windows[id]?.space = number
+        sends.append((id, number, follow))
     }
 
     /// A click on a window: it takes focus, as reported to `watchFocus`.

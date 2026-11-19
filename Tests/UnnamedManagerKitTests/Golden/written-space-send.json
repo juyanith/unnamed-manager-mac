@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "entries": [
+    { "keys": "Meh+S", "title": "Spaces" },
+    { "keys": "Meh+S A", "title": "send-left", "action": "send-left" },
+    { "keys": "Meh+S B", "title": "to-two", "action": "to-two" },
+    { "keys": "Meh+S C", "title": "built-in left", "action": "space-send-left" },
+    { "keys": "Meh+S D", "title": "built-in right", "action": "space-send-right" },
+    { "keys": "Meh+S E", "title": "built-in 3", "action": "space-send-3" }
+  ],
+  "actions": {
+    "send-left": { "type": "space.send", "target": "left" },
+    "to-two": { "type": "space.send", "target": 2, "follow": true }
+  }
+}

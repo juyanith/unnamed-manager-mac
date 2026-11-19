@@ -63,6 +63,12 @@ protocol WindowSystem: AnyObject {
     func watchFocus(_ changed: @escaping (WindowRef) -> Void)
     /// Goes to the Space to the left or right on a display, with no slide (S-088).
     func switchSpace(_ direction: SpaceDirection, on screen: WindowGeometry.Screen)
+    /// Which desktop of its display a window is on (S-096).
+    func desktop(of window: WindowRef) -> DesktopPlace
+    /// Puts a window on desktop `number` of its display (S-096). With
+    /// `follow` off, the desktop on screen is `from` again afterwards.
+    /// Fails when the window didn't move.
+    func send(_ window: WindowRef, toDesktop number: Int, from: Int, follow: Bool) async throws(PlanError)
     /// A window seen before, when it still exists: minimized, hidden or on
     /// another Space too (S-092).
     func listed(_ ref: WindowRef) -> ListedWindow?
@@ -296,6 +302,36 @@ final class WindowControl {
         }
         put(focused, in: other)
         put(window, in: frame)
+    }
+
+    /// Send to Space (S-096, spec v20): puts the focused window on another
+    /// desktop of its display. With `follow`, focus goes with it to that
+    /// Space; without, it goes to the window used before on this one, so
+    /// typing never goes to a window you can't see. The history keeps the
+    /// sent window, so Window Used Before can go back to it.
+    func send(to target: SpaceTarget, follow: Bool) async throws(PlanError) {
+        guard system.canControlWindows else {
+            throw PlanError("Unnamed Manager needs Accessibility access to move windows.")
+        }
+        guard let app = system.frontApp(), let window = system.focusedWindow(of: app), let frame = system.frame(of: window) else {
+            throw PlanError("No window to send.", alerts: true)
+        }
+        history.record(window)
+        let place = system.desktop(of: window)
+        switch SpaceSend.pick(target, from: place, appName: app.name) {
+        case let .none(failure):
+            throw PlanError(failure, alerts: true)
+        case .stay:
+            return
+        case let .desktop(number):
+            guard case let .desktop(from, _) = place else { return }
+            try await system.send(window, toDesktop: number, from: from, follow: follow)
+        }
+        if follow {
+            if let sent = system.window(window) { try await go(to: sent) }
+        } else if let other = recent(.display, around: frame, focused: window, rule: \.focus, anySpace: false) {
+            try await go(to: other)
+        }
     }
 
     /// False once a listed window has closed or its app has quit.

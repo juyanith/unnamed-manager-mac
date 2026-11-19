@@ -1089,6 +1089,27 @@ UX:
 Status: done
 Verified: reading, writing, the rules, built-in names, the swipe's events and payload bytes (unit tests, `SpaceSwitchTests`, the spec-v17 fixtures, 281 in all); left and right on the focused window's display, the last Space, no focused window, no Accessibility, the Type picker and saving (self-test, 231 checks); actions-window-space-right, hud-window and help-builtin in light and dark, grid checks. The swipe itself was tried by hand on 2026-11-18 with a test tool, before the app had it: about 40 ms per switch on macOS 27.2.1. Not yet tried by hand in the app: the manual lines, including whether the leader's held modifiers or the event location change anything.
 
+### S-096 Send a window to another Space
+As the user, I press a key such as `CAG+Quote 2` to put the focused window on Space 2 of its display and keep working where I am; with Go With the Window on, I go there with it. When I change tasks, I send a window or two to the Space for the new one.
+Screens: actions-window, help-builtin
+Depends: S-088
+Acceptance:
+- [unit] `space.send` reads and writes `target` (`left`, `right`, or a number from 1) and `follow` (false is left out); no target is `missing-field`, `0`, `"up"` and `"2"` are `bad-window-value`, a `follow` that isn't a boolean is `wrong-type`; `space-send-left`, `space-send-right` and `space-send-N` are built-in actions with `follow` off; the spec-v20 fixtures pass.
+- [unit] Where it goes: left and right stop at the ends with no failure, the window's own Space does nothing, a number past the last desktop fails ("No Space 5. There are 4."), and a full-screen window or one on every Space can't be sent.
+- [self] Through the window system seam (`WindowSystem.desktop`, `.send`), so `FakeWindowSystem` takes it and no real window moves: you stay and the window used before on this Space takes focus; with follow you go there and the window keeps focus; failures play the sound; no Accessibility says so.
+- [self] Send to Space is in the Type picker with Send To (Space to the Left, Space to the Right, Space Number), a Number stepper and Go With the Window; Help lists its built-in actions with a row for Space 1, 2, 3….
+- [snap] The Send to Space form and the Help window's Built-In Actions list.
+- [manual] `CAG+Quote 2` on a window on Space 1 puts it on Space 2 with no slide, and focus goes to the window used before on Space 1; with follow, you're on Space 2 with the window in front.
+- [manual] When macOS refuses the quiet move, the title bar is held and the Switch to Desktop shortcut pressed: the window arrives, and without follow you're back on your Space.
+UX:
+- Glossary: "Send to Space" (spec v20). Form: "Send To" with "Space to the Left", "Space to the Right" and "Space Number"; "Number" (1 to 16, the Mac's Switch to Desktop shortcuts); "Go With the Window". Footer says how numbers count, what follow does, and that the fallback needs the shortcut on.
+- Errors, with the sound: "No window to send.", "No Space 5. There are 4.", "Safari's window is full screen, so it can't go to another Space.", "Safari's window is on every Space.", "Turn on “Switch to Desktop 3” in System Settings › Keyboard › Keyboard Shortcuts › Mission Control, so windows can go to Space 3.", "macOS didn't move the window. Hold its title bar and press the shortcut for Space 3."
+- How (research/send-to-space.md): SkyLight's `SLSBridgedMoveWindowsToManagedSpaceOperation`, submitted with the non-exported function found in SkyLight's symbol table, works with SIP on in macOS 26 and 27.2. It returns before the move and says nothing when refused, so the app reads the window's Space back for half a second. Nothing that needs SIP off.
+- Fallback: hold the title bar (the middle of the top edge, 6 pt down), press the Switch to Desktop N shortcut read from `com.apple.symbolichotkeys` (118 and up), let go after 700 ms, put the pointer back, and without follow press the shortcut for the Space you came from. It waits up to a second for the leader's modifiers to be let go, since Control with a click is a right click.
+- Risk: macOS 27.3 beta 2 refuses the bridged move from apps other than the Dock (yabai #2853). Then the fallback is the only route, and it slides.
+Status: done
+Verified: reading, writing, the rules, built-in names and where a window goes (unit tests, `SpaceSendTests`, the spec-v20 fixtures, 330 in all); stay and follow, the focus after, the ends, the window's own Space, past the last, full screen, every Space, a refused move, no window, no Accessibility, the Type picker and saving, Help's rows (self-test, 281 checks); actions-window-send-3 and help-builtin in light and dark, grid checks. The app's SkyLight code, run alone on 2026-11-18 on macOS 27.2.1 with SIP on, found desktop 1 of 5, moved a test window to Space 2 and back, and saw a window on every Space. Not yet tried by hand: the manual lines, the title bar fallback, and a second display.
+
 ## M12 Held menus
 
 Hold a leader's modifiers to work its menu, as ⌘Tab does, and let go to choose. Then a menu the app fills itself, Recent Windows, gives a ⌘Tab for windows with number keys. The rules are in `spec/CONFIG-SPEC.md`, Held menus and Lists (spec v18), and `SPEC.md`, Held menus and Lists. The research and every decision behind them: `research/held-menus.md`.
