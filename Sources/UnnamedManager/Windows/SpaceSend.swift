@@ -28,7 +28,14 @@ extension AXWindowSystem {
         guard let id = windowID(of: window), let sky = SkyLight.shared, let space = sky.desktop(number, besides: id) else {
             throw PlanError("Unable to find Space \(number).", alerts: true)
         }
-        if sky.move(id, to: space), await sky.wait(until: id, isOn: space) { return }
+        if sky.move(id, to: space), await sky.wait(until: id, isOn: space) {
+            if follow {
+                // Focus alone can leave the user behind when Dock Space-following is off.
+                // Without a configured desktop shortcut, the caller still tries to focus the window.
+                try? await TitleBarCarry.switchTo(desktop: number)
+            }
+            return
+        }
         log.info("Send to Space: the window server refused the move; carrying the window by its title bar")
         guard let frame = frame(of: window) else { throw PlanError("That window has closed.", alerts: true) }
         try await TitleBarCarry.carry(grabbing: frame, to: number)
@@ -214,7 +221,9 @@ enum TitleBarCarry {
 
     /// Goes to a desktop with its shortcut, sliding.
     static func switchTo(desktop: Int) async throws(PlanError) {
-        post(try shortcut(for: desktop))
+        let shortcut = try shortcut(for: desktop)
+        await waitForModifiersUp()
+        post(shortcut)
         try? await Task.sleep(for: .milliseconds(500))
     }
 
