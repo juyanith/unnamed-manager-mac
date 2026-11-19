@@ -22,6 +22,9 @@ final class FakeWindowSystem: WindowSystem {
         var isHidden = false
         /// In a full-screen Space, or on every Space (S-096).
         var place: Place = .desktop
+        /// On screen, but missing from the list of every app's windows, as a
+        /// menu bar app's Settings window once was.
+        var isUnlisted = false
     }
 
     enum Place { case desktop, fullScreen, everySpace }
@@ -113,7 +116,7 @@ final class FakeWindowSystem: WindowSystem {
     func allWindows() -> [ListedWindow] {
         windows.keys.sorted().filter { id in
             let window = windows[id]!
-            return window.space == currentSpace || window.isMinimized || window.isHidden
+            return !window.isUnlisted && (window.space == currentSpace || window.isMinimized || window.isHidden)
         }.compactMap { listed(WindowRef(id: $0)) }
     }
 

@@ -159,6 +159,8 @@ struct ListTests {
         // C is filtered; D and E are in front, F after; X came from the history.
         #expect(items == ["B", "X", "D", "E"])
         #expect(RecentWindows.items(history: [], front: [], found: ["F"], focused: nil, count: 9) { _ in true } == ["F"])
+        // A window on screen that the app list missed, such as a menu bar app's Settings, is still listed.
+        #expect(RecentWindows.items(history: [], front: ["S", "D"], found: ["D", "F"], focused: "D", count: 9) { _ in true } == ["S", "F"])
         #expect(FocusHistory<Int>.limit >= 30)
     }
 

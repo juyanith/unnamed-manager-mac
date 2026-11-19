@@ -182,6 +182,18 @@ extension SelfTest {
         check("S-092 letting go of Cancel does nothing and plays no sound",
               fake.restored.count == restored && launcher.alertsPlayed == alerts && !launcher.sequenceIsHeld)
 
+        // A window Focus Window can reach is listed, even one missing from the app list.
+        var settings = FakeWindowSystem.Window(frame: frame, pid: 6, app: "com.example.MenuBarApp", title: "Settings")
+        settings.isUnlisted = true
+        fake.windows["S"] = settings
+        fake.stacking = ["A", "S"]
+        await open()
+        check("S-092 an on-screen window missing from the app list, such as a menu bar app's Settings, is listed",
+              launcher.guide.content?.rows.dropFirst().map(\.title) == ["Settings"], "\(launcher.guide.content?.rows.map(\.title) ?? [])")
+        launcher.handleForTesting(.down(keyCode: KeyName.escape.keyCode!, modifiers: [], isRepeat: false))
+        held.value = []
+        try? await Task.sleep(for: .milliseconds(300))
+
         // S-093: a count of 20 lists 20 windows over three pages.
         fake.windows = Dictionary(uniqueKeysWithValues: (0...24).map {
             (String(format: "W%02d", $0), FakeWindowSystem.Window(frame: frame, pid: 1, app: "com.apple.Notes", title: String(format: "W%02d", $0)))
