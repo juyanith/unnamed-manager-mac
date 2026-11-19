@@ -148,10 +148,12 @@ final class AXWindowSystem: WindowSystem {
                             isHidden: app.isHidden)
     }
 
+    /// Menu bar apps count too: their Settings windows are standard windows
+    /// that ⌘Tab never lists. Background-only apps have no windows.
     func allWindows() -> [ListedWindow] {
         let own = ProcessInfo.processInfo.processIdentifier
         return NSWorkspace.shared.runningApplications
-            .filter { $0.activationPolicy == .regular && $0.processIdentifier != own && !$0.isTerminated }
+            .filter { $0.activationPolicy != .prohibited && $0.processIdentifier != own && !$0.isTerminated }
             .flatMap { app -> [ListedWindow] in
                 let element = AXUIElementCreateApplication(app.processIdentifier)
                 AXUIElementSetMessagingTimeout(element, Self.timeout)

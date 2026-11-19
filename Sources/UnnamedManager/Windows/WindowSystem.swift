@@ -257,6 +257,8 @@ final class WindowControl {
             if listed[ref] == nil { listed[ref] = system.listed(ref) }
             return listed[ref] != nil
         }
+        // A window on screen that the app list missed is still listed.
+        for ref in here.map(\.ref) where listed[ref] == nil { listed[ref] = system.listed(ref) }
         var items: [WindowRef: RecentWindow] = [:]
         let refs = RecentWindows.items(history: used, front: here.map(\.ref), found: all.map(\.info.ref),
                                        focused: focused, count: list.count) { ref in
