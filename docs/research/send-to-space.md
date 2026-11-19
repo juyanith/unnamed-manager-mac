@@ -85,6 +85,16 @@ Patterns: every tool that moves one window with SIP on uses either a
 private call that Apple keeps closing, or a simulated drag. Every tool
 offers "send" (you stay) and most also "take" (you go with it).
 
+## Decided with the user (2026-11-18)
+
+- The action is **Send** ("Send to Space"), with an optional
+  `"follow": true` to go with the window.
+- **Nothing that needs SIP off.** The Dock scripting addition is out.
+- Sending is occasional (a window or two when switching tasks), so a
+  slower route is fine. Holding the title bar and pressing `CAG+2` carried
+  the window to Space 2 on 27.2.1 by hand [V, by hand], so the drag
+  fallback is sound. If both routes fail, the user can still do it by hand.
+
 ## Decisions (proposed, for discussion)
 
 1. **Build it on the bridged operation**, because it moved another app's
@@ -98,7 +108,7 @@ offers "send" (you stay) and most also "take" (you go with it).
 3. **Fallback: the title-bar drag with the macOS shortcut** for that
    Space, read from `com.apple.symbolichotkeys` (118 and up). When that
    shortcut is off, fail with a message that says to turn it on. Planned
-   test: by hand first (hold a title bar, press `CAG+2`) on 27.2.1 [U].
+   test: by hand worked on 27.2.1; a synthetic mouse-down is still [U].
 4. **Target by number, plus `left` and `right`,** counting desktops only on
    the focused window's display, as the macOS `Ctrl+N` shortcuts do.
    Full-screen Spaces can't take a window [K]: sending to one is not
@@ -122,8 +132,8 @@ offers "send" (you stay) and most also "take" (you go with it).
 
 - Does the bridged move survive macOS 27.3? Watch yabai #2853; if it
   doesn't, the drag is the only route with SIP on [U].
-- Does the drag fallback work on 27.2.1 with a synthetic mouse-down, or
-  only by hand, as on Sequoia? [U]
+- The drag works by hand on 27.2.1. Does it work with a synthetic
+  mouse-down, or only by hand, as on Sequoia? [U]
 - What happens with a window in a native tab group, a sheet, or a window
   set to "All Desktops" (Dock › Options)? [U]
 - With Displays have separate Spaces on, can a window go to a Space on the
