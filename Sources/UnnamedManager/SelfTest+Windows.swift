@@ -523,6 +523,26 @@ extension SelfTest {
         _ = await run(recent)
         check("S-084 Focus Window still picks a window of an app with arrange false", fake.focused == "c", "\(String(describing: fake.focused))")
 
+        // A dialog, as many Settings windows are: Focus Window picks it, Swap Window and Arrange Windows never move it.
+        settings.apps = [:]
+        start(["a": .init(frame: CGRect(x: 0, y: 0, width: 800, height: 600)), "b": .init(frame: CGRect(x: 1000, y: 0, width: 800, height: 600)),
+               "s": .init(frame: small, isDialog: true)], clicks: ["b", "s", "a"])
+        _ = await run(ArrangeAction())
+        check("Arrange Windows never counts or moves a dialog",
+              fake.windows["a"]?.frame == leftHalf && fake.windows["b"]?.frame == rightHalf && fake.windows["s"]?.frame == small,
+              "\(fake.windows.mapValues(\.frame))")
+        _ = await run(recent)
+        check("Focus Window picks a dialog", fake.focused == "s", "\(String(describing: fake.focused))")
+        let refused = await run(swap)
+        check("Swap Window never moves a focused dialog", refused?.message == "A dialog is left out of Swap Window."
+              && fake.windows["s"]?.frame == small && fake.windows["a"]?.frame == leftHalf, refused?.message ?? "no failure")
+        fake.click("a")
+        _ = await run(swap)
+        check("Swap Window's recent skips a dialog for the window before it",
+              fake.windows["s"]?.frame == small && fake.windows["a"]?.frame == rightHalf && fake.windows["b"]?.frame == leftHalf,
+              "\(fake.windows.mapValues(\.frame))")
+        settings.apps = [calc: .init(arrange: false)]
+
         let d = CGRect(x: 1920, y: 0, width: 800, height: 600), e = CGRect(x: 2920, y: 0, width: 800, height: 600)
         start(["a": .init(frame: CGRect(x: 0, y: 0, width: 800, height: 600)), "d": .init(frame: d), "e": .init(frame: e),
                "c": .init(frame: other.insetBy(dx: 400, dy: 300), app: calc)], clicks: ["a", "e", "d", "c"])
