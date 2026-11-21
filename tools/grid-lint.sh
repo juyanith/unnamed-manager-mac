@@ -3,13 +3,13 @@
 # Usage: tools/grid-lint.sh [folder]      (default: Sources)
 # Allowed numbers: 0, 1, 2, and multiples of 4. Better: a token (Space.lg, theme.radius.md).
 # The token files (Theme.swift, Grid.swift, and a design kit's Tokens.swift) are skipped, and so is
-# the window actions' geometry (Actions/Window, Windows, SelfTest+Windows.swift): its numbers are
+# the window actions' geometry (Actions/Window, Windows, and the window self-test: SelfTest+Windows, +Arrange, +Focus, +Recent, +Spaces): its numbers are
 # other apps' window frames and fractions of the screen, not this app's layout.
 # Silence one line with a reason: // grid: ok <why>
 set -euo pipefail
 dir=${1:-${0:A:h:h}/Sources}
 find "$dir" -name '*.swift' -not -name 'Theme.swift' -not -name 'Grid.swift' -not -name 'Tokens.swift' \
-  -not -path '*/Actions/Window/*' -not -path '*/Windows/*' -not -name 'SelfTest+Windows.swift' -print0 | xargs -0 perl -ne '
+  -not -path '*/Actions/Window/*' -not -path '*/Windows/*' -not -name 'SelfTest+Windows.swift' -not -name 'SelfTest+Arrange.swift' -not -name 'SelfTest+Focus.swift' -not -name 'SelfTest+Recent.swift' -not -name 'SelfTest+Spaces.swift' -print0 | xargs -0 perl -ne '
   BEGIN { $count = 0 }
   if (!/grid: ok/) {
     my @bad;
