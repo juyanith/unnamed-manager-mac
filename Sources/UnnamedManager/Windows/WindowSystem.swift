@@ -75,9 +75,10 @@ protocol WindowSystem: AnyObject {
     /// Which desktop of its display a window is on (S-096).
     func desktop(of window: WindowRef) -> DesktopPlace
     /// Puts a window on desktop `number` of its display (S-096). With
-    /// `follow` off, the desktop on screen is `from` again afterwards.
-    /// Fails when the window didn't move.
-    func send(_ window: WindowRef, toDesktop number: Int, from: Int, follow: Bool) async throws(PlanError)
+    /// `follow` off, the desktop on screen is `from` again afterwards; with
+    /// it, the fallback may already have gone there. Returns the desktop on
+    /// screen afterwards. Fails when the window didn't move.
+    func send(_ window: WindowRef, toDesktop number: Int, from: Int, follow: Bool) async throws(PlanError) -> Int
     /// A window seen before, when it still exists: minimized, hidden or on
     /// another Space too (S-092).
     func listed(_ ref: WindowRef) -> ListedWindow?
@@ -332,7 +333,8 @@ final class WindowControl {
             return
         case let .desktop(number):
             guard case let .desktop(from, _) = place else { return }
-            try await system.send(window, toDesktop: number, from: from, follow: follow)
+            let onScreen = try await system.send(window, toDesktop: number, from: from, follow: follow)
+            if follow, onScreen != number { await swipe(from: onScreen, to: number, around: frame) }
         }
         if follow {
             if let sent = system.window(window) { try await go(to: sent) }
@@ -340,6 +342,21 @@ final class WindowControl {
             try await go(to: other)
         }
     }
+
+    /// Goes with a sent window by Switch Space's swipe, one Space at a time,
+    /// so there's no slide and no Switch to Desktop shortcut is needed. Focus
+    /// alone would slide, or leave you behind when the Dock's “switch to a
+    /// Space with open windows” is off.
+    private func swipe(from: Int, to number: Int, around frame: CGRect) async {
+        guard let screen = WindowGeometry.screen(for: frame, among: system.screens()) else { return }
+        for step in 0..<abs(number - from) {
+            if step > 0 { try? await Task.sleep(for: Self.swipeGap) }
+            system.switchSpace(number > from ? .right : .left, on: screen)
+        }
+    }
+
+    /// Between swipes, so the Dock takes each one.
+    private static let swipeGap = Duration.milliseconds(60)
 
     /// False once a listed window has closed or its app has quit.
     func exists(_ window: WindowRef) -> Bool { system.listed(window) != nil }

@@ -766,15 +766,26 @@ extension SelfTest {
         let back = await run(SpaceSendAction(.side(.left)))
         check("S-096 left from Space 1 does nothing, with no sound",
               back == nil && fake.sends.count == 1 && fake.windows["b"]?.space == 1)
+        let swipes = fake.spaceSwitches.count
         let followed = await run(SpaceSendAction(.side(.right), follow: true))
         check("S-096 right with follow takes the window and you to Space 2, and it keeps focus",
               followed == nil && fake.windows["b"]?.space == 2 && fake.currentSpace == 2 && fake.focused == "b",
               "\(String(describing: followed)) space \(fake.currentSpace) focused \(String(describing: fake.focused))")
+        check("S-096 follow goes with one swipe to the right, on the window's display, with no slide",
+              fake.spaceSwitches.dropFirst(swipes).map(\.direction) == [.right]
+                  && fake.spaceSwitches.last?.screen == fake.screens().first(where: { $0.frame.contains(right) })?.frame,
+              "\(fake.spaceSwitches.dropFirst(swipes))")
         let same = await run(SpaceSendAction(.number(2)))
         check("S-096 a number for the window's own Space does nothing", same == nil && fake.sends.count == 2)
         let past = await run(SpaceSendAction(.number(5)))
         check("S-096 a number past the last Space fails with the sound",
               past == PlanError("No Space 5. There are 4.", alerts: true) && fake.sends.count == 2, "\(String(describing: past))")
+        let far = fake.spaceSwitches.count
+        let jumped = await run(SpaceSendAction(.number(4), follow: true))
+        check("S-096 follow to Space 4 from Space 2 swipes right twice, and you arrive with the window",
+              jumped == nil && fake.spaceSwitches.dropFirst(far).map(\.direction) == [.right, .right]
+                  && fake.windows["b"]?.space == 4 && fake.currentSpace == 4 && fake.focused == "b",
+              "\(String(describing: jumped)) \(fake.spaceSwitches.dropFirst(far)) space \(fake.currentSpace)")
         let builtIn = BuiltInAction.action(named: "space-send-4")
         check("S-096 space-send-4 is a built-in action with follow off",
               builtIn == .family(AnyActionValue(SpaceSendAction(.number(4)))))
@@ -787,7 +798,7 @@ extension SelfTest {
         fake.windows["b"]?.place = .desktop
         fake.refusesSend = true
         let refused = await run(SpaceSendAction(.number(1)))
-        check("S-096 when macOS refuses, it fails with the sound", refused?.alerts == true && fake.windows["b"]?.space == 2)
+        check("S-096 when macOS refuses, it fails with the sound", refused?.alerts == true && fake.windows["b"]?.space == 4)
         fake.refusesSend = false
         fake.focused = nil
         let none = await run(SpaceSendAction(.number(1)))

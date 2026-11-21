@@ -149,12 +149,14 @@ final class FakeWindowSystem: WindowSystem {
         }
     }
 
-    /// The window goes to that desktop; the Space on screen doesn't change.
-    func send(_ window: WindowRef, toDesktop number: Int, from: Int, follow: Bool) async throws(PlanError) {
+    /// The window goes to that desktop; the Space on screen doesn't change,
+    /// as with the window server's quiet move.
+    func send(_ window: WindowRef, toDesktop number: Int, from: Int, follow: Bool) async throws(PlanError) -> Int {
         guard !refusesSend else { throw PlanError("macOS didn't move the window.", alerts: true) }
-        guard let id = window.id.base as? String else { return }
+        guard let id = window.id.base as? String else { return from }
         windows[id]?.space = number
         sends.append((id, number, follow))
+        return from
     }
 
     /// A click on a window: it takes focus, as reported to `watchFocus`.

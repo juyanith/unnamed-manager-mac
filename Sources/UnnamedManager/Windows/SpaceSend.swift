@@ -23,19 +23,13 @@ extension AXWindowSystem {
     /// The quiet way first: the window server's own move, which leaves the
     /// Space on screen as it is. When macOS refuses it, as 27.3 beta does
     /// for apps other than the Dock, carry the window by its title bar
-    /// with the Mac's own Switch to Desktop shortcut (S-096).
-    func send(_ window: WindowRef, toDesktop number: Int, from: Int, follow: Bool) async throws(PlanError) {
+    /// with the Mac's own Switch to Desktop shortcut (S-096). The quiet move
+    /// leaves you on `from`, follow or not; `WindowControl` swipes after it.
+    func send(_ window: WindowRef, toDesktop number: Int, from: Int, follow: Bool) async throws(PlanError) -> Int {
         guard let id = windowID(of: window), let sky = SkyLight.shared, let space = sky.desktop(number, besides: id) else {
             throw PlanError("Unable to find Space \(number).", alerts: true)
         }
-        if sky.move(id, to: space), await sky.wait(until: id, isOn: space) {
-            if follow {
-                // Focus alone can leave the user behind when Dock Space-following is off.
-                // Without a configured desktop shortcut, the caller still tries to focus the window.
-                try? await TitleBarCarry.switchTo(desktop: number)
-            }
-            return
-        }
+        if sky.move(id, to: space), await sky.wait(until: id, isOn: space) { return from }
         log.info("Send to Space: the window server refused the move; carrying the window by its title bar")
         guard let frame = frame(of: window) else { throw PlanError("That window has closed.", alerts: true) }
         try await TitleBarCarry.carry(grabbing: frame, to: number)
@@ -44,6 +38,7 @@ extension AXWindowSystem {
         guard moved else {
             throw PlanError("macOS didn't move the window. Hold its title bar and press the shortcut for Space \(number).", alerts: true)
         }
+        return follow ? number : from
     }
 }
 
