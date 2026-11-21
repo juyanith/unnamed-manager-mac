@@ -1,6 +1,8 @@
 # Architecture review, end of M12 (2026-11-21)
 
-M12 added held menus and Recent Windows (S-089 to S-095). Since the M11 review the app also gained Window Used Before, per-app rules, Quit on Close, the Spaces settings, Switch Space and Send to Space (S-083 to S-088, S-096). Survey: 79 commits; 19,691 lines of Swift, tests included. The unit tests (330), the self-test (290 checks) and the grid checks all pass. Nothing was refactored in this check-in.
+M12 added held menus and Recent Windows (S-089 to S-095). Since the M11 review the app also gained Window Used Before, per-app rules, Quit on Close, the Spaces settings, Switch Space and Send to Space (S-083 to S-088, S-096). Survey: 79 commits; 19,691 lines of Swift, tests included. The unit tests (330), the self-test (290 checks) and the grid checks all pass.
+
+**Done after the review (2026-11-21):** both Strong proposals, one commit each, each checked against the 290 self-test checks and the 330 unit tests before and after. `WindowSystem.swift` is 92 lines and `WindowControl` is in four files plus `SpaceSend.swift`. `Launcher` is 289 lines, and `ListSession` 68. The list session is one object for the app's life, not one per list, so item ids keep counting up across lists as before. It doesn't cancel its watch at the end of a sequence: the watch already stops once the engine has no items.
 
 Since the M11 review, these files grew the most:
 

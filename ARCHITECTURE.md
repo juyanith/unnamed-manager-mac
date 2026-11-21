@@ -34,6 +34,8 @@ ConfigStore (main) ── onLoad ─► EngineBox.replace(config)
 - **Icons are looked up when the config loads, never when the Guide shows.** `IconSource` (Kit) names where an icon comes from; `GuideIcons` (main) caches the images; `EntryIcon` draws one the same way in the Guide and the Bindings editor, and only the editor looks up on a miss. `AppGlyph` draws the app's glyph for the menu bar and for menus.
 - **Every kind of action except Context Aware is a family** (S-060). A family is one value type conforming to `ActionValue` (Kit, `Actions/`): its `type` values and UI names, reading and checking its fields through `ActionFields`, writing them through `ActionFieldWriter`, its part of the schema, its plan and its icon. `ActionRegistry.standard` lists the families; the decoder, the validator, the schema, the writer, the Guide and the Type picker all read it. `Config.Action` is `.family(AnyActionValue)` or the `.contextual` shell case. In the app, a family's form comes from `EditableAction`, and a step the built-in `ActionPlan` cases don't cover is an `ActionStep` that also conforms to `PerformableStep`. Each is a retroactive conformance in the family's own app file, so a new family changes no shared file except the one registry line.
 - **`Launcher` owns permissions, Enabled, the tap, the engine box and the Guide.** The menu bar menu reads its state through `MenuBarStatus`, a plain value the self-test checks.
+- **A list in the Guide is a `ListSession`** (S-092 to S-095), owned by `Launcher`: the window behind each item, the 250 ms watch that takes out closed ones, and whether choosing focuses or swaps. It reaches the engine only through closures `Launcher` gives it.
+- **`WindowControl` is one class in files by area:** `WindowControl.swift` (its state, `run`, focusing and placing), `+Focus` (Focus Window and Swap Window), `+Arrange`, `+Recent` (Recent Windows and choosing from a list), and Send to Space in `SpaceSend.swift`. `WindowSystem.swift` holds only the seam.
 
 ## Seams
 
@@ -59,4 +61,4 @@ ConfigStore (main) ── onLoad ─► EngineBox.replace(config)
 - [docs/architecture-review-2026-11-11-m9.md](docs/architecture-review-2026-11-11-m9.md) (end of M9; action families behind one registry, done as M10)
 - [docs/architecture-review-2026-11-11-m10.md](docs/architecture-review-2026-11-11-m10.md) (end of M10; the window system seam, done in S-062)
 - [docs/architecture-review-2026-11-11-m11.md](docs/architecture-review-2026-11-11-m11.md) (end of M11; window commands as values the Kit decides)
-- [docs/architecture-review-2026-11-21-m12.md](docs/architecture-review-2026-11-21-m12.md) (end of M12; `WindowControl` in files by area, and a `ListSession` out of `Launcher`)
+- [docs/architecture-review-2026-11-21-m12.md](docs/architecture-review-2026-11-21-m12.md) (end of M12; `WindowControl` in files by area, and a `ListSession` out of `Launcher`, both done)
