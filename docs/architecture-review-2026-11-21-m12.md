@@ -69,7 +69,7 @@ Carried over from M11, with a stronger signal. `WindowCommand` has eight cases, 
 
 ## Snapshot pages from a table  [Worth exploring]
 
-Carried over. The M11 review said to do it when `Snapshot.swift` passed 300 lines, and it's at 351. M12 added three more blocks in the same "light and dark, set up, wait, capture" shape.
+Carried over. The M11 review said to do it when `Snapshot.swift` passed 300 lines, and it's at 351. M12 added three more blocks in the same "light and dark, set up, wait, capture" shape. **Done (2026-11-21):** every page is a `Page` in one table (selector, name, before and after, show, hide, wait), and one loop takes light and dark. The same 193 files come out, with the same layout files. Pixel for pixel, two pages got better: `help-dark` was still scrolled down from the light pass, and `hud-error-dark` was blank. The bottom capture now scrolls back exactly, since a tab's dark capture now comes right after its light one.
 
 ## Held and list state in the engine as values  [Speculative]
 

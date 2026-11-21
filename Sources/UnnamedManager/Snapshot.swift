@@ -38,255 +38,237 @@ enum Snapshot {
             try? await Task.sleep(for: .seconds(1.5))
             // The Guide's seed content may use icons the /tmp config doesn't (S-054).
             GuideIcons.shared.load(SeedData.fixture.iconSources())
-            for mode in ["light", "dark"] {
-                NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
-                // A row selected on each page, so the editor pane shows a form.
-                model.editor.selection = KeySequence(parsing: "Hyper+Space A T")
-                model.actionSelection = "find"
-                model.contextSelection = "browser"
-                for tab in SettingsTab.allCases where only?.contains(tab.rawValue) ?? true {
-                    model.tab = tab
-                    try? await Task.sleep(for: .seconds(0.8))
-                    capture(to: "\(dir)/\(tab.rawValue)-\(mode).png")
-                    if !tab.isEditor { await captureBottom(to: "\(dir)/\(tab.rawValue)-bottom-\(mode).png") }
-                }
-                if only?.contains("help") ?? true {
-                    model.showHelp()
-                    try? await Task.sleep(for: .seconds(1))
-                    capture(to: "\(dir)/help-\(mode).png", window: SelfTest.window(WindowID.help))
-                }
-                if only?.contains("actions") ?? true {
-                    // S-046: a Use Application action, with its Mode picker.
-                    model.tab = .actions
-                    model.actionSelection = "open-editor"
-                    try? await Task.sleep(for: .seconds(0.8))
-                    capture(to: "\(dir)/actions-app-\(mode).png")
-                    // S-053: Show Help, which has no fields.
-                    model.actionSelection = "show-help"
-                    try? await Task.sleep(for: .seconds(0.8))
-                    capture(to: "\(dir)/actions-help-\(mode).png")
-                }
-                if only?.contains("actions") ?? true {
-                    // S-070: each window action's form.
-                    model.tab = .actions
-                    for id in ["left-half", "move-center", "wider", "half-size", "focus-right", "focus-next", "focus-recent", "window-fill", "arrange", "swap-2", "space-right", "send-3"] {
-                        model.actionSelection = id
-                        try? await Task.sleep(for: .seconds(0.8))
-                        capture(to: "\(dir)/actions-window-\(id)-\(mode).png")
-                    }
-                }
-                if only?.contains("help") ?? true {
-                    // S-081: the Built-In Actions section, with Place Window open.
-                    model.showBuiltIns("Place Window")
-                    try? await Task.sleep(for: .seconds(1.2))
-                    capture(to: "\(dir)/help-builtin-\(mode).png", window: SelfTest.window(WindowID.help))
-                    model.openBuiltIns = []
-                    // S-094: the Held Menus section.
-                    model.revealBuiltIn = HelpContent.heldMenusID
-                    try? await Task.sleep(for: .seconds(1.2))
-                    capture(to: "\(dir)/help-held-\(mode).png", window: SelfTest.window(WindowID.help))
-                    SelfTest.window(WindowID.help)?.close()
-                }
-                if only?.contains("bindings") ?? true {
-                    // S-048: a direct binding, with its editor pane.
-                    model.tab = .bindings
-                    model.editor.selection = KeySequence(parsing: "CAG+T")
-                    try? await Task.sleep(for: .seconds(0.8))
-                    capture(to: "\(dir)/bindings-direct-\(mode).png")
-                    // S-056: an entry with an icon of its own.
-                    model.editor.selection = KeySequence(parsing: "Hyper+Space S")
-                    try? await Task.sleep(for: .seconds(0.8))
-                    capture(to: "\(dir)/bindings-icon-\(mode).png")
-                    // S-080: a binding with a built-in action, and the Built In menu.
-                    model.editor.selection = KeySequence(parsing: "Hyper+Space W Left")
-                    try? await Task.sleep(for: .seconds(0.8))
-                    capture(to: "\(dir)/bindings-builtin-\(mode).png")
-                }
-            }
-            if only == nil || !(only ?? []).isDisjoint(with: ["bindings-hold", "bindings-list", "bindings-swap"]) {
-                // S-094: Hold to Choose on a leader, and a menu that's Recent Windows.
-                var document = ConfigDocument(config: SeedData.fixture.config)
-                let leader = KeySequence(parsing: "Hyper+Space")!, recent = KeySequence(parsing: "Hyper+Space R")!
-                document.setHold(leader, true)
-                let at = document.config.entries.firstIndex { $0.keys == "Hyper+Space N" }!
-                document.config.entries.insert(Config.Entry(keys: recent.description, title: "Recent Windows",
-                                                            list: Config.List(count: 20, minimized: false, spaces: "current")), at: at)
-                // S-095: a list that swaps.
-                let swap = KeySequence(parsing: "Hyper+Space O")!
-                document.config.entries.insert(Config.Entry(keys: swap.description, title: "Swap With",
-                                                            list: Config.List(choose: "swap")), at: at)
-                model.editor.preview(document)
-                model.tab = .bindings
+            for page in pages(openWelcome: openWelcome) where only?.contains(page.selector) ?? true {
+                await page.before(model)
                 for mode in ["light", "dark"] {
                     NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
-                    for (name, path) in [("bindings-hold", leader), ("bindings-list", recent), ("bindings-swap", swap)] {
-                        model.editor.selection = path
-                        try? await Task.sleep(for: .seconds(0.8))
-                        capture(to: "\(dir)/\(name)-\(mode).png")
-                    }
+                    let window = await page.show(model, mode)
+                    try? await Task.sleep(for: .seconds(page.wait))
+                    capture(to: "\(dir)/\(page.file(mode)).png", window: window)
+                    if page.bottom { await captureBottom(to: "\(dir)/\(page.name)-bottom-\(mode).png") }
+                    await page.hide(model)
                 }
-                model.editor.endPreview()
-            }
-            if only == nil || only?.contains("empty") == true {
-                // S-042: each page with nothing in it.
-                model.editor.preview(ConfigDocument(config: Config(entries: [])))
-                model.actionSelection = nil
-                model.contextSelection = nil
-                for mode in ["light", "dark"] {
-                    NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
-                    for tab in SettingsTab.allCases where tab.isEditor {
-                        model.tab = tab
-                        try? await Task.sleep(for: .seconds(0.8))
-                        capture(to: "\(dir)/empty-\(tab.rawValue)-\(mode).png")
-                    }
-                    model.showHelp()
-                    try? await Task.sleep(for: .seconds(1))
-                    capture(to: "\(dir)/empty-help-\(mode).png", window: SelfTest.window(WindowID.help))
-                    SelfTest.window(WindowID.help)?.close()
-                }
-                model.editor.endPreview()
-            }
-            if only == nil || only?.contains("bindings-error") == true {
-                // S-023: a broken file shows the banner over the last valid outline.
-                let good = try? Data(contentsOf: model.store.url)
-                try? Data(#"{ "version": 1, "entries": [{ "keys": "Hyper+Spcae", "title": "C" }] }"#.utf8).write(to: model.store.url)
-                model.store.reload()
-                model.tab = .bindings
-                for mode in ["light", "dark"] {
-                    NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
-                    try? await Task.sleep(for: .seconds(0.8))
-                    capture(to: "\(dir)/bindings-error-\(mode).png")
-                }
-                if let good { try? good.write(to: model.store.url) }
-                model.store.reload()
-            }
-            if only == nil || only?.contains("hud") == true {
-                // The Guide right after the leader, over Settings.
-                let guide = model.launcher.guide
-                for mode in ["light", "dark"] {
-                    NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
-                    guide.show(SeedData.guideContent)
-                    try? await Task.sleep(for: .seconds(0.8))
-                    capture(to: "\(dir)/hud-\(mode).png", window: guide.window)
-                    // The error flash for an unbound key (S-018).
-                    guide.holdFlashForSnapshot(true)
-                    try? await Task.sleep(for: .seconds(0.3))
-                    capture(to: "\(dir)/hud-flash-\(mode).png", window: guide.window)
-                    guide.holdFlashForSnapshot(false)
-                    guide.hide()
-                    try? await Task.sleep(for: .seconds(0.3))
-                }
-            }
-            if only == nil || !(only ?? []).isDisjoint(with: ["hud-held", "hud-recent", "hud-recent-more"]) {
-                // S-091: a held menu, with Cancel and the highlight. S-092: Recent Windows. S-093: its second page.
-                let guide = model.launcher.guide
-                for (name, content) in [("hud-held", SeedData.heldContent), ("hud-recent", SeedData.recentContent),
-                                        ("hud-recent-more", SeedData.recentMoreContent)]
-                where only == nil || only?.contains(name) == true {
-                    for mode in ["light", "dark"] {
-                        NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
-                        guide.show(content)
-                        try? await Task.sleep(for: .seconds(0.8))
-                        capture(to: "\(dir)/\(name)-\(mode).png", window: guide.window)
-                        guide.hide()
-                        try? await Task.sleep(for: .seconds(0.3))
-                    }
-                }
-            }
-            if only == nil || only?.contains("hud") == true {
-                // S-070: the Windows menu, with each window action's symbol.
-                let guide = model.launcher.guide
-                for mode in ["light", "dark"] {
-                    NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
-                    guide.show(SeedData.windowsContent)
-                    try? await Task.sleep(for: .seconds(0.8))
-                    capture(to: "\(dir)/hud-window-\(mode).png", window: guide.window)
-                    guide.hide()
-                    try? await Task.sleep(for: .seconds(0.3))
-                }
-            }
-            if only == nil || only?.contains("hud-home") == true {
-                // S-050: Home in one column, and side by side.
-                let guide = model.launcher.guide
-                for (name, content) in [("hud-home", SeedData.homeContent), ("hud-home-wide", SeedData.wideHomeContent)] {
-                    for mode in ["light", "dark"] {
-                        NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
-                        guide.show(content)
-                        try? await Task.sleep(for: .seconds(0.8))
-                        capture(to: "\(dir)/\(name)-\(mode).png", window: guide.window)
-                        guide.hide()
-                        try? await Task.sleep(for: .seconds(0.3))
-                    }
-                }
+                await page.after(model)
             }
             if only == nil || only?.contains("menubar-icons") == true {
-                // S-041: ready, off and warning on a light and a dark menu bar.
+                // S-041: ready, off and warning on a light and a dark menu bar, in one PNG.
                 if let png = MenuBarIcon.contactSheet() {
                     try? png.write(to: URL(fileURLWithPath: "\(dir)/menubar-icons.png"))
                     print("SNAPSHOT \(dir)/menubar-icons.png")
-                }
-            }
-            if only == nil || only?.contains("welcome") == true {
-                // S-040: the first-run window.
-                let before = Set(NSApp.windows.map(ObjectIdentifier.init))
-                openWelcome()
-                try? await Task.sleep(for: .seconds(1))
-                let welcome = NSApp.windows.first { !before.contains(ObjectIdentifier($0)) && $0.isVisible }
-                for mode in ["light", "dark"] {
-                    NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
-                    try? await Task.sleep(for: .seconds(0.8))
-                    capture(to: "\(dir)/welcome-\(mode).png", window: welcome)
-                }
-                welcome?.close()
-            }
-            if only == nil || only?.contains("welcome-import") == true {
-                // S-058: the copy offer with the old app running, then the copied state.
-                for (name, state) in [("welcome-import", LauncherMigration.State.offer), ("welcome-copied", .copied)] {
-                    model.migration.show(state, launcherRunning: state == .offer,
-                                         source: LauncherMigration.sourceURL(environment: [:], home: URL.homeDirectory))
-                    openWelcome()
-                    try? await Task.sleep(for: .seconds(1))
-                    // A single Window reuses its NSWindow, so find it by id, not as a new window.
-                    let welcome = NSApp.windows.first { $0.identifier?.rawValue.hasPrefix(WindowID.welcome) == true && $0.isVisible }
-                    for mode in ["light", "dark"] {
-                        NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
-                        try? await Task.sleep(for: .seconds(0.8))
-                        capture(to: "\(dir)/\(name)-\(mode).png", window: welcome)
-                    }
-                    welcome?.close()
-                    try? await Task.sleep(for: .seconds(0.3))
-                }
-                model.migration.show(.hidden, launcherRunning: false)
-            }
-            if only == nil || only?.contains("hud-theme") == true {
-                // S-020: a fixed theme wins over the Mac's mode.
-                let guide = model.launcher.guide
-                for (mac, theme) in [("dark", "light"), ("light", "dark")] {
-                    NSApp.appearance = NSAppearance(named: mac == "light" ? .aqua : .darkAqua)
-                    guide.theme = theme
-                    guide.show(SeedData.guideContent)
-                    try? await Task.sleep(for: .seconds(0.8))
-                    capture(to: "\(dir)/hud-theme-\(theme)-on-\(mac).png", window: guide.window)
-                    guide.hide()
-                    try? await Task.sleep(for: .seconds(0.3))
-                }
-                guide.theme = "system"
-            }
-            if only == nil || only?.contains("hud-error") == true {
-                let guide = model.launcher.guide
-                for mode in ["light", "dark"] {
-                    NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
-                    guide.showFailure("Couldn't open dev.zed.Zed: not installed.", title: "Editor")
-                    try? await Task.sleep(for: .seconds(0.8))
-                    capture(to: "\(dir)/hud-error-\(mode).png", window: guide.window)
-                    guide.hide()
-                    try? await Task.sleep(for: .seconds(0.3))
                 }
             }
             print("SNAPSHOT done \(dir)")
             // An open sheet refuses terminate, and the run would wait forever.
             for window in NSApp.windows { if let sheet = window.attachedSheet { window.endSheet(sheet) } }
             NSApp.terminate(nil)
+        }
+    }
+
+    /// One snapshot page: shown, captured in light and dark, then hidden.
+    /// `APP_SNAPSHOT_PAGES` picks pages by `selector`, which several pages
+    /// can share, as every Actions page shares "actions".
+    private struct Page {
+        let selector: String
+        /// The file name before -light.png or -dark.png.
+        let name: String
+        var wait = 0.8
+        /// Also captures `<name>-bottom-<mode>.png`, the Form scrolled to its end.
+        var bottom = false
+        /// Once before both modes, and once after.
+        var before: (AppModel) async -> Void = { _ in }
+        var after: (AppModel) async -> Void = { _ in }
+        /// Shows the page for a mode and returns its window; nil is Settings.
+        var show: (AppModel, String) async -> NSWindow?
+        var hide: (AppModel) async -> Void = { _ in }
+        /// The file name for a mode.
+        var fileName: ((String) -> String)?
+
+        func file(_ mode: String) -> String { fileName?(mode) ?? "\(name)-\(mode)" }
+    }
+
+    private static var help: NSWindow? { SelfTest.window(WindowID.help) }
+    /// A single Window reuses its NSWindow, so it's found by id, not as a new window (S-058).
+    private static var welcome: NSWindow? {
+        NSApp.windows.first { $0.identifier?.rawValue.hasPrefix(WindowID.welcome) == true && $0.isVisible }
+    }
+
+    /// A Settings page: a tab with a row selected.
+    private static func settings(_ selector: String, _ name: String, tab: SettingsTab, bottom: Bool = false,
+                                 select: @escaping (AppModel) -> Void = { _ in }) -> Page {
+        Page(selector: selector, name: name, bottom: bottom) { model, _ in
+            model.tab = tab
+            select(model)
+            return nil
+        }
+    }
+
+    /// A Guide page, hidden after each capture.
+    private static func guide(_ selector: String, _ name: String, _ content: GuideContent) -> Page {
+        Page(selector: selector, name: name, show: { model, _ in
+            model.launcher.guide.show(content)
+            return model.launcher.guide.window
+        }, hide: hideGuide)
+    }
+
+    private static func hideGuide(_ model: AppModel) async {
+        model.launcher.guide.hide()
+        try? await Task.sleep(for: .seconds(0.3))
+    }
+
+    /// Every page, in the order they're taken.
+    private static func pages(openWelcome: @escaping () -> Void) -> [Page] {
+        // A row selected on each tab, so the editor pane shows a form.
+        let tabs = SettingsTab.allCases.map { tab in
+            settings(tab.rawValue, tab.rawValue, tab: tab, bottom: !tab.isEditor) { model in
+                model.editor.selection = KeySequence(parsing: "Hyper+Space A T")
+                model.actionSelection = "find"
+                model.contextSelection = "browser"
+            }
+        }
+        let action = { (name: String, id: String) in settings("actions", name, tab: .actions) { $0.actionSelection = id } }
+        let binding = { (name: String, keys: String) in
+            settings("bindings", name, tab: .bindings) { $0.editor.selection = KeySequence(parsing: keys) }
+        }
+        let held = HeldPreview()
+        let heldPage = { (name: String, path: KeySequence) in
+            Page(selector: name, name: name, before: { $0.editor.preview(held.document) },
+                 after: { $0.editor.endPreview() }) { model, _ in
+                model.tab = .bindings
+                model.editor.selection = path
+                return nil
+            }
+        }
+        let empty = { (tab: SettingsTab) in
+            Page(selector: "empty", name: "empty-\(tab.rawValue)", before: Self.emptyPreview, after: { $0.editor.endPreview() }) { model, _ in
+                model.tab = tab
+                return nil
+            }
+        }
+        let welcomePage = { (selector: String, name: String, state: LauncherMigration.State?) in
+            Page(selector: selector, name: name, before: { model in
+                if let state {
+                    model.migration.show(state, launcherRunning: state == .offer,
+                                         source: LauncherMigration.sourceURL(environment: [:], home: URL.homeDirectory))
+                }
+                openWelcome()
+                try? await Task.sleep(for: .seconds(1))
+            }, after: { model in
+                welcome?.close()
+                try? await Task.sleep(for: .seconds(0.3))
+                if state == .copied { model.migration.show(.hidden, launcherRunning: false) }
+            }) { _, _ in welcome }
+        }
+        var brokenFile: Data?
+        return tabs + [
+            Page(selector: "help", name: "help", wait: 1) { model, _ in
+                model.showHelp()
+                return help
+            },
+            // S-046: a Use Application action, with its Mode picker. S-053: Show Help, which has no fields.
+            action("actions-app", "open-editor"),
+            action("actions-help", "show-help"),
+        ] + [
+            // S-070: each window action's form.
+            "left-half", "move-center", "wider", "half-size", "focus-right", "focus-next", "focus-recent",
+            "window-fill", "arrange", "swap-2", "space-right", "send-3",
+        ].map { action("actions-window-\($0)", $0) } + [
+            // S-081: the Built-In Actions section, with Place Window open.
+            Page(selector: "help", name: "help-builtin", wait: 1.2, show: { model, _ in
+                model.showBuiltIns("Place Window")
+                return help
+            }, hide: { $0.openBuiltIns = [] }),
+            // S-094: the Held Menus section.
+            Page(selector: "help", name: "help-held", wait: 1.2, after: { _ in help?.close() }) { model, _ in
+                model.revealBuiltIn = HelpContent.heldMenusID
+                model.showHelp()
+                return help
+            },
+            // S-048: a direct binding. S-056: an entry with an icon of its own. S-080: a built-in action.
+            binding("bindings-direct", "CAG+T"),
+            binding("bindings-icon", "Hyper+Space S"),
+            binding("bindings-builtin", "Hyper+Space W Left"),
+            // S-094: Hold to Choose on a leader, and a menu that's Recent Windows. S-095: a list that swaps.
+            heldPage("bindings-hold", held.leader),
+            heldPage("bindings-list", held.recent),
+            heldPage("bindings-swap", held.swap),
+        ] + SettingsTab.allCases.filter(\.isEditor).map(empty) + [
+            // S-042: Help with nothing in it.
+            Page(selector: "empty", name: "empty-help", wait: 1, before: Self.emptyPreview, after: { $0.editor.endPreview() },
+                 show: { model, _ in
+                     model.showHelp()
+                     return help
+                 }, hide: { _ in help?.close() }),
+            // S-023: a broken file shows the banner over the last valid outline.
+            Page(selector: "bindings-error", name: "bindings-error", before: { model in
+                brokenFile = try? Data(contentsOf: model.store.url)
+                try? Data(#"{ "version": 1, "entries": [{ "keys": "Hyper+Spcae", "title": "C" }] }"#.utf8).write(to: model.store.url)
+                model.store.reload()
+            }, after: { model in
+                if let brokenFile { try? brokenFile.write(to: model.store.url) }
+                model.store.reload()
+            }) { model, _ in
+                model.tab = .bindings
+                return nil
+            },
+            // The Guide right after the leader, over Settings.
+            guide("hud", "hud", SeedData.guideContent),
+            // S-018: the error flash for an unbound key.
+            Page(selector: "hud", name: "hud-flash", wait: 1.1, show: { model, _ in
+                model.launcher.guide.show(SeedData.guideContent)
+                model.launcher.guide.holdFlashForSnapshot(true)
+                return model.launcher.guide.window
+            }, hide: { model in
+                model.launcher.guide.holdFlashForSnapshot(false)
+                await hideGuide(model)
+            }),
+            // S-091: a held menu, with Cancel and the highlight. S-092: Recent Windows. S-093: its second page.
+            guide("hud-held", "hud-held", SeedData.heldContent),
+            guide("hud-recent", "hud-recent", SeedData.recentContent),
+            guide("hud-recent-more", "hud-recent-more", SeedData.recentMoreContent),
+            // S-070: the Windows menu, with each window action's symbol.
+            guide("hud", "hud-window", SeedData.windowsContent),
+            // S-050: Home in one column, and side by side.
+            guide("hud-home", "hud-home", SeedData.homeContent),
+            guide("hud-home", "hud-home-wide", SeedData.wideHomeContent),
+            // S-040: the first-run window. S-058: the copy offer with the old app running, then the copied state.
+            welcomePage("welcome", "welcome", nil),
+            welcomePage("welcome-import", "welcome-import", .offer),
+            welcomePage("welcome-import", "welcome-copied", .copied),
+            // S-020: a fixed theme wins over the Mac's mode: light on a dark Mac, dark on a light one.
+            Page(selector: "hud-theme", name: "hud-theme", after: { $0.launcher.guide.theme = "system" }, show: { model, mac in
+                model.launcher.guide.theme = mac == "light" ? "dark" : "light"
+                model.launcher.guide.show(SeedData.guideContent)
+                return model.launcher.guide.window
+            }, hide: hideGuide, fileName: { mac in "hud-theme-\(mac == "light" ? "dark" : "light")-on-\(mac)" }),
+            Page(selector: "hud-error", name: "hud-error", show: { model, _ in
+                model.launcher.guide.showFailure("Couldn't open dev.zed.Zed: not installed.", title: "Editor")
+                return model.launcher.guide.window
+            }, hide: hideGuide),
+        ]
+    }
+
+    private static func emptyPreview(_ model: AppModel) async {
+        model.editor.preview(ConfigDocument(config: Config(entries: [])))
+        model.actionSelection = nil
+        model.contextSelection = nil
+    }
+
+    /// S-094 and S-095: the sample config with Hold on its leader, a Recent
+    /// Windows list, and a list that swaps.
+    private struct HeldPreview {
+        let leader = KeySequence(parsing: "Hyper+Space")!
+        let recent = KeySequence(parsing: "Hyper+Space R")!
+        let swap = KeySequence(parsing: "Hyper+Space O")!
+
+        var document: ConfigDocument {
+            var document = ConfigDocument(config: SeedData.fixture.config)
+            document.setHold(leader, true)
+            let at = document.config.entries.firstIndex { $0.keys == "Hyper+Space N" }!
+            document.config.entries.insert(Config.Entry(keys: recent.description, title: "Recent Windows",
+                                                        list: Config.List(count: 20, minimized: false, spaces: "current")), at: at)
+            document.config.entries.insert(Config.Entry(keys: swap.description, title: "Swap With",
+                                                        list: Config.List(choose: "swap")), at: at)
+            return document
         }
     }
 
@@ -301,10 +283,14 @@ enum Snapshot {
         let settings = SelfTest.window(WindowID.settings)
         guard let scroll = settings?.contentView.flatMap(Self.scrollView), let document = scroll.documentView,
               document.bounds.height > scroll.contentView.bounds.height + 1 else { return }
+        // Back to exactly where it was, since the dark capture of the same tab comes next.
+        let top = scroll.contentView.bounds.origin
         document.scroll(NSPoint(x: 0, y: document.isFlipped ? document.bounds.maxY : 0))
         try? await Task.sleep(for: .seconds(0.3))
         capture(to: path, window: settings)
-        document.scroll(NSPoint(x: 0, y: document.isFlipped ? 0 : document.bounds.maxY))
+        scroll.contentView.scroll(to: top)
+        scroll.reflectScrolledClipView(scroll.contentView)
+        try? await Task.sleep(for: .seconds(0.3))
     }
 
     /// The first scroll view in a view's tree, such as a Form's.
