@@ -65,7 +65,7 @@ Carried over from M11, with a stronger signal. `WindowCommand` has eight cases, 
 
 ## The window self-test in files by area  [Worth exploring]
 
-`SelfTest+Windows.swift` is 819 lines, the largest file in the repo. It's already ten `static func …Checks()` groups, so it splits along them with no other change: Focus and Swap, Arrange, Recent Windows and seen windows, Spaces (settings, switch, send), editing. Proof: the same 290 checks, in the same order. It's only test code, so do it alongside the `WindowControl` split.
+`SelfTest+Windows.swift` is 819 lines, the largest file in the repo. It's already ten `static func …Checks()` groups, so it splits along them with no other change: Focus and Swap, Arrange, Recent Windows and seen windows, Spaces (settings, switch, send), editing. Proof: the same 290 checks, in the same order. It's only test code, so do it alongside the `WindowControl` split. **Done (2026-11-21):** `SelfTest+Windows.swift` (window actions and editing, 234 lines), `+Arrange`, `+Focus` (focus, swap, seen windows), `+Recent` and `+Spaces`; still 290 checks, in the same order.
 
 ## Snapshot pages from a table  [Worth exploring]
 
