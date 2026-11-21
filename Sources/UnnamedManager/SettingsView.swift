@@ -132,10 +132,17 @@ struct SettingsForm: View {
                             .foregroundStyle(.secondary)
                     }
                     Button("Open Desktop & Dock Settings…") { NSWorkspace.shared.open(SpacesSettingsStore.systemSettingsURL) }
+                    LabeledContent {
+                        Text(model.spaces.reducesMotion ? "On" : "Off")
+                    } label: {
+                        Text("Reduce Motion")
+                        Text(model.spaces.reduceMotionNote)
+                    }
+                    Button("Open Accessibility Settings…") { NSWorkspace.shared.open(SpacesSettingsStore.accessibilitySettingsURL) }
                 } header: {
                     Text("Spaces")
                 } footer: {
-                    Text("Suggestions for using window actions with Spaces. These are macOS settings, the same as in System Settings › Desktop & Dock, so they aren't in the config file. Changing Rearrange restarts the Dock.")
+                    Text("Suggestions for using window actions with Spaces. These are macOS settings, the same as in System Settings › Desktop & Dock and Accessibility › Motion, so they aren't in the config file. Changing Rearrange restarts the Dock. Switch Space and Go With the Window never slide, with Reduce Motion or without.")
                 }
                 .onAppear { model.spaces.refresh() }
                 .confirmationDialog("Restart the Dock?", isPresented: Binding(get: { pendingRearrange != nil }, set: { if !$0 { pendingRearrange = nil } })) {

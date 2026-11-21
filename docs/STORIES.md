@@ -1058,6 +1058,7 @@ Acceptance:
 - [unit] Both are on when their key isn't set; `mru-spaces` in com.apple.dock is Rearrange, and `spans-displays` in com.apple.spaces is the opposite of Separate Spaces; a test domain prefix reads and writes its own domain.
 - [self] Turning Rearrange off writes `mru-spaces` false and restarts the Dock once; turning Separate Spaces off writes `spans-displays` true, restarts nothing, and says it waits for log out; both in test domains.
 - [snap] A Spaces section ends the Windows tab with both switches, a suggestion under each one that isn't as suggested, and Open Desktop & Dock Settings….
+- [self] Reduce Motion (Accessibility › Motion) shows as On or Off with a note, as an optional tip: never in the menu bar's Suggested, and the app only reads it, since it changes animations across the Mac. Off, the note says Spaces would fade instead of sliding; on, that they do. Open Accessibility Settings… opens the Accessibility pane (no anchor for Motion was found).
 - [manual] Turning Rearrange off asks before restarting the Dock, then System Settings shows it off. With either one not as suggested, the menu bar menu has Suggested › Review Spaces Settings…, which opens the Windows tab.
 UX:
 - Suggestions, not requirements: the menu bar icon gets no badge, and nothing else changes when they're left as they are.
@@ -1065,7 +1066,7 @@ UX:
 - These are macOS settings, not the config file, so there's no undo and nothing in `spec/`.
 - Snapshots and the self-test use test domains (`net.unnamed.manager.test.`) and never restart the Dock.
 Status: done
-Verified: the keys and their meaning (unit tests, `SpacesSettingsTests`); writing, the Dock restart and the log-out note (self-test); windows-bottom in light and dark, grid checks. Not yet tried by hand: the manual line.
+Verified: the keys and their meaning (unit tests, `SpacesSettingsTests`); writing, the Dock restart and the log-out note, Reduce Motion's note off and on and that it's never a suggestion (self-test, 290 checks); windows-bottom in light and dark, grid checks. Not yet tried by hand: the manual line, and the Reduce Motion row following a change in System Settings while the tab is open.
 
 ### S-088 Switch Space with a key, with no slide
 As the user, I press a key to go to the Space to the left or right on the display I'm working in, the focused window's, and I'm there at once, without the sliding animation macOS plays for Control-Left and Control-Right.

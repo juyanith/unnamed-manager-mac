@@ -11,6 +11,12 @@ final class SpacesSettingsStore {
     let separateSpacesInEffect: Bool
     /// How many times the Dock was restarted, or would have been in a test.
     private(set) var dockRestarts = 0
+    /// Reduce Motion in System Settings › Accessibility › Motion: optional,
+    /// so it's never in `unsuggested`. Spaces fade with it instead of
+    /// sliding. The app only reads it, since it changes the whole Mac.
+    private(set) var reducesMotion = false
+    /// What the self-test and snapshots read instead of the Mac's setting.
+    @ObservationIgnored var testReducesMotion = false
     @ObservationIgnored let preferences: SpacesPreferences
     @ObservationIgnored private let isTest: Bool
 
@@ -20,11 +26,18 @@ final class SpacesSettingsStore {
         if isTest { SpacesSetting.allCases.forEach(preferences.remove) }
         separateSpacesInEffect = isTest ? preferences.isOn(.separateSpaces) : NSScreen.screensHaveSeparateSpaces
         refresh()
+        guard !isTest else { return }
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.refresh() }
+        }
     }
 
-    /// Reads both again, since they can change in System Settings.
+    /// Reads them all again, since they can change in System Settings.
     func refresh() {
         for setting in SpacesSetting.allCases { isOn[setting] = preferences.isOn(setting) }
+        reducesMotion = isTest ? testReducesMotion : NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
     }
 
     /// The settings that aren't as suggested.
@@ -52,6 +65,14 @@ final class SpacesSettingsStore {
     }
 
     static let systemSettingsURL = URL(string: "x-apple.systempreferences:com.apple.Desktop-Settings.extension")!
+    static let accessibilitySettingsURL = URL(string: "x-apple.systempreferences:com.apple.Accessibility-Settings.extension")!
+
+    /// Under Reduce Motion, what it would change, or that it's on.
+    var reduceMotionNote: String {
+        reducesMotion
+            ? "On, so Spaces fade instead of sliding."
+            : "Optional. Turn it on in Accessibility › Motion, and Spaces fade instead of sliding when macOS or the Switch to Desktop fallback changes them. It tones down animations across the Mac too."
+    }
 }
 
 extension SpacesSetting {

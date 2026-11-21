@@ -696,6 +696,14 @@ extension SelfTest {
         spaces.set(.separateSpaces, isOn: true)
         check("S-087 turning it back on writes spans-displays false and no longer waits",
               prefs.stored(.separateSpaces) == false && !spaces.waitsForLogOut)
+        check("S-087 Reduce Motion off is a tip, never a suggestion in the menu bar menu",
+              !spaces.reducesMotion && spaces.unsuggested.isEmpty && spaces.reduceMotionNote.contains("Accessibility › Motion"),
+              spaces.reduceMotionNote)
+        spaces.testReducesMotion = true
+        spaces.refresh()
+        check("S-087 with Reduce Motion on, the Windows tab says Spaces fade",
+              spaces.reducesMotion && spaces.reduceMotionNote.contains("fade") && spaces.unsuggested.isEmpty)
+        spaces.testReducesMotion = false
         SpacesSetting.allCases.forEach(prefs.remove)
         spaces.refresh()
     }
