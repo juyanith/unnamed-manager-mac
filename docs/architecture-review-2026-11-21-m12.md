@@ -61,7 +61,7 @@ Plan: (1) move the state and the three functions; (2) end the session on `.endSe
 
 ## Window commands as values the Kit decides  [Worth exploring]
 
-Carried over from M11, with a stronger signal. `WindowCommand` has eight cases, and `WindowControl.run` still mixes decisions with effects. Focus, swap, Recent Windows' order and Send to Space's target are already Kit decisions (`WindowGeometry.neighbor` and the focus order, `RecentWindows`, `SpaceSend.pick`), so what's left in the app is mostly reading the scene and carrying out effects. Do the file split above first: it shows how much is left. Do this before "pick a window from an overlay" (in Later), which adds a target to both Focus Window and Swap Window.
+Carried over from M11, with a stronger signal. `WindowCommand` has eight cases, and `WindowControl.run` still mixes decisions with effects. Focus, swap, Recent Windows' order and Send to Space's target are already Kit decisions (`WindowGeometry.neighbor` and the focus order, `RecentWindows`, `SpaceSend.pick`), so what's left in the app is mostly reading the scene and carrying out effects. Do the file split above first: it shows how much is left. Do this before "pick a window from an overlay" (in Later), which adds a target to both Focus Window and Swap Window. **Put off (2026-11-21)** along with the overlay picker, which the user put off because Recent Windows on Alt+Tab covers it.
 
 ## The window self-test in files by area  [Worth exploring]
 

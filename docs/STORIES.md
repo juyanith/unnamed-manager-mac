@@ -1132,7 +1132,7 @@ Acceptance:
 - [unit] `fixtures/manifest.json` has `valid/held-menus.json` and one invalid fixture per new rule, 148 in all.
 - [unit] The spec repo is tagged `spec-v18`, and the `spec/` submodule moves to it with the first story that reads it, S-090. `SpecFixtureTests` marks the new fixtures pending until S-090, S-092 and S-093 take them off.
 Status: done
-Verified: spec v18 committed and tagged on 2026-11-18 (`9803aa9`); every fixture parses, and the manifest's paths are real. Not yet pushed.
+Verified: spec v18 committed and tagged on 2026-11-18 (`9803aa9`); every fixture parses, and the manifest's paths are real. Pushed to the spec repo's main branch.
 
 ### S-090 Hold a leader and let go to choose
 As the user, I give a leader Hold, and then I hold its modifiers, press its key again to move along, and let go to run what's highlighted: CAG+A, let go, runs the first item, and CAG+A A A, let go, the third.
@@ -1144,7 +1144,7 @@ Acceptance:
 - [unit] Letting go: the first leader modifier up chooses, for all six orders in which ⌃, ⌥ and ⌘ can come up; a binding runs; a menu goes on as an ordinary menu with no modifiers held; Cancel ends with nothing run and no failure; an unavailable Context Aware binding stays in its menu, now ordinary.
 - [unit] No timeout while held, and `timeoutMs` once a chosen menu goes on. Back from a held leader's menu opens Home, and Home isn't held. A leader without Hold works exactly as before, including `CAG+D`, let go, `S`.
 - [self] A missed key-up: with the tap turned off during a hold, the menu chooses within 200 ms of the modifiers being up (`flagsState` through a seam the self-test fakes).
-- [manual] With kanata's Caps as CAG and a held CAG+A: tap and let go runs the first item; holding and pressing A twice runs the third; holding A down moves once; Escape cancels.
+- [manual] With kanata's Caps as CAG and a held CAG+A: tap and let go runs the first item; holding and pressing A twice runs the third; holding A down moves once; Escape cancels. Put off on 2026-11-21: Recent Windows on Alt+Tab, with a number key for each window (S-092 to S-095), covers it well enough for now. The refactor it would prompt, window commands as values the Kit decides (M11 and M12 architecture reviews), is put off with it.
 UX:
 - Glossary (spec v18): "Held menu", "Highlight", "Repeat key", "Cancel". The log says "Chose Browser" when letting go runs it.
 - Nothing shows on screen until S-091's Guide; this story is the engine and the tap.
