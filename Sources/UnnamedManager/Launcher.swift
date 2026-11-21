@@ -52,17 +52,13 @@ final class Launcher {
     @ObservationIgnored var heldModifiers: @MainActor () -> Modifiers = {
         Modifiers(CGEventSource.flagsState(.combinedSessionState))
     }
-    /// The windows Recent Windows lists and goes to (S-092): the ones the
-    /// window actions use, so they share the focus history. The self-test
-    /// replaces it.
-    @ObservationIgnored lazy var windows: WindowControl? = (runner.performer as? SystemPerformer)?.context.windows
-    /// The window of each item in the list shown, by item id.
-    @ObservationIgnored private var listed: [Int: WindowRef] = [:]
-    /// The list shown swaps with the chosen window instead of focusing it (S-095).
-    @ObservationIgnored private var listSwaps = false
-    @ObservationIgnored private var nextItemID = 1
-    /// While a list is up, checks that its items' windows are still open.
-    @ObservationIgnored private var listWatch: Task<Void, Never>?
+    /// The list in the Guide, while one is up (S-092 to S-095).
+    @ObservationIgnored lazy var lists = ListSession(windows: (runner.performer as? SystemPerformer)?.context.windows)
+    /// The windows Recent Windows lists and goes to. The self-test replaces it.
+    var windows: WindowControl? {
+        get { lists.windows }
+        set { lists.windows = newValue }
+    }
     @ObservationIgnored private var permissionTimer: Timer?
     /// False in snapshots and the self-test, which never touch the keyboard.
     @ObservationIgnored private var capturesKeys = false
@@ -205,51 +201,19 @@ final class Launcher {
     /// windows the app finds now, then shows it and replays the keys
     /// pressed meanwhile.
     private func fill(_ menu: BindingNode) {
-        var items: [ListItem] = [], front: ListItem?
-        // Only the list just opened can be chosen from.
-        listed = [:]
-        listSwaps = menu.list?.swaps ?? false
-        if let list = menu.list, let windows {
-            let found = windows.recentWindows(list)
-            func item(_ window: WindowControl.RecentWindow) -> ListItem {
-                let id = nextItemID
-                nextItemID += 1
-                listed[id] = window.window.info.ref
-                return ListItem(id: id, title: window.title, app: window.window.info.app, marks: window.marks)
-            }
-            front = found.front.map(item)
-            items = found.items.map(item)
-            GuideIcons.shared.load(Set(([front].compactMap { $0 } + items).compactMap { $0.app.map(IconSource.app) }))
-        }
-        for effect in engine.fill(items, front: front) { apply(effect) }
-        watchList()
-    }
-
-    /// Every 250 ms while a list is up, takes out the items whose windows closed.
-    private func watchList() {
-        guard listWatch == nil else { return }
-        listWatch = Task { [weak self] in
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .milliseconds(250))
-                guard let self, let windows else { break }
-                let items = engine.listItems
-                guard !items.isEmpty else { break }
-                for item in items {
-                    guard let ref = listed[item.id], !windows.exists(ref) else { continue }
-                    if let effect = engine.removeItem(id: item.id) { apply(effect) }
-                }
-            }
-            self?.listWatch = nil
+        let found = lists.items(for: menu)
+        for effect in engine.fill(found.items, front: found.front) { apply(effect) }
+        lists.watchItems({ [engine] in engine.listItems }) { [weak self, engine] id in
+            if let effect = engine.removeItem(id: id) { self?.apply(effect) }
         }
     }
 
     /// Goes to the window of a list's item (S-092).
     private func choose(_ item: ListItem, title: String) {
-        guard let ref = listed[item.id], let windows else { return }
-        let swaps = listSwaps
+        guard let choice = lists.choice(for: item) else { return }
         Task {
             do throws(PlanError) {
-                if swaps { try windows.swap(with: ref) } else { try await windows.choose(ref) }
+                try await choice()
             } catch {
                 report(error.message, title: title, alerts: error.alerts)
             }
