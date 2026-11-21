@@ -14,6 +14,54 @@ extension SpaceSendCommand: PerformableStep {
     }
 }
 
+extension WindowControl {
+    /// Send to Space (S-096, spec v20): puts the focused window on another
+    /// desktop of its display. With `follow`, focus goes with it to that
+    /// Space; without, it goes to the window used before on this one, so
+    /// typing never goes to a window you can't see. The history keeps the
+    /// sent window, so Window Used Before can go back to it.
+    func send(to target: SpaceTarget, follow: Bool) async throws(PlanError) {
+        guard system.canControlWindows else {
+            throw PlanError("Unnamed Manager needs Accessibility access to move windows.")
+        }
+        guard let app = system.frontApp(), let window = system.focusedWindow(of: app), let frame = system.frame(of: window) else {
+            throw PlanError("No window to send.", alerts: true)
+        }
+        history.record(window)
+        let place = system.desktop(of: window)
+        switch SpaceSend.pick(target, from: place, appName: app.name) {
+        case let .none(failure):
+            throw PlanError(failure, alerts: true)
+        case .stay:
+            return
+        case let .desktop(number):
+            guard case let .desktop(from, _) = place else { return }
+            let onScreen = try await system.send(window, toDesktop: number, from: from, follow: follow)
+            if follow, onScreen != number { await swipe(from: onScreen, to: number, around: frame) }
+        }
+        if follow {
+            if let sent = system.window(window) { try await go(to: sent) }
+        } else if let other = recent(.display, around: frame, focused: window, rule: \.focus, anySpace: false) {
+            try await go(to: other)
+        }
+    }
+
+    /// Goes with a sent window by Switch Space's swipe, one Space at a time,
+    /// so there's no slide and no Switch to Desktop shortcut is needed. Focus
+    /// alone would slide, or leave you behind when the Dock's “switch to a
+    /// Space with open windows” is off.
+    private func swipe(from: Int, to number: Int, around frame: CGRect) async {
+        guard let screen = WindowGeometry.screen(for: frame, among: system.screens()) else { return }
+        for step in 0..<abs(number - from) {
+            if step > 0 { try? await Task.sleep(for: Self.swipeGap) }
+            system.switchSpace(number > from ? .right : .left, on: screen)
+        }
+    }
+
+    /// Between swipes, so the Dock takes each one.
+    private static let swipeGap = Duration.milliseconds(60)
+}
+
 extension AXWindowSystem {
     func desktop(of window: WindowRef) -> DesktopPlace {
         guard let id = windowID(of: window), let sky = SkyLight.shared else { return .unknown }
