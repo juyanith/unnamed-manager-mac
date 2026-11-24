@@ -64,10 +64,10 @@ struct HelpContent: Equatable {
             var rows = group.entries.map {
                 BuiltIn(title: $0.action.builtInValueName ?? group.name, name: $0.name, isOverridden: defined.contains($0.name))
             }
-            // Focus Window, Swap Window and Send to Space take any number, which the list can't hold.
+            // Focus Window, Swap Window, Switch Space and Send to Space take any number, which the list can't hold.
             if let first = group.entries.first?.name,
-               let prefix = ["window-focus-", "window-swap-", "space-send-"].first(where: first.hasPrefix) {
-                let title = prefix == "space-send-" ? "Space 1, 2, 3…" : "Window 1, 2, 3…"
+               let prefix = ["window-focus-", "window-swap-", "space-switch-", "space-send-"].first(where: first.hasPrefix) {
+                let title = prefix.hasPrefix("space-") ? "Space 1, 2, 3…" : "Window 1, 2, 3…"
                 rows.append(BuiltIn(title: title, name: "\(prefix)1, \(prefix)2, …", isOverridden: false))
             }
             return BuiltInGroup(title: group.name, rows: rows)

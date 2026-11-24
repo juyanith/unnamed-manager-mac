@@ -16,31 +16,10 @@ public enum SpaceTarget: Sendable, Hashable {
             return nil
         }
     }
-}
 
-/// Send to Space (S-096, spec v20): puts the focused window on another
-/// Space, and with `follow` goes there with it.
-public struct SpaceSendAction: ActionValue {
-    public var target: SpaceTarget
-    public var follow: Bool
-
-    public init(_ target: SpaceTarget, follow: Bool = false) {
-        self.target = target
-        self.follow = follow
-    }
-
-    public static let kinds = [ActionKind(type: "space.send", displayName: "Send to Space", symbol: "macwindow.badge.plus")]
-
-    public var type: String { "space.send" }
-
-    public static func blank(_ type: String) -> SpaceSendAction {
-        SpaceSendAction(.number(2))
-    }
-
-    /// `target` is required: left, right or a number from 1. Any other
-    /// value, the string "2" included, is `bad-window-value`.
-    public init(type: String, fields: ActionFields) throws {
-        try fields.allow(["target", "follow"])
+    /// Reads `target`, which is required: left, right or a number from 1.
+    /// Any other value, the string "2" included, is `bad-window-value`.
+    init(_ fields: ActionFields) throws {
         enum Raw: Decodable {
             case number(Int), word(String), other
 
@@ -66,28 +45,64 @@ public struct SpaceSendAction: ActionValue {
                 throw fields.invalid("target", "Unknown target “\(word)” in \(fields.path). Use left, right, or a number from 1.",
                                      rule: .badWindowValue)
             }
-            target = .side(direction)
+            self = .side(direction)
         case let .number(number) where number >= 1:
-            target = .number(number)
+            self = .number(number)
         case .number, .other:
             throw fields.invalid("target", "“target” in \(fields.path) must be left, right, or a number from 1.", rule: .badWindowValue)
         }
+    }
+
+    func write(to fields: inout ActionFieldWriter) {
+        switch self {
+        case let .side(direction): fields.string("target", direction.rawValue)
+        case let .number(number): fields.number("target", Double(number))
+        }
+    }
+
+    static func schema(_ description: String) -> [String: Any] {
+        ["oneOf": [["enum": SpaceDirection.allCases.map(\.rawValue)], ["type": "integer", "minimum": 1]],
+         "description": description]
+    }
+}
+
+/// Send to Space (S-096, spec v20): puts the focused window on another
+/// Space, and with `follow` goes there with it.
+public struct SpaceSendAction: ActionValue {
+    public var target: SpaceTarget
+    public var follow: Bool
+
+    public init(_ target: SpaceTarget, follow: Bool = false) {
+        self.target = target
+        self.follow = follow
+    }
+
+    public static let kinds = [ActionKind(type: "space.send", displayName: "Send to Space", symbol: "macwindow.badge.plus")]
+
+    public var type: String { "space.send" }
+
+    public static func blank(_ type: String) -> SpaceSendAction {
+        SpaceSendAction(.number(2))
+    }
+
+    /// `target` is required: left, right or a number from 1. Any other
+    /// value, the string "2" included, is `bad-window-value`.
+    public init(type: String, fields: ActionFields) throws {
+        try fields.allow(["target", "follow"])
+        target = try SpaceTarget(fields)
         follow = try fields.value("follow", default: false)
     }
 
     /// `follow` is left out when it's off, the default.
     public func write(to fields: inout ActionFieldWriter) {
-        switch target {
-        case let .side(direction): fields.string("target", direction.rawValue)
-        case let .number(number): fields.number("target", Double(number))
-        }
+        target.write(to: &fields)
         if follow { fields.bool("follow", true) }
     }
 
     public static func schema(_ type: String) -> ActionSchema {
         ActionSchema([
-            "target": ["oneOf": [["enum": SpaceDirection.allCases.map(\.rawValue)], ["type": "integer", "minimum": 1]],
-                       "description": "Where the window goes: the Space or desktop to the left or right of its own, or the one with that number, from 1."],
+            "target": SpaceTarget.schema(
+                "Where the window goes: the Space or desktop to the left or right of its own, or the one with that number, from 1."),
             "follow": ["type": "boolean",
                        "description": "Go to that Space or desktop with the window. Default false: stay where you are."],
         ], required: ["target"])

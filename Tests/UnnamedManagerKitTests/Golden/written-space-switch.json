@@ -5,10 +5,13 @@
     { "keys": "Meh+S A", "title": "go-left", "action": "go-left" },
     { "keys": "Meh+S B", "title": "go-right", "action": "go-right" },
     { "keys": "Meh+S C", "title": "built-in left", "action": "space-switch-left" },
-    { "keys": "Meh+S D", "title": "built-in right", "action": "space-switch-right" }
+    { "keys": "Meh+S D", "title": "built-in right", "action": "space-switch-right" },
+    { "keys": "Meh+S E", "title": "go-one", "action": "go-one" },
+    { "keys": "Meh+S F", "title": "built-in 3", "action": "space-switch-3" }
   ],
   "actions": {
     "go-left": { "type": "space.switch", "target": "left" },
-    "go-right": { "type": "space.switch", "target": "right" }
+    "go-right": { "type": "space.switch", "target": "right" },
+    "go-one": { "type": "space.switch", "target": 1 }
   }
 }

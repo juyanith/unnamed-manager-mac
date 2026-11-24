@@ -74,37 +74,47 @@ extension SwapAction: EditableAction {
 }
 
 extension SpaceSendAction: EditableAction {
-    /// The picker's choices: a side, or a number set below it.
-    private enum Choice: Hashable { case side(SpaceDirection), number }
-
     @MainActor static func form(_ value: Binding<SpaceSendAction>) -> some View {
         Section {
-            Picker("Send To", selection: Binding<Choice>(
-                get: { if case let .side(direction) = value.wrappedValue.target { .side(direction) } else { .number } },
-                set: { new in
-                    switch new {
-                    case let .side(direction): value.wrappedValue.target = .side(direction)
-                    case .number: if case .side = value.wrappedValue.target { value.wrappedValue.target = .number(1) }
-                    }
-                })) {
-                ForEach(SpaceDirection.allCases, id: \.self) { Text("Space to the \($0.displayName)").tag(Choice.side($0)) }
-                Divider()
-                Text("Space Number").tag(Choice.number)
-            }
-            if case let .number(number) = value.wrappedValue.target {
-                LabeledContent("Number") {
-                    HStack(spacing: Space.sm) {
-                        Text("\(number)").monospacedDigit()
-                        Stepper("Space number", value: Binding(get: { number }, set: { value.wrappedValue.target = .number(max(1, $0)) }),
-                                in: 1...16)
-                            .labelsHidden()
-                            .accessibilityValue("\(number)")
-                    }
-                }
-            }
+            SpaceTargetRows(label: "Send To", target: value.target)
             Toggle("Go With the Window", isOn: value.follow)
         } footer: {
             Text("Puts the window in front on another Space of its display. Numbers count Spaces as Mission Control shows them, without full-screen apps. With Go With the Window off, you stay, and the window you used before here takes focus. If macOS won't move the window quietly, Unnamed Manager holds its title bar and presses the Switch to Desktop shortcut, which must be on in Keyboard Shortcuts.")
+        }
+    }
+}
+
+/// Switch Space's and Send to Space's target: a picker of the two sides
+/// and Space Number, with a Number stepper below it for a number (spec v20, v22).
+private struct SpaceTargetRows: View {
+    /// The picker's choices: a side, or a number set below it.
+    private enum Choice: Hashable { case side(SpaceDirection), number }
+
+    let label: String
+    @Binding var target: SpaceTarget
+
+    var body: some View {
+        Picker(label, selection: Binding<Choice>(
+            get: { if case let .side(direction) = target { .side(direction) } else { .number } },
+            set: { new in
+                switch new {
+                case let .side(direction): target = .side(direction)
+                case .number: if case .side = target { target = .number(1) }
+                }
+            })) {
+            ForEach(SpaceDirection.allCases, id: \.self) { Text("Space to the \($0.displayName)").tag(Choice.side($0)) }
+            Divider()
+            Text("Space Number").tag(Choice.number)
+        }
+        if case let .number(number) = target {
+            LabeledContent("Number") {
+                HStack(spacing: Space.sm) {
+                    Text("\(number)").monospacedDigit()
+                    Stepper("Space number", value: Binding(get: { number }, set: { target = .number(max(1, $0)) }), in: 1...16)
+                        .labelsHidden()
+                        .accessibilityValue("\(number)")
+                }
+            }
         }
     }
 }
@@ -273,11 +283,9 @@ extension ResizeAction: EditableAction {
 extension SpaceSwitchAction: EditableAction {
     @MainActor static func form(_ value: Binding<SpaceSwitchAction>) -> some View {
         Section {
-            Picker("Direction", selection: value.target) {
-                ForEach(SpaceDirection.allCases, id: \.self) { Text($0.displayName).tag($0) }
-            }
+            SpaceTargetRows(label: "Go To", target: value.target)
         } footer: {
-            Text("Goes to the Space to the left or right on the display of the window in front, without the slide. Full-screen apps count as Spaces. With no window in front, nothing happens. If a macOS update brings the slide back, Control-Left and Control-Right still work.")
+            Text("Goes to another Space on the display of the window in front, without the slide. Left and Right count full-screen apps as Spaces; with no window in front, they do nothing. Numbers count Spaces as Mission Control shows them, without full-screen apps, and with no window in front they work on the display with the pointer. If a macOS update brings the slide back, Control-Left and Control-Right still work.")
         }
     }
 }

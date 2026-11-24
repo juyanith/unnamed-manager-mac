@@ -50,6 +50,10 @@ final class FakeWindowSystem: WindowSystem {
     var currentSpace = 1
     /// Spaces go from 1 to this one, left to right (S-088).
     var lastSpace = 3
+    /// Spaces that are full-screen apps, which numbers don't count (S-097).
+    var fullScreenSpaces: Set<Int> = []
+    /// Nil when macOS doesn't say where the pointer is.
+    var pointer: CGPoint? = CGPoint(x: 700, y: 400)
     /// Each Switch Space, with the display it went to.
     var spaceSwitches: [(direction: SpaceDirection, screen: CGRect)] = []
     private var focusChanged: ((WindowRef) -> Void)?
@@ -139,6 +143,12 @@ final class FakeWindowSystem: WindowSystem {
         spaceSwitches.append((direction, screen.frame))
         currentSpace = min(max(currentSpace + (direction == .right ? 1 : -1), 1), lastSpace)
     }
+
+    func spaces(on screen: WindowGeometry.Screen) -> SpaceStrip? {
+        SpaceStrip(desktops: (1...lastSpace).map { !fullScreenSpaces.contains($0) }, current: currentSpace - 1)
+    }
+
+    func pointerLocation() -> CGPoint? { pointer }
 
     func desktop(of window: WindowRef) -> DesktopPlace {
         guard let id = window.id.base as? String, let window = windows[id] else { return .unknown }

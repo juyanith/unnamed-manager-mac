@@ -65,10 +65,46 @@ extension SelfTest {
         let none = await run("space-switch-left")
         check("S-088 with no focused window, nothing is posted and it isn't a failure",
               none == nil && fake.spaceSwitches.count == count)
+
+        // S-097: by number, counting desktops only, one swipe at a time.
         fake.focused = "a"
+        fake.spaceSwitches = []
+        let one = await run("space-switch-1")
+        check("S-097 space-switch-1 swipes left on the focused window's display to Space 1",
+              one == nil && fake.spaceSwitches.map(\.direction) == [.left] && fake.spaceSwitches.first?.screen == other
+                  && fake.currentSpace == 1, "\(String(describing: one)) \(fake.spaceSwitches)")
+        let again = await run("space-switch-1")
+        check("S-097 the Space you're on does nothing, and isn't a failure", again == nil && fake.spaceSwitches.count == 1)
+        fake.spaceSwitches = []
+        let three = await run("space-switch-3")
+        check("S-097 space-switch-3 from Space 1 swipes right twice", three == nil && fake.spaceSwitches.map(\.direction) == [.right, .right]
+                  && fake.currentSpace == 3, "\(String(describing: three)) \(fake.spaceSwitches)")
+        fake.spaceSwitches = []
+        let past = await run("space-switch-4")
+        check("S-097 a number past the last desktop fails with the alert sound, and nothing moves",
+              past?.alerts == true && past?.message == "No Space 4. There are 3." && fake.spaceSwitches.isEmpty && fake.currentSpace == 3,
+              "\(String(describing: past))")
+        fake.fullScreenSpaces = [2]
+        let skip = await run("space-switch-1")
+        check("S-097 numbers skip full-screen apps, and the swipes pass them",
+              skip == nil && fake.spaceSwitches.map(\.direction) == [.left, .left] && fake.currentSpace == 1,
+              "\(String(describing: skip)) \(fake.spaceSwitches)")
+        let noThird = await run("space-switch-3")
+        check("S-097 with a full-screen app, Space 3 is past the last desktop", noThird?.message == "No Space 3. There are 2.")
+        fake.focused = nil
+        fake.pointer = CGPoint(x: 700, y: 400)
+        fake.spaceSwitches = []
+        let empty = await run("space-switch-2")
+        check("S-097 with no focused window, a number switches on the display with the pointer",
+              empty == nil && fake.spaceSwitches.map(\.direction) == [.right, .right] && fake.spaceSwitches.allSatisfy { $0.screen == main }
+                  && fake.currentSpace == 3, "\(String(describing: empty)) \(fake.spaceSwitches)")
+        fake.fullScreenSpaces = []
+
+        fake.focused = "a"
+        let count2 = fake.spaceSwitches.count
         fake.canControlWindows = false
         let denied = await run("space-switch-left")
-        check("S-088 without Accessibility it fails and says so", denied?.message.contains("Accessibility") == true && fake.spaceSwitches.count == count)
+        check("S-088 without Accessibility it fails and says so", denied?.message.contains("Accessibility") == true && fake.spaceSwitches.count == count2)
     }
 
     /// S-096, against FakeWindowSystem: no real window leaves its Space.

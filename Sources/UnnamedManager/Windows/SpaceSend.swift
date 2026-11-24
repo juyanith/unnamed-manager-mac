@@ -52,14 +52,8 @@ extension WindowControl {
     /// Space with open windows” is off.
     private func swipe(from: Int, to number: Int, around frame: CGRect) async {
         guard let screen = WindowGeometry.screen(for: frame, among: system.screens()) else { return }
-        for step in 0..<abs(number - from) {
-            if step > 0 { try? await Task.sleep(for: Self.swipeGap) }
-            system.switchSpace(number > from ? .right : .left, on: screen)
-        }
+        await swipe(number > from ? .right : .left, count: abs(number - from), on: screen)
     }
-
-    /// Between swipes, so the Dock takes each one.
-    private static let swipeGap = Duration.milliseconds(60)
 }
 
 extension AXWindowSystem {
@@ -132,6 +126,24 @@ final class SkyLight {
                 (space["ManagedSpaceID"] as? UInt64).map { ($0, space["type"] as? Int ?? Self.desktopType) }
             }
         }
+    }
+
+    /// The Spaces of the display at `point`, in top-left coordinates, and
+    /// the one on screen. With Displays have separate Spaces off, there's
+    /// one list for every display.
+    func strip(at point: CGPoint) -> SpaceStrip? {
+        let list = copyDisplaySpaces(connection)?.takeRetainedValue() as? [[String: Any]] ?? []
+        var id: CGDirectDisplayID = 0
+        var found: UInt32 = 0
+        let uuid = CGGetDisplaysWithPoint(point, 1, &id, &found) == .success && found == 1
+            ? CGDisplayCreateUUIDFromDisplayID(id).map { CFUUIDCreateString(nil, $0.takeRetainedValue()) as String } : nil
+        guard let display = list.count == 1 ? list.first : list.first(where: { $0["Display Identifier"] as? String == uuid }),
+              let current = (display["Current Space"] as? [String: Any])?["ManagedSpaceID"] as? UInt64 else { return nil }
+        let spaces = (display["Spaces"] as? [[String: Any]] ?? []).compactMap { space in
+            (space["ManagedSpaceID"] as? UInt64).map { ($0, space["type"] as? Int ?? Self.desktopType) }
+        }
+        guard let index = spaces.firstIndex(where: { $0.0 == current }) else { return nil }
+        return SpaceStrip(desktops: spaces.map { $0.1 == Self.desktopType }, current: index)
     }
 
     /// The Spaces a window is on: one, or every one for a window on all of them.

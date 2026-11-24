@@ -580,10 +580,18 @@
           "additionalProperties" : false,
           "properties" : {
             "target" : {
-              "description" : "The Space or desktop to go to: the one to the left or to the right of the current one.",
-              "enum" : [
-                "left",
-                "right"
+              "description" : "The Space or desktop to go to: the one to the left or to the right of the current one, or the one with that number, from 1.",
+              "oneOf" : [
+                {
+                  "enum" : [
+                    "left",
+                    "right"
+                  ]
+                },
+                {
+                  "minimum" : 1,
+                  "type" : "integer"
+                }
               ]
             },
             "type" : {
@@ -1237,10 +1245,18 @@
           "additionalProperties" : false,
           "properties" : {
             "target" : {
-              "description" : "The Space or desktop to go to: the one to the left or to the right of the current one.",
-              "enum" : [
-                "left",
-                "right"
+              "description" : "The Space or desktop to go to: the one to the left or to the right of the current one, or the one with that number, from 1.",
+              "oneOf" : [
+                {
+                  "enum" : [
+                    "left",
+                    "right"
+                  ]
+                },
+                {
+                  "minimum" : 1,
+                  "type" : "integer"
+                }
               ]
             },
             "type" : {

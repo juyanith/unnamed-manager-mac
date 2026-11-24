@@ -1111,6 +1111,23 @@ UX:
 - Risk: macOS 27.3 beta 2 refuses the bridged move from apps other than the Dock (yabai #2853). Then the fallback is the only route, and it slides.
 Status: done
 Verified: reading, writing, the rules, built-in names and where a window goes (unit tests, `SpaceSendTests`, the spec-v20 fixtures, 330 in all); stay and follow, the focus after, the ends, the window's own Space, past the last, full screen, every Space, a refused move, no window, no Accessibility, the Type picker and saving, Help's rows (self-test, 281 checks); actions-window-send-3 and help-builtin in light and dark, grid checks. The app's SkyLight code, run alone on 2026-11-18 on macOS 27.2.1 with SIP on, found desktop 1 of 5, moved a test window to Space 2 and back, and saw a window on every Space. Tried by hand on 2026-11-18 by the user: `space-send-N` works. On 2026-11-19 the user found follow could leave them behind and patched it to press Switch to Desktop N, which slides; on 2026-11-21 follow swipes instead, as Switch Space does (self-test, 288 checks). Not yet tried by hand: follow by swipes, more than one swipe in a row (60 ms apart), the title bar fallback in the app, and a second display.
+### S-097 Switch to a Space by number
+As the user, I press a key such as `CAG+Space 2` to go straight to Space 2 of the display I'm working in, without the slide, even from an empty desktop, instead of pressing Space Right twice.
+Screens: actions-window, help-builtin
+Depends: S-088, S-096
+Acceptance:
+- [unit] `space.switch` also reads and writes a number from 1 (spec v22); `0`, `"2"` and `1.5` are `bad-window-value`; `space-switch-1` and the other numbers are built-in actions, `space-switch-0` isn't; the spec-v22 fixtures pass, and the schema matches the spec's.
+- [unit] Where it goes (`SpaceSwitch.pick`): numbers count desktops only; the swipes pass full-screen Spaces too (desktop 1 to desktop 2 past a full-screen app is two swipes right); the Space you're on does nothing; a number past the last desktop fails ("No Space 4. There are 3.").
+- [self] Through the window system seam (`WindowSystem.spaces(on:)`, `.switchSpace`), so `FakeWindowSystem` takes it: one swipe per Space on the focused window's display, 60 ms apart; with no focused window, on the display with the pointer; past the last desktop the sound plays and nothing moves.
+- [self] The Switch Space form has Go To (Space to the Left, Space to the Right, Space Number) and a Number stepper, as Send to Space's; Help lists a "Space 1, 2, 3…" row under Switch Space.
+- [snap] actions-window-space-1 and actions-window-space-right.
+- [manual] From Space 1 of 4, `space-switch-3` reaches Space 3 with no slide; with a full-screen app between, it still lands on desktop 3; from an empty desktop, it switches the display with the pointer; `space-switch-9` plays the sound.
+UX:
+- Glossary: "Switch Space" (spec v22 adds numbers). Form: "Go To" with "Space to the Left", "Space to the Right" and "Space Number"; "Number" (1 to 16). Footer says how left and right and numbers count, and where a number works with no window in front.
+- How: SkyLight's `SLSCopyManagedDisplaySpaces` gives the display's Spaces and the current one, found by the display's UUID (one list when Displays have separate Spaces is off); then Switch Space's swipe, once per Space between. No Switch to Desktop shortcut, so nothing slides.
+- Error, with the sound: "No Space 4. There are 3.", and "Unable to find the Spaces of this display." when SkyLight doesn't say.
+Status: done
+Verified: reading, writing, the rules, built-in names and the pick (unit tests, `SpaceSwitchTests`, the spec-v22 fixtures, 332 in all); swipes by number, the Space you're on, past the last, full-screen Spaces, no focused window, Help's row (self-test, 297 checks); actions-window-space-1 and actions-window-space-right in light and dark, grid checks. Not yet tried by hand: the manual line, including the SkyLight lookup of the current Space and a second display.
 
 ## M12 Held menus
 

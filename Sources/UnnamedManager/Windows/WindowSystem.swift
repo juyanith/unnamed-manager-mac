@@ -72,6 +72,10 @@ protocol WindowSystem: AnyObject {
     func watchFocus(_ changed: @escaping (WindowRef) -> Void)
     /// Goes to the Space to the left or right on a display, with no slide (S-088).
     func switchSpace(_ direction: SpaceDirection, on screen: WindowGeometry.Screen)
+    /// A display's Spaces and the one on screen (S-097); nil when macOS doesn't say.
+    func spaces(on screen: WindowGeometry.Screen) -> SpaceStrip?
+    /// Where the pointer is, in the same coordinates as window frames.
+    func pointerLocation() -> CGPoint?
     /// Which desktop of its display a window is on (S-096).
     func desktop(of window: WindowRef) -> DesktopPlace
     /// Puts a window on desktop `number` of its display (S-096). With

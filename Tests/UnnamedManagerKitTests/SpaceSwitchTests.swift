@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import UnnamedManagerKit
 
-@Suite("Switch Space (S-088, spec v17)")
+@Suite("Switch Space (S-088, spec v17; S-097, spec v22)")
 struct SpaceSwitchTests {
     func load(_ action: String) -> Result<LoadedConfig, ConfigErrors> {
         ConfigLoader.load(Data((FocusHistoryTests.minimal + #", "actions": { "go": "# + action + " } }").utf8))
@@ -26,9 +26,19 @@ struct SpaceSwitchTests {
     func rules() {
         #expect(rule(#"{ "type": "space.switch" }"#) == .missingField)
         #expect(rule(#"{ "type": "space.switch", "target": "up" }"#) == .badWindowValue)
-        #expect(rule(#"{ "type": "space.switch", "target": 2 }"#) == .badWindowValue)
+        #expect(rule(#"{ "type": "space.switch", "target": 0 }"#) == .badWindowValue)
+        #expect(rule(#"{ "type": "space.switch", "target": "2" }"#) == .badWindowValue)
+        #expect(rule(#"{ "type": "space.switch", "target": 1.5 }"#) == .badWindowValue)
         #expect(rule(#"{ "type": "space.switch", "target": true }"#) == .wrongType)
         #expect(rule(#"{ "type": "space.switch", "target": "left", "scope": "all" }"#) == .unknownField)
+    }
+
+    @Test("Reads and writes a number target")
+    func number() throws {
+        let loaded = try load(#"{ "type": "space.switch", "target": 3 }"#).get()
+        #expect(loaded.config.actions["go"] == .family(AnyActionValue(SpaceSwitchAction(.number(3)))))
+        #expect(ConfigWriter.write(loaded.config, actionOrder: ["go"])
+            .contains(#""go": { "type": "space.switch", "target": 3 }"#))
     }
 
     @Test("space-switch-left and space-switch-right are built-in actions; space-switch-up isn't")
@@ -37,12 +47,30 @@ struct SpaceSwitchTests {
         #expect(BuiltInAction.action(named: "space-switch-right") == .family(AnyActionValue(SpaceSwitchAction(.right))))
         #expect(BuiltInAction.action(named: "space-switch-up") == nil)
         #expect(BuiltInAction.action(named: "space-switch") == nil)
+        #expect(BuiltInAction.action(named: "space-switch-3") == .family(AnyActionValue(SpaceSwitchAction(.number(3)))))
+        #expect(BuiltInAction.action(named: "space-switch-0") == nil)
         #expect(BuiltInAction.entries().filter { $0.name.hasPrefix("space-switch") }.map(\.name) == ["space-switch-left", "space-switch-right"])
     }
 
-    @Test("It plans a SpaceCommand for its direction")
+    @Test("It plans a SpaceCommand for its target")
     func plan() throws {
-        #expect(try SpaceSwitchAction(.left).plan(home: URL(filePath: "/")) == .custom(AnyActionStep(SpaceCommand(direction: .left))))
+        #expect(try SpaceSwitchAction(.left).plan(home: URL(filePath: "/")) == .custom(AnyActionStep(SpaceCommand(target: .side(.left)))))
+        #expect(try SpaceSwitchAction(.number(2)).plan(home: URL(filePath: "/")) == .custom(AnyActionStep(SpaceCommand(target: .number(2)))))
+    }
+
+    @Test("A number counts desktops only, and swipes past full-screen Spaces")
+    func pick() {
+        // Desktop 1, a full-screen app, desktop 2, desktop 3; on desktop 1.
+        let strip = SpaceStrip(desktops: [true, false, true, true], current: 0)
+        #expect(SpaceSwitch.pick(1, in: strip) == .stay)
+        #expect(SpaceSwitch.pick(2, in: strip) == .swipe(.right, count: 2))
+        #expect(SpaceSwitch.pick(3, in: strip) == .swipe(.right, count: 3))
+        #expect(SpaceSwitch.pick(4, in: strip) == .none("No Space 4. There are 3."))
+        // On the full-screen app.
+        let onApp = SpaceStrip(desktops: [true, false, true], current: 1)
+        #expect(SpaceSwitch.pick(1, in: onApp) == .swipe(.left, count: 1))
+        #expect(SpaceSwitch.pick(2, in: onApp) == .swipe(.right, count: 1))
+        #expect(SpaceSwitch.pick(2, in: SpaceStrip(desktops: [true], current: 0)) == .none("No Space 2. There is 1."))
     }
 
     @Test("A switch is Began, Changed and Ended dock swipes, horizontal")

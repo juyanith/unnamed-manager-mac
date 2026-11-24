@@ -4,26 +4,63 @@ import UnnamedManagerKit
 
 extension SpaceCommand: PerformableStep {
     func perform(in context: StepContext) async throws(PlanError) {
-        try context.windows.switchSpace(direction)
+        try await context.windows.switchSpace(target)
     }
 }
 
 extension WindowControl {
-    /// Switch Space (S-088, spec v17): on the focused window's display.
-    /// With no focused window nothing happens, and that isn't a failure.
-    func switchSpace(_ direction: SpaceDirection) throws(PlanError) {
+    /// Switch Space (S-088, spec v17; S-097, spec v22). Left and right go
+    /// on the focused window's display, and with no focused window nothing
+    /// happens, which isn't a failure. A number counts desktops only, and
+    /// with no focused window goes on the display with the pointer.
+    func switchSpace(_ target: SpaceTarget) async throws(PlanError) {
         guard system.canControlWindows else {
             throw PlanError("Unnamed Manager needs Accessibility access to switch Spaces.")
         }
-        guard let app = system.frontApp(), let window = system.focusedWindow(of: app), let frame = system.frame(of: window),
-              let screen = WindowGeometry.screen(for: frame, among: system.screens()) else { return }
-        system.switchSpace(direction, on: screen)
+        let screens = system.screens()
+        let focused = system.frontApp().flatMap { system.focusedWindow(of: $0) }.flatMap { system.frame(of: $0) }
+        switch target {
+        case let .side(direction):
+            guard let focused, let screen = WindowGeometry.screen(for: focused, among: screens) else { return }
+            system.switchSpace(direction, on: screen)
+        case let .number(number):
+            let around = focused ?? system.pointerLocation().map { CGRect(origin: $0, size: CGSize(width: 1, height: 1)) }
+            guard let screen = around.flatMap({ WindowGeometry.screen(for: $0, among: screens) }) ?? screens.first else { return }
+            guard let strip = system.spaces(on: screen) else {
+                throw PlanError("Unable to find the Spaces of this display.", alerts: true)
+            }
+            switch SpaceSwitch.pick(number, in: strip) {
+            case let .none(failure): throw PlanError(failure, alerts: true)
+            case .stay: return
+            case let .swipe(direction, count): await swipe(direction, count: count, on: screen)
+            }
+        }
     }
+
+    /// Swipes one Space at a time, so there's no slide and no Switch to
+    /// Desktop shortcut is needed.
+    func swipe(_ direction: SpaceDirection, count: Int, on screen: WindowGeometry.Screen) async {
+        for step in 0..<count {
+            if step > 0 { try? await Task.sleep(for: Self.swipeGap) }
+            system.switchSpace(direction, on: screen)
+        }
+    }
+
+    /// Between swipes, so the Dock takes each one.
+    static let swipeGap = Duration.milliseconds(60)
 }
 
 extension AXWindowSystem {
     func switchSpace(_ direction: SpaceDirection, on screen: WindowGeometry.Screen) {
         DockSwipePoster.post(direction, at: CGPoint(x: screen.frame.midX, y: screen.frame.midY))
+    }
+
+    func spaces(on screen: WindowGeometry.Screen) -> SpaceStrip? {
+        SkyLight.shared?.strip(at: CGPoint(x: screen.frame.midX, y: screen.frame.midY))
+    }
+
+    func pointerLocation() -> CGPoint? {
+        CGEvent(source: nil)?.location
     }
 }
 
