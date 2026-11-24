@@ -1,6 +1,6 @@
 # Unnamed Manager
 
-A keyboard manager for macOS that lives in the menu bar. It grew out of [Unnamed Launcher](https://github.com/juyanith/unnamed-launcher), and window actions (focus, place, move, resize, fill, arrange, minimize) are on the way. Press a leader chord such as Hyper+Space, then one key per menu level, to open apps, files and URLs, run commands, or send shortcuts to the app in front.
+A keyboard manager for macOS that lives in the menu bar. It grew out of [Unnamed Launcher](https://github.com/juyanith/unnamed-launcher). Press a leader chord such as Hyper+Space, then one key per menu level, to open apps, files and URLs, run commands, send shortcuts to the app in front, manage windows, or switch Spaces.
 
 If you finish the sequence quickly, nothing appears on screen. If you pause, a small HUD shows where you are and which keys come next. The app in front never loses focus.
 
@@ -19,6 +19,10 @@ If you finish the sequence quickly, nothing appears on screen. If you pause, a s
   - **Context Aware** picks a different action depending on which app is in front.
   - **Do Nothing.**
   - **Show Help** opens the Help window. The starter config puts it on Hyper+H.
+  - **Window actions:** Place, Move, Resize, Fill, Minimize, Arrange, Focus and Swap Window, from the keyboard. Focus and Swap go by direction, in order, by number, or back to the window used before.
+  - **Switch Space** goes to the Space to the left or right, or to one by number, without the slide. **Send to Space** puts the focused window on another Space, and can go with it.
+  - Common window and Space actions are built in, such as `window-place-left-half` or `space-switch-2`, so a binding can name them without defining them.
+- **Held menus and Recent Windows.** A leader can work while you hold its modifiers and choose when you let go, as ⌘Tab does. A list such as Recent Windows fills itself with your windows, minimized and on other Spaces too, and can go to or swap with the one you pick.
 - **Icons in the Guide:** menus show the app's keycaps, apps and Open targets show their own icon, and any entry can have an SF Symbol or a file's icon of its own.
 - **One Settings window** (Settings…, ⌘,) to edit menus, bindings, actions and contexts, record chords, and reorder items, on tabs beside the General and Windows preferences. A Help window lists your leaders and direct bindings and how sequences work (Help in the menu bar menu, or a Show Help binding).
 - **One JSON config file** at `~/.config/unnamed-manager/config.json`. The app watches it and reloads it when it changes, so you can keep it in your dotfiles. A config with errors is reported, and the last valid one stays in use.

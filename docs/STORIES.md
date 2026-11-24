@@ -1264,7 +1264,7 @@ Verified: unit, 325 tests; self-test, 269 checks; bindings-swap in light and dar
 - Pick a window from an overlay: `"target": "pick"` on Focus Window and Swap Window labels the visible windows in order and waits for one key (numbers or home-row letters), Escape cancels.
 - Import and export a single menu as a JSON snippet.
 - A basic automatic tiling mode.
-- Move a window to another display or Space; save and restore window layouts.
+- Move a window to another display (Send to Space covers Spaces, S-096 and S-097); save and restore window layouts.
 - New action families on the registry (S-060): volume, display resolution.
 - Double-tap modifier leaders, such as tapping ⌥ twice.
 - The green button fills a window instead of going full screen, as an option, with a per-app rule. Plan and risks: `docs/research/green-button-fill.md`. Put off: the button is rarely clicked.
