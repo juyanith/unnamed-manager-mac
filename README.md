@@ -20,7 +20,7 @@ If you finish the sequence quickly, nothing appears on screen. If you pause, a s
   - **Do Nothing.**
   - **Show Help** opens the Help window. The starter config puts it on Hyper+H.
   - **Window actions:** Place, Move, Resize, Fill, Minimize, Arrange, Focus and Swap Window, from the keyboard. Focus and Swap go by direction, in order, by number, or back to the window used before.
-  - **Switch Space** goes to the Space to the left or right, or to one by number, without the slide. **Send to Space** puts the focused window on another Space, and can go with it.
+  - **Switch Space** goes to the Space to the left or right, or to one by number, without the slide. **Send to Space** puts the focused window on another Space, and **Follow to Space** does the same and goes there with it.
   - Common window and Space actions are built in, such as `window-place-left-half` or `space-switch-2`, so a binding can name them without defining them.
 - **Held menus and Recent Windows.** A leader can work while you hold its modifiers and choose when you let go, as ⌘Tab does. A list such as Recent Windows fills itself with your windows, minimized and on other Spaces too, and can go to or swap with the one you pick.
 - **Icons in the Guide:** menus show the app's keycaps, apps and Open targets show their own icon, and any entry can have an SF Symbol or a file's icon of its own.
