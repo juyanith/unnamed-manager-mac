@@ -160,7 +160,7 @@ extension SelfTest {
         }
         guide.flash()
         check("S-018 an unbound key flashes the Guide", guide.isFlashing)
-        try? await Task.sleep(for: Motion.errorFlashHold + .milliseconds(150))
+        await waitUntil(Motion.errorFlashHold + .milliseconds(150)) { !guide.isFlashing }
         check("S-018 the flash goes away by itself", !guide.isFlashing)
         guide.hide()
         try? await Task.sleep(for: .seconds(0.3))
@@ -295,7 +295,7 @@ extension SelfTest {
         try? await Task.sleep(for: .seconds(0.3))
         let guide = model.launcher.guide
         check("S-015 the Guide shows the failure", guide.isVisible && guide.content?.failure == message)
-        try? await Task.sleep(for: Motion.errorMessageHold + .seconds(0.5))
+        await waitUntil(Motion.errorMessageHold + .seconds(0.5)) { !guide.window.isVisible }
         check("S-015 the failure closes after two seconds", !guide.window.isVisible)
         let logged = (try? OSLogStore(scope: .currentProcessIdentifier))
             .flatMap { try? $0.getEntries(at: $0.position(timeIntervalSinceLatestBoot: 0)) }?  // grid: ok OSLogStore, not a view

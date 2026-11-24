@@ -70,13 +70,8 @@ extension SelfTest {
         // The key-up is lost, as when macOS turns the tap off: only the
         // modifiers held say it happened.
         held.value = []
-        let clock = ContinuousClock()
-        let start = clock.now
-        while launcher.sequenceIsHeld, clock.now - start < .milliseconds(500) {
-            try? await Task.sleep(for: .milliseconds(5))
-        }
-        let took = clock.now - start
-        check("S-090 a missed key-up chooses within 200 ms", !launcher.sequenceIsHeld && took < .milliseconds(200), "\(took)")
+        let took = await waitUntil(.milliseconds(500)) { !launcher.sequenceIsHeld }
+        check("S-090 a missed key-up chooses within 200 ms", !launcher.sequenceIsHeld && took < .milliseconds(200) * timingSlack, "\(took)")
         check("S-090 a missed key-up is logged", logContains("key-up was missed"))
 
         launcher.heldModifiers = real

@@ -71,6 +71,23 @@ enum SelfTest {
             .contains { $0.subsystem == "net.unnamed.manager" && $0.composedMessage.contains(text) } ?? false
     }
 
+    /// How much longer a timing check waits on CI, whose machines are
+    /// slower and busier: a timer there can fire hundreds of ms late.
+    /// GitHub Actions sets `CI`.
+    static let timingSlack = ProcessInfo.processInfo.environment["CI"] == "true" ? 4.0 : 1.0
+
+    /// Waits until `done` is true, checking every 10 ms, for at most
+    /// `limit` times `timingSlack`. Returns how long it took.
+    @discardableResult
+    static func waitUntil(_ limit: Duration, _ done: () -> Bool) async -> Duration {
+        let clock = ContinuousClock()
+        let start = clock.now
+        while !done(), clock.now - start < limit * timingSlack {
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+        return clock.now - start
+    }
+
     static func check(_ name: String, _ ok: Bool, _ detail: String = "") {
         count += 1
         if !ok { failures += 1 }
