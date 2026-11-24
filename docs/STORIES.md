@@ -1099,7 +1099,7 @@ Acceptance:
 - [unit] Where it goes: left and right stop at the ends with no failure, the window's own Space does nothing, a number past the last desktop fails ("No Space 5. There are 4."), and a full-screen window or one on every Space can't be sent.
 - [self] Through the window system seam (`WindowSystem.desktop`, `.send`), so `FakeWindowSystem` takes it and no real window moves: you stay and the window used before on this Space takes focus; with follow you go there and the window keeps focus; failures play the sound; no Accessibility says so.
 - [self] With follow, after the quiet move you go there by Switch Space's swipe, one per Space on the window's display (Space 2 to 4 is two swipes right), so there's no slide and no Switch to Desktop shortcut is needed.
-- [self] Send to Space is in the Type picker with Send To (Space to the Left, Space to the Right, Space Number), a Number stepper and Go With the Window; Help lists its built-in actions with a row for Space 1, 2, 3….
+- [self] Send to Space is in the Type picker with Send To (Space to the Left, Space to the Right, Space Number) and a Number stepper; Help lists its built-in actions with a row for Space 1, 2, 3…. From spec v23, going with the window is Follow to Space (S-098), not a toggle.
 - [snap] The Send to Space form and the Help window's Built-In Actions list.
 - [manual] `CAG+Quote 2` on a window on Space 1 puts it on Space 2 with no slide, and focus goes to the window used before on Space 1; with follow, you're on Space 2 with the window in front, with no slide, also when the Dock's “switch to a Space with open windows” is off and when the target is two or more Spaces away.
 - [manual] When macOS refuses the quiet move, the title bar is held and the Switch to Desktop shortcut pressed: the window arrives, and without follow you're back on your Space.
@@ -1128,6 +1128,22 @@ UX:
 - Error, with the sound: "No Space 4. There are 3.", and "Unable to find the Spaces of this display." when SkyLight doesn't say.
 Status: done
 Verified: reading, writing, the rules, built-in names and the pick (unit tests, `SpaceSwitchTests`, the spec-v22 fixtures, 332 in all); swipes by number, the Space you're on, past the last, full-screen Spaces, no focused window, Help's row (self-test, 297 checks); actions-window-space-1 and actions-window-space-right in light and dark, grid checks. Not yet tried by hand: the manual line, including the SkyLight lookup of the current Space and a second display.
+
+### S-098 Follow a window to another Space with a built-in name
+As the user, I bind `space-follow-2` to put the focused window on Space 2 and go there with it, without defining an action, since I do that as often as sending a window and staying.
+Screens: actions-window, help-builtin
+Depends: S-096, S-097
+Acceptance:
+- [unit] `space.follow` reads and writes `target` (`left`, `right`, or a number from 1); no target is `missing-field`, `0` and `"2"` are `bad-window-value`, a `send` field is `unknown-field`; `space.send` with `follow`, true or false, is `unknown-field` (spec v23); `space-follow-left`, `space-follow-right` and `space-follow-N` are built-in actions; the spec-v23 fixtures pass, and the schema's Space actions match the spec's.
+- [self] Follow to Space takes the window and you to that Space with one swipe per Space, and the window keeps focus; `space-follow-4` is a built-in action; Help lists "Space 1, 2, 3…" under Follow to Space.
+- [self] Follow to Space is in the Type picker beside Send to Space, with Follow To (Space to the Left, Space to the Right, Space Number) and a Number stepper. Send to Space has no Go With the Window toggle.
+- [snap] actions-window-follow-2 and actions-window-send-3.
+- [manual] `space-follow-2` from Space 1 puts the window on Space 2 and you with it, with no slide.
+UX:
+- Glossary: "Follow to Space" (spec v23). Send to Space and Follow to Space are one family in the Kit (`SpaceSendAction`, whose type sets `follow`), so the app code for going with a window is S-096's.
+- A config with `"follow"` doesn't load: use `"type": "space.follow"` for `"follow": true`, and leave it out for `false`. The format is still young, so the spec drops the field instead of keeping it as an old name.
+Status: done
+Verified: reading, writing, the rules, built-in names (unit tests, `SpaceSendTests`, the spec-v23 fixtures, 332 in all); following by swipes, the built-in name, Help's row, saving (self-test, 298 checks); actions-window-follow-2 and actions-window-send-3 in light and dark, grid checks. Not yet tried by hand: the manual line.
 
 ## M12 Held menus
 

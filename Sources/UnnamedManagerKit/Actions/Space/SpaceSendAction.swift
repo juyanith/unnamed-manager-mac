@@ -66,10 +66,12 @@ public enum SpaceTarget: Sendable, Hashable {
     }
 }
 
-/// Send to Space (S-096, spec v20): puts the focused window on another
-/// Space, and with `follow` goes there with it.
+/// Send to Space (S-096, spec v20) and Follow to Space (spec v23): puts
+/// the focused window on another Space, and you stay, or go with it.
+/// One family with two types, since they differ only in where you end up.
 public struct SpaceSendAction: ActionValue {
     public var target: SpaceTarget
+    /// True for Follow to Space (`space.follow`).
     public var follow: Bool
 
     public init(_ target: SpaceTarget, follow: Bool = false) {
@@ -77,41 +79,42 @@ public struct SpaceSendAction: ActionValue {
         self.follow = follow
     }
 
-    public static let kinds = [ActionKind(type: "space.send", displayName: "Send to Space", symbol: "macwindow.badge.plus")]
+    public static let kinds = [
+        ActionKind(type: "space.send", displayName: "Send to Space", symbol: "macwindow.badge.plus"),
+        ActionKind(type: "space.follow", displayName: "Follow to Space", symbol: "macwindow.on.rectangle"),
+    ]
 
-    public var type: String { "space.send" }
+    public var type: String { follow ? "space.follow" : "space.send" }
 
     public static func blank(_ type: String) -> SpaceSendAction {
-        SpaceSendAction(.number(2))
+        SpaceSendAction(.number(2), follow: type == "space.follow")
     }
 
     /// `target` is required: left, right or a number from 1. Any other
-    /// value, the string "2" included, is `bad-window-value`.
+    /// value, the string "2" included, is `bad-window-value`. Send to
+    /// Space's `follow` (spec v20 to v22) is gone, so it's `unknown-field`.
     public init(type: String, fields: ActionFields) throws {
-        try fields.allow(["target", "follow"])
+        try fields.allow(["target"])
         target = try SpaceTarget(fields)
-        follow = try fields.value("follow", default: false)
+        follow = type == "space.follow"
     }
 
-    /// `follow` is left out when it's off, the default.
     public func write(to fields: inout ActionFieldWriter) {
         target.write(to: &fields)
-        if follow { fields.bool("follow", true) }
     }
 
     public static func schema(_ type: String) -> ActionSchema {
         ActionSchema([
-            "target": SpaceTarget.schema(
-                "Where the window goes: the Space or desktop to the left or right of its own, or the one with that number, from 1."),
-            "follow": ["type": "boolean",
-                       "description": "Go to that Space or desktop with the window. Default false: stay where you are."],
+            "target": SpaceTarget.schema(type == "space.follow"
+                ? "Where the window goes, and you with it: the Space or desktop to the left or right of its own, or the one with that number, from 1."
+                : "Where the window goes: the Space or desktop to the left or right of its own, or the one with that number, from 1."),
         ], required: ["target"])
     }
 
     /// Built-in actions: `space-send-left`, `space-send-right` and
-    /// `space-send-2` and the other numbers, all with `follow` off.
+    /// `space-send-2` and the other numbers, and the same for `space-follow-`.
     public static func builtIn(_ type: String, value: String?) -> SpaceSendAction? {
-        value.flatMap(SpaceTarget.init(builtIn:)).map { SpaceSendAction($0) }
+        value.flatMap(SpaceTarget.init(builtIn:)).map { SpaceSendAction($0, follow: type == "space.follow") }
     }
 
     public static func builtInValues(_ type: String) -> [String?] {
@@ -119,11 +122,12 @@ public struct SpaceSendAction: ActionValue {
     }
 
     public func iconSource(home: URL) -> IconSource? {
-        switch target {
-        case .side(.left): .symbol("arrow.left.square")
-        case .side(.right): .symbol("arrow.right.square")
-        case let .number(number) where number <= 50: .symbol("\(number).square")
-        case .number: .symbol("number.square")
+        let fill = follow ? ".fill" : ""
+        return switch target {
+        case .side(.left): .symbol("arrow.left.square" + fill)
+        case .side(.right): .symbol("arrow.right.square" + fill)
+        case let .number(number) where number <= 50: .symbol("\(number).square" + fill)
+        case .number: .symbol("number.square" + fill)
         }
     }
 

@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "entries": [
+    { "keys": "Meh+S", "title": "Spaces" },
+    { "keys": "Meh+S A", "title": "follow-left", "action": "follow-left" },
+    { "keys": "Meh+S B", "title": "with-two", "action": "with-two" },
+    { "keys": "Meh+S C", "title": "built-in left", "action": "space-follow-left" },
+    { "keys": "Meh+S D", "title": "built-in right", "action": "space-follow-right" },
+    { "keys": "Meh+S E", "title": "built-in 3", "action": "space-follow-3" }
+  ],
+  "actions": {
+    "follow-left": { "type": "space.follow", "target": "left" },
+    "with-two": { "type": "space.follow", "target": 2 }
+  }
+}

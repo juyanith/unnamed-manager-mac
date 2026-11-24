@@ -131,16 +131,16 @@ extension SelfTest {
         check("S-096 space.send 3 puts the window on Space 3, and you stay",
               sent == nil && fake.windows["a"]?.space == 3 && fake.currentSpace == 1 && fake.sends.map(\.desktop) == [3],
               "\(String(describing: sent)) \(fake.sends)")
-        check("S-096 without follow, the window used before on this Space takes focus", fake.focused == "b", "\(String(describing: fake.focused))")
+        check("S-096 you stay, and the window used before on this Space takes focus", fake.focused == "b", "\(String(describing: fake.focused))")
         let back = await run(SpaceSendAction(.side(.left)))
         check("S-096 left from Space 1 does nothing, with no sound",
               back == nil && fake.sends.count == 1 && fake.windows["b"]?.space == 1)
         let swipes = fake.spaceSwitches.count
         let followed = await run(SpaceSendAction(.side(.right), follow: true))
-        check("S-096 right with follow takes the window and you to Space 2, and it keeps focus",
+        check("S-098 space.follow right takes the window and you to Space 2, and it keeps focus",
               followed == nil && fake.windows["b"]?.space == 2 && fake.currentSpace == 2 && fake.focused == "b",
               "\(String(describing: followed)) space \(fake.currentSpace) focused \(String(describing: fake.focused))")
-        check("S-096 follow goes with one swipe to the right, on the window's display, with no slide",
+        check("S-098 Follow to Space goes with one swipe to the right, on the window's display, with no slide",
               fake.spaceSwitches.dropFirst(swipes).map(\.direction) == [.right]
                   && fake.spaceSwitches.last?.screen == fake.screens().first(where: { $0.frame.contains(right) })?.frame,
               "\(fake.spaceSwitches.dropFirst(swipes))")
@@ -151,13 +151,15 @@ extension SelfTest {
               past == PlanError("No Space 5. There are 4.", alerts: true) && fake.sends.count == 2, "\(String(describing: past))")
         let far = fake.spaceSwitches.count
         let jumped = await run(SpaceSendAction(.number(4), follow: true))
-        check("S-096 follow to Space 4 from Space 2 swipes right twice, and you arrive with the window",
+        check("S-098 space.follow 4 from Space 2 swipes right twice, and you arrive with the window",
               jumped == nil && fake.spaceSwitches.dropFirst(far).map(\.direction) == [.right, .right]
                   && fake.windows["b"]?.space == 4 && fake.currentSpace == 4 && fake.focused == "b",
               "\(String(describing: jumped)) \(fake.spaceSwitches.dropFirst(far)) space \(fake.currentSpace)")
         let builtIn = BuiltInAction.action(named: "space-send-4")
-        check("S-096 space-send-4 is a built-in action with follow off",
+        check("S-096 space-send-4 is a built-in action, and you stay",
               builtIn == .family(AnyActionValue(SpaceSendAction(.number(4)))))
+        check("S-098 space-follow-4 is a built-in action, and you go with the window",
+              BuiltInAction.action(named: "space-follow-4") == .family(AnyActionValue(SpaceSendAction(.number(4), follow: true))))
         fake.windows["b"]?.place = .fullScreen
         let full = await run(SpaceSendAction(.number(1)))
         check("S-096 a full-screen window can't be sent, with the sound", full?.alerts == true && full?.message.contains("full screen") == true)

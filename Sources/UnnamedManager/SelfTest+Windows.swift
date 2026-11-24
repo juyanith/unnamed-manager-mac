@@ -156,7 +156,7 @@ extension SelfTest {
             (.family(AnyActionValue(SwapAction(.number(2), scope: .display))), #"{ "type": "window.swap", "target": 2, "scope": "display" }"#),
             (.family(AnyActionValue(SwapAction(.window(.left)))), #"{ "type": "window.swap", "target": "left" }"#),
             (.family(AnyActionValue(SpaceSwitchAction(.left))), #"{ "type": "space.switch", "target": "left" }"#),
-            (.family(AnyActionValue(SpaceSendAction(.number(2), follow: true))), #"{ "type": "space.send", "target": 2, "follow": true }"#),
+            (.family(AnyActionValue(SpaceSendAction(.number(2), follow: true))), #"{ "type": "space.follow", "target": 2 }"#),
             (.family(AnyActionValue(FillAction(toggle: false))), #"{ "type": "window.fill", "toggle": false }"#),
             (.family(AnyActionValue(MinimizeAction())), #"{ "type": "window.minimize" }"#),
             (.family(AnyActionValue(MoveAction.by(dx: 40, dy: 0))), #"{ "type": "window.move", "by": { "dx": 40 } }"#),

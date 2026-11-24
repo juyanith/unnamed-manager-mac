@@ -170,7 +170,7 @@ enum Snapshot {
         ] + [
             // S-070: each window action's form.
             "left-half", "move-center", "wider", "half-size", "focus-right", "focus-next", "focus-recent",
-            "window-fill", "arrange", "swap-2", "space-right", "space-1", "send-3",
+            "window-fill", "arrange", "swap-2", "space-right", "space-1", "send-3", "follow-2",
         ].map { action("actions-window-\($0)", $0) } + [
             // S-081: the Built-In Actions section, with Place Window open.
             Page(selector: "help", name: "help-builtin", wait: 1.2, show: { model, _ in

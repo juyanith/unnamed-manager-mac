@@ -76,10 +76,11 @@ extension SwapAction: EditableAction {
 extension SpaceSendAction: EditableAction {
     @MainActor static func form(_ value: Binding<SpaceSendAction>) -> some View {
         Section {
-            SpaceTargetRows(label: "Send To", target: value.target)
-            Toggle("Go With the Window", isOn: value.follow)
+            SpaceTargetRows(label: value.wrappedValue.follow ? "Follow To" : "Send To", target: value.target)
         } footer: {
-            Text("Puts the window in front on another Space of its display. Numbers count Spaces as Mission Control shows them, without full-screen apps. With Go With the Window off, you stay, and the window you used before here takes focus. If macOS won't move the window quietly, Unnamed Manager holds its title bar and presses the Switch to Desktop shortcut, which must be on in Keyboard Shortcuts.")
+            Text(value.wrappedValue.follow
+                ? "Puts the window in front on another Space of its display, and you go there with it, without the slide. Numbers count Spaces as Mission Control shows them, without full-screen apps. To stay where you are, use Send to Space. If macOS won't move the window quietly, Unnamed Manager holds its title bar and presses the Switch to Desktop shortcut, which must be on in Keyboard Shortcuts."
+                : "Puts the window in front on another Space of its display, and you stay: the window you used before here takes focus. Numbers count Spaces as Mission Control shows them, without full-screen apps. To go with the window, use Follow to Space. If macOS won't move the window quietly, Unnamed Manager holds its title bar and presses the Switch to Desktop shortcut, which must be on in Keyboard Shortcuts.")
         }
     }
 }

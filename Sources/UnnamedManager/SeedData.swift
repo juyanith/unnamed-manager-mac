@@ -39,6 +39,7 @@ enum SeedData {
         { "keys": "Hyper+Space W D", "title": "Space Right", "action": "space-right" },
         { "keys": "Hyper+Space W 1", "title": "Space 1", "action": "space-1" },
         { "keys": "Hyper+Space W 3", "title": "Send to Space 3", "action": "send-3" },
+        { "keys": "Hyper+Space W G", "title": "Follow to Space 2", "action": "follow-2" },
         { "keys": "Meh+W", "title": "Workspace" },
         { "keys": "Meh+W 1", "title": "Workspace 1", "action": "workspace-1" },
         { "keys": "CAG+T", "title": "Terminal", "action": "open-terminal" },
@@ -68,7 +69,8 @@ enum SeedData {
         "swap-2": { "type": "window.swap", "target": 2, "scope": "display" },
         "space-right": { "type": "space.switch", "target": "right" },
         "space-1": { "type": "space.switch", "target": 1 },
-        "send-3": { "type": "space.send", "target": 3, "follow": true },
+        "send-3": { "type": "space.send", "target": 3 },
+        "follow-2": { "type": "space.follow", "target": 2 },
         "address-bar": { "type": "contextual", "variants": { "browser": { "type": "send", "keys": "Cmd+L" } } },
         "find": {
           "type": "contextual",
