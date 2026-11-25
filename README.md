@@ -21,7 +21,7 @@ If you finish the sequence quickly, nothing appears on screen. If you pause, a s
   - **Show Help** opens the Help window. The starter config puts it on Hyper+H.
   - **Window actions:** Place, Move, Resize, Fill, Minimize, Arrange, Focus and Swap Window, from the keyboard. Focus and Swap go by direction, in order, by number, or back to the window used before.
   - **Switch Space** goes to the Space to the left or right, or to one by number, without the slide. **Send to Space** puts the focused window on another Space, and **Follow to Space** does the same and goes there with it.
-  - Common window and Space actions are built in, such as `window-place-left-half` or `space-switch-2`, so a binding can name them without defining them.
+  - [Built-in actions](#built-in-actions) such as `window-place-left-half` or `space-switch-2` can be used directly in bindings.
 - **Held menus and Recent Windows.** A leader can work while you hold its modifiers and choose when you let go, as ⌘Tab does. A list such as Recent Windows fills itself with your windows, minimized and on other Spaces too, and can go to or swap with the one you pick.
 - **Icons in the Guide:** menus show the app's keycaps, apps and Open targets show their own icon, and any entry can have an SF Symbol or a file's icon of its own.
 - **One Settings window** (Settings…, ⌘,) to edit menus, bindings, actions and contexts, record chords, and reorder items, on tabs beside the General and Windows preferences. A Help window lists your leaders and direct bindings and how sequences work (Help in the menu bar menu, or a Show Help binding).
@@ -84,6 +84,27 @@ On first launch the app writes a starter config. A small example:
 ```
 
 Chords use `Ctrl`, `Opt` (or `Alt`), `Shift` and `Cmd`, the symbols ⌃⌥⇧⌘ (`⌃⌥⇧T`), or the groups `Hyper` (⌃⌥⇧⌘), `Meh` (⌃⌥⇧) and `CAG` (⌃⌥⌘). An entry with an `action` is a binding, and one without is a menu. A top-level entry (a single chord) without an action is a leader; with an action it's a direct binding that runs as soon as you press the chord. The full format, including runtime and HUD settings, is in [docs/SPEC.md](docs/SPEC.md).
+
+### Built-in actions
+
+Use a built-in name as the binding's `action` value without defining it in `actions`. For example, `"action": "window-place-left-half"` places the focused window in the left half of the screen.
+
+| Action | Built-in names |
+|---|---|
+| Show Help or do nothing | `help`, `noop` |
+| Fill or minimize | `window-fill`, `window-minimize` |
+| Place in halves | `window-place-left-half`, `window-place-right-half`, `window-place-top-half`, `window-place-bottom-half` |
+| Place in thirds | `window-place-left-third`, `window-place-center-third`, `window-place-right-third`, `window-place-left-two-thirds`, `window-place-right-two-thirds` |
+| Place in corners or center | `window-place-top-left`, `window-place-top-right`, `window-place-bottom-left`, `window-place-bottom-right`, `window-place-center` |
+| Resize | `window-resize-grow`, `window-resize-shrink` |
+| Arrange | `window-arrange`, `window-arrange-2` through `window-arrange-8`, `window-arrange-all` |
+| Focus a window | `window-focus-` plus `left`, `right`, `up`, `down`, `next`, `previous`, `first`, `last`, `recent`, or a window number |
+| Swap windows | `window-swap-` plus `left`, `right`, `up`, `down`, `next`, `previous`, `first`, `last`, `recent`, or a window number |
+| Switch Space | `space-switch-left`, `space-switch-right`, `space-switch-<number>` |
+| Send a window to another Space | `space-send-left`, `space-send-right`, `space-send-<number>` |
+| Send a window and follow it | `space-follow-left`, `space-follow-right`, `space-follow-<number>` |
+
+Window and Space numbers start at `1` and use no leading zeros. `window-arrange` is shorthand for `window-arrange-2`.
 
 ## Development
 
