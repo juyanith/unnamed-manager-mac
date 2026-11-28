@@ -4,7 +4,7 @@ import UnnamedManagerKit
 
 /// The General and Windows tabs of Settings: a grouped Form each, at most
 /// 600 pt wide in the window every tab shares. General has Guide, Keys, Feedback and Startup; Windows has
-/// Windows, Focus and Swap, Quit on Close, Apps, and Spaces (S-032, S-036, S-082, S-084, S-085, S-086, S-087).
+/// Windows, Displays, Focus and Swap, Quit on Close, Apps, and Spaces (S-032, S-036, S-082, S-084, S-085, S-086, S-087, S-101).
 /// Changes are written to the config file at once, like every other edit.
 struct SettingsForm: View {
     let tab: SettingsTab
@@ -27,13 +27,15 @@ struct SettingsForm: View {
                         PointsField(value: windowDistance(\.gap, "Change Gap"), range: 0...64, step: 2,
                                     accessibilityLabel: "Gap between windows, points")
                     }
-                    stepsField("Smallest Cell Across", windowLimit(\.minCell.across, "Change Smallest Cell Across"))
-                    stepsField("Smallest Cell Down", windowLimit(\.minCell.down, "Change Smallest Cell Down"))
+                    StepsField(title: "Smallest Cell Across", value: windowLimit(\.minCell.across, "Change Smallest Cell Across"))
+                    StepsField(title: "Smallest Cell Down", value: windowLimit(\.minCell.down, "Change Smallest Cell Down"))
                 } header: {
                     Text("Windows")
                 } footer: {
                     Text("Place Window, Fill, Arrange Windows and Tidy Windows leave the gap between a window and the screen's edges, and between windows side by side. 0 puts them edge to edge. Arrange Windows and Tidy Windows put edges on steps: 12 on a display's short side, and 12 on its long side for each time the short side fits into it. The smallest cell sets the most columns and rows Arrange Windows picks: with 6 by 6, a 16:9 display gets at most 2 by 2.")
                 }
+
+                DisplaysSection()
 
                 Section {
                     LabeledContent("Smallest Visible Part") {
@@ -73,6 +75,7 @@ struct SettingsForm: View {
                             Text("App")
                             Spacer()
                             ForEach(Self.rules, id: \.name) { Text($0.name).frame(width: Layout.ruleColumnWidth) }
+                            Text("Smallest Size").frame(width: Layout.sizeColumnWidth)
                             // Room for the Remove button.
                             Image(systemName: "minus.circle").hidden()
                         }
@@ -98,6 +101,7 @@ struct SettingsForm: View {
                                                 : rule.help.replacingOccurrences(of: "{app}", with: AppIcon.name(bundleId)))
                                     .accessibilityLabel("\(rule.name) for \(AppIcon.name(bundleId))")
                             }
+                            AppSizeButton(bundleId: bundleId).frame(width: Layout.sizeColumnWidth)
                             Button("Remove", systemImage: "minus.circle") {
                                 editApps { $0[bundleId] = nil }
                             }
@@ -111,7 +115,7 @@ struct SettingsForm: View {
                 } header: {
                     Text("Apps")
                 } footer: {
-                    Text("Uncheck what an app's windows stay out of. Focus: Focus Window never picks them, Window Used Before too. Swap: Swap Window never moves them. Arrange: Arrange Windows never counts or moves them. Their windows still hide the ones behind them. Quit: Quit on Close never quits the app.")
+                    Text("Uncheck what an app's windows stay out of. Focus: Focus Window never picks them, Window Used Before too. Swap: Swap Window never moves them. Arrange: Arrange Windows never counts or moves them. Their windows still hide the ones behind them. Quit: Quit on Close never quits the app. Smallest Size: Arrange Windows and Tidy Windows give its windows at least this much room.")
                 }
 
                 Section {
@@ -290,25 +294,7 @@ struct SettingsForm: View {
         })
     }
 
-    /// One of Arrange Windows' limits (S-076).
-    /// A count of steps, from 1 to 96 (spec v24), laid out as PointsField.
-    private func stepsField(_ title: String, _ value: Binding<Int>) -> some View {
-        let range = WindowSteps.range
-        let clamped = Binding(get: { value.wrappedValue }, set: { value.wrappedValue = min(max($0, range.lowerBound), range.upperBound) })
-        return LabeledContent(title) {
-            HStack(spacing: Space.sm) {
-                TextField("Steps", value: clamped, format: .number)
-                    .labelsHidden()
-                    .multilineTextAlignment(.trailing)
-                    .frame(width: Layout.keyColumnWidth / 2)
-                    .accessibilityLabel("\(title), steps")
-                Stepper("Steps", value: clamped, in: range)
-                    .labelsHidden()
-                Text("steps").foregroundStyle(.secondary)
-            }
-        }
-    }
-
+    /// The smallest cell every display shares (S-076, spec v24).
     private func windowLimit(_ key: WritableKeyPath<Config.Windows, Int>, _ name: String) -> Binding<Int> {
         Binding(get: { editor.draft.config.windows[keyPath: key] }, set: { value in
             guard editor.draft.config.windows[keyPath: key] != value else { return }

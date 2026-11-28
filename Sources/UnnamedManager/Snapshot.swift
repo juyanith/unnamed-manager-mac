@@ -183,6 +183,21 @@ enum Snapshot {
                 model.showHelp()
                 return help
             },
+            // S-101: an app's smallest size, in its popover on the Windows tab.
+            Page(selector: "windows-size", name: "windows-size", wait: 1, show: { model, _ in
+                model.tab = .windows
+                model.appSizeShown = nil
+                try? await Task.sleep(for: .seconds(0.3))
+                // The Apps table is below the fold, and a popover needs its button on screen.
+                if let scroll = SelfTest.window(WindowID.settings)?.contentView.flatMap(Self.scrollView),
+                   let document = scroll.documentView {
+                    document.scroll(NSPoint(x: 0, y: document.isFlipped ? document.bounds.maxY : 0))
+                    try? await Task.sleep(for: .seconds(0.3))
+                }
+                model.appSizeShown = "com.apple.Safari"
+                try? await Task.sleep(for: .seconds(0.5))
+                return NSApp.windows.first { $0.className.contains("Popover") && $0.isVisible }
+            }, hide: { $0.appSizeShown = nil }),
             // S-048: a direct binding. S-056: an entry with an icon of its own. S-080: a built-in action.
             binding("bindings-direct", "CAG+T"),
             binding("bindings-icon", "Hyper+Space S"),

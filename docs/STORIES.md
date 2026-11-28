@@ -1187,8 +1187,12 @@ Acceptance:
 - [unit] `minCell`, `displays`, `minWidth` and `minHeight` read and write, defaults left out; a bad display key is `bad-display-key`, a count outside 1 to 96 is `bad-window-limit`, a negative size is `negative-window-distance`; `maxColumns` and `maxRows` load with the `retired-setting` warning and are dropped when the file is saved.
 - [self] With the smallest cell 4 steps across, three windows are three columns; Smallest Cell is saved in the file.
 - [snap] Settings › Windows has Smallest Cell Across and Smallest Cell Down, in steps, in place of the maximums.
+- [unit] A display's steps or smallest cell set back to the guess or the shared one leaves the file; with neither, the display leaves `displays`.
+- [self] A display's steps set in Settings are saved under its size and undo; a smallest cell the same as the shared one isn't saved; an app's smallest width is saved with its rules and undoes.
+- [snap] Settings › Windows has a Displays section: a Display picker (connected displays, then ones in the file marked Not Connected), Steps Across and Down, Smallest Cell Across and Down, and Use Defaults. The Apps table has a Smallest Size column whose button opens a popover with Smallest Width and Smallest Height.
 UX:
 - Words: "Smallest Cell Across", "Smallest Cell Down", "steps". The footer says what a step is and gives the 16:9 example.
+- Words: "Displays", "Steps Across", "Steps Down", "Use Defaults", "Not Connected", "Smallest Size", "Smallest Width", "Smallest Height", "Any". Displays of the same size share one choice, named after both.
 - `windows.displays` and each app's smallest size are in the config file only for now.
 Status: done
 Verified: unit tests (`ArrangeTests`, 349 in all); self-test, 308 checks; settings in light and dark, grid checks. Not yet tried by hand on real windows.

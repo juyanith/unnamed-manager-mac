@@ -68,6 +68,8 @@ final class AppModel {
     /// The selected action and context on their pages.
     var actionSelection: String?
     var contextSelection: String?
+    /// The app whose smallest size shows in a popover on the Windows tab (spec v24).
+    var appSizeShown: String?
     /// The built-in action kinds open on the Help page (S-081).
     var openBuiltIns: Set<String> = []
     /// A built-in action kind for the Help page to scroll to, once.

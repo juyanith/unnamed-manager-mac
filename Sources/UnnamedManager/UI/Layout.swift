@@ -11,6 +11,9 @@ enum Layout {
     static let settingsDefault = CGSize(width: 980, height: 640)
     /// One rule's checkbox column in Settings' Apps table.
     static let ruleColumnWidth: CGFloat = 56
+    /// The Apps table's Smallest Size column, and the note in its popover.
+    static let sizeColumnWidth: CGFloat = 88
+    static let sizePopoverTextWidth: CGFloat = 240
     /// The first-run welcome window.
     static let welcomeWidth: CGFloat = 520
     /// The Help window's smallest and first-open size.
