@@ -263,4 +263,20 @@ struct ArrangeTests {
                              Array(windows.prefix(2)))
         #expect(whole[0]?.width == 3840)
     }
+    @Test("Settings writes a display's own steps and smallest cell, and leaves out the defaults (S-101)")
+    func displaySettings() {
+        var windows = Config.Windows()
+        let wide = CGSize(width: 3840, height: 1080)
+        windows.setSteps(WindowSteps(across: 48, down: 12), for: wide)
+        #expect(windows.displays["3840x1080"] == Config.Windows.Display(steps: WindowSteps(across: 48, down: 12)))
+        windows.setMinCell(WindowSteps(across: 4, down: 6), for: wide)
+        #expect(windows.minCell(for: wide) == WindowSteps(across: 4, down: 6))
+        // Back to the guess and the shared smallest cell: nothing of its own is left.
+        windows.setSteps(WindowSteps(across: 36, down: 12), for: wide)
+        #expect(windows.displays["3840x1080"]?.steps == nil)
+        windows.setMinCell(Config.Windows.standardMinCell, for: wide)
+        #expect(windows.displays.isEmpty)
+        #expect(Config.Windows.size(ofDisplayKey: "3840x1080") == wide)
+        #expect(Config.Windows.size(ofDisplayKey: "wide") == nil)
+    }
 }

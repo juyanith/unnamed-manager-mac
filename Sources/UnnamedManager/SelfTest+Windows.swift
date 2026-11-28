@@ -182,6 +182,22 @@ extension SelfTest {
         undo.endUndoGrouping()
         check("S-076 Smallest Cell is saved in the file's windows settings",
               file().contains(#""minCell": { "across": 4, "down": 6 }"#), file())
+        let wide = CGSize(width: 3840, height: 1080)
+        undo.beginUndoGrouping()
+        editor.edit("Change Display Steps", undo: undo) { $0.config.windows.setSteps(WindowSteps(across: 48, down: 12), for: wide) }
+        undo.endUndoGrouping()
+        check("S-101 a display's steps from Settings are saved under its size, and undo",
+              file().contains(#""displays": { "3840x1080": { "steps": { "across": 48, "down": 12 } } }"#)
+                  && { undo.undo(); return !file().contains("3840x1080") }(), file())
+        undo.beginUndoGrouping()
+        editor.edit("Change Display Smallest Cell", undo: undo) { $0.config.windows.setMinCell(WindowSteps(across: 4, down: 6), for: wide) }
+        undo.endUndoGrouping()
+        check("S-101 a display's smallest cell the same as the shared one isn't saved", !file().contains("3840x1080"), file())
+        undo.beginUndoGrouping()
+        editor.edit("Change Smallest Width", undo: undo) { $0.config.windows.apps["com.apple.Safari", default: .init()].minWidth = 1000 }
+        undo.endUndoGrouping()
+        check("S-101 an app's smallest width from Settings is saved with its rules, and undoes",
+              file().contains(#""minWidth": 1000"#) && { undo.undo(); return !file().contains("minWidth") }(), file())
         undo.beginUndoGrouping()
         editor.edit("Change Smallest Visible Part", undo: undo) { $0.config.windows.minVisible = 40 }
         undo.endUndoGrouping()

@@ -156,6 +156,36 @@ public struct Config: Sendable, Equatable {
             return CGSize(width: max(0, rules.minWidth), height: max(0, rules.minHeight))
         }
 
+        /// The size a key in `displays` names, or nil when it isn't one.
+        public static func size(ofDisplayKey key: String) -> CGSize? {
+            guard isDisplayKey(key) else { return nil }
+            let parts = key.split(separator: "x").compactMap { Int($0) }
+            return parts.count == 2 ? CGSize(width: parts[0], height: parts[1]) : nil
+        }
+
+        /// Sets a display's steps from Settings. The guess isn't written, so
+        /// a display set back to it follows the guess again.
+        public mutating func setSteps(_ steps: WindowSteps, for display: CGSize) {
+            let key = Self.displayKey(for: display)
+            var entry = displays[key] ?? Display()
+            entry.steps = steps == WindowSteps.guess(for: display) ? nil : steps
+            store(entry, at: key)
+        }
+
+        /// Sets a display's smallest cell from Settings. The one every display
+        /// shares isn't written, so the display follows it again.
+        public mutating func setMinCell(_ cell: WindowSteps, for display: CGSize) {
+            let key = Self.displayKey(for: display)
+            var entry = displays[key] ?? Display()
+            entry.minCell = cell == minCell ? nil : cell
+            store(entry, at: key)
+        }
+
+        /// A display with nothing of its own leaves `displays`.
+        private mutating func store(_ entry: Display, at key: String) {
+            displays[key] = entry.steps == nil && entry.minCell == nil ? nil : entry
+        }
+
         /// The apps whose rule leaves them out of an action, such as `\.arrange`.
         public func leftOut(of rule: KeyPath<AppRules, Bool>) -> Set<String> {
             Set(apps.filter { !$0.value[keyPath: rule] }.keys)
