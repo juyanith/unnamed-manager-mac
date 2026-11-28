@@ -11,19 +11,19 @@ public enum ArrangeLayout: String, CaseIterable, Sendable {
 public enum ArrangeCount: Sendable, Hashable {
     /// The focused window and the ones used before it.
     case windows(Int)
-    /// Every window on the display, up to the settings' limit.
+    /// Every window on the display, up to the limits `windows.minCell` sets.
     case all
 }
 
 /// Arrange Windows (S-075, S-076): the windows used last, on the focused
 /// window's display, in a grid of columns or rows.
 public struct ArrangeAction: ActionValue {
-    /// The numbers `count` and `groups` take, and the most windows ever arranged.
+    /// The numbers `count` and `groups` take. `"all"` may arrange more (spec v24).
     public static let countRange = 2...8
     public static let groupsRange = 1...8
 
     public var count: ArrangeCount
-    /// nil lets the app pick, up to the settings' limit.
+    /// nil lets the app pick, up to the limits `windows.minCell` sets.
     public var groups: Int?
     public var layout: ArrangeLayout
 
@@ -113,9 +113,9 @@ public struct ArrangeAction: ActionValue {
     public static func schema(_ type: String) -> ActionSchema {
         ActionSchema([
             "count": ["oneOf": [["type": "integer", "minimum": countRange.lowerBound, "maximum": countRange.upperBound], ["enum": ["all"]]],
-                      "description": "How many windows: the focused one and the ones used before it. \"all\" is every window on the display, up to windows.maxColumns times windows.maxRows. Default 2."],
+                      "description": "How many windows: the focused one and the ones used before it. \"all\" is every window on the display, up to the most columns times the most rows that windows.minCell allows. Default 2."],
             "groups": ["type": "integer", "minimum": groupsRange.lowerBound, "maximum": groupsRange.upperBound,
-                       "description": "How many columns or rows. Without it, as many as there are windows, up to windows.maxColumns or windows.maxRows."],
+                       "description": "How many columns or rows. Without it, as many as there are windows, up to the most that windows.minCell allows."],
             "layout": ["enum": ArrangeLayout.allCases.map(\.rawValue),
                        "description": "auto (default) is columns on a wide screen and rows on a tall one."],
         ])
@@ -172,17 +172,39 @@ public enum ArrangeGrid {
     /// on the display, the focused one first, then front to back. The
     /// result has an index into `windows` and its cell, for the windows
     /// that are arranged; the others stay as they are.
-    public static func plan(_ action: ArrangeAction, maxColumns: Int, maxRows: Int, usable: CGRect,
-                            windows: [CGRect]) -> [(window: Int, cell: Cell)] {
+    ///
+    /// Cells land on the display's `steps` (spec v24): the groups share
+    /// the steps along them, and each group's cells share its steps the
+    /// other way, the leftover steps going one each from the left or the
+    /// top. `minCell` sets the most columns and rows the app picks.
+    /// `minimums` are the smallest sizes in points, by window, from each
+    /// app's `minWidth` and `minHeight`.
+    public static func plan(_ action: ArrangeAction, steps: WindowSteps, minCell: WindowSteps, usable: CGRect,
+                            windows: [CGRect], minimums: [CGSize] = []) -> [(window: Int, cell: Cell)] {
         guard !windows.isEmpty else { return [] }
-        let limit = ArrangeAction.countRange.upperBound
+        let steps = steps.clamped, minCell = minCell.clamped
+        let cell = WindowSteps(across: min(minCell.across, steps.across), down: min(minCell.down, steps.down))
+        let maxColumns = max(1, steps.across / cell.across), maxRows = max(1, steps.down / cell.down)
         let count = switch action.count {
         case let .windows(number): number
-        case .all: max(1, min(windows.count, limit, maxColumns * maxRows))
+        case .all: max(1, min(windows.count, maxColumns * maxRows))
         }
         let rows = action.layout == .rows || (action.layout == .auto && usable.height > usable.width)
-        let groups = min(count, max(1, action.groups ?? (rows ? maxRows : maxColumns)))
         let used = Array(windows.indices.prefix(count))
+        // Along the groups, and across one.
+        let alongSteps = rows ? steps.down : steps.across, acrossSteps = rows ? steps.across : steps.down
+        let floor = rows ? cell.down : cell.across
+
+        /// The steps a window needs, along the groups or across one.
+        func need(_ window: Int, along: Bool) -> Int {
+            guard window < minimums.count else { return 0 }
+            let byWidth = along != rows
+            let points = byWidth ? minimums[window].width : minimums[window].height
+            let total = along ? alongSteps : acrossSteps
+            let step = (byWidth ? usable.width : usable.height) / CGFloat(total)
+            guard points > 0, step > 0 else { return 0 }
+            return min(total, Int((points / step - 0.000_001).rounded(.up)))
+        }
 
         /// Windows keep the order they're in: by center along the groups,
         /// or across one. Centers within the tolerance are the same; what's
@@ -204,32 +226,98 @@ public enum ArrangeGrid {
             return along != rows ? missing + real : real + missing
         }
 
-        // The focused window stays in the group its center is in.
-        let center = rows ? (windows[0].midY - usable.minY) / usable.height : (windows[0].midX - usable.minX) / usable.width
-        let home = center.isFinite ? min(groups - 1, max(0, Int((center * CGFloat(groups)).rounded(.down)))) : 0
-        let shape = shape(count: count, groups: groups, rows: rows, focused: home)
-        var order = ordered(used + Array(repeating: nil, count: count - used.count), along: true)
-        // The focused window is dealt into its own group; the others fill the groups in order.
-        if shape.focused != nil { order.removeAll { $0 == 0 } }
-        var rest = order[...], result: [(window: Int, cell: Cell)] = []
-        for (group, size) in shape.sizes.enumerated() {
-            let own = group == shape.focused
-            let taken = rest.prefix(own ? size - 1 : size)
-            rest = rest.dropFirst(taken.count)
-            // The focused window's group keeps the plain grid's cells; another group splits equally.
-            let parts = own ? shape.per : size
+        /// The grid in `groups` groups, or nil when a window's smallest
+        /// size leaves the other groups less than `minCell`.
+        func layout(_ groups: Int) -> [(window: Int, cell: Cell)]? {
+            // The focused window stays in the group its center is in, by the groups' steps.
+            let center = rows ? (windows[0].midY - usable.minY) / usable.height : (windows[0].midX - usable.minX) / usable.width
+            let plain = bounds(alongSteps, spans: Array(repeating: 1, count: groups), needs: [], floor: 1) ?? [0, 1]
+            let home = center.isFinite ? max(0, (plain.dropFirst().firstIndex { Double(center) < $0 } ?? groups) - 1) : 0
+            let shape = shape(count: count, groups: groups, rows: rows, focused: home)
+            var order = ordered(used + Array(repeating: nil, count: count - used.count), along: true)
+            // The focused window is dealt into its own group; the others fill the groups in order.
+            if shape.focused != nil { order.removeAll { $0 == 0 } }
+            var rest = order[...]
+            // Each group's members across it, with how many of its cells each spans.
+            var members: [[(window: Int?, span: Int)]] = []
+            for (group, size) in shape.sizes.enumerated() {
+                let own = group == shape.focused
+                let taken = rest.prefix(own ? size - 1 : size)
+                rest = rest.dropFirst(taken.count)
+                // The focused window's group keeps the plain grid's cells; another group splits equally.
+                members.append(ordered(taken + (own ? [0] : []), along: false).map { ($0, own && $0 == 0 ? shape.span : 1) })
+            }
+            let groupNeeds = members.map { $0.compactMap(\.window).map { need($0, along: true) }.max() ?? 0 }
+            guard let along = bounds(alongSteps, spans: Array(repeating: 1, count: groups), needs: groupNeeds, floor: floor) else {
+                return nil
+            }
+            var result: [(window: Int, cell: Cell)] = []
+            for (group, list) in members.enumerated() {
+                let needs = list.map { $0.window.map { need($0, along: false) } ?? 0 }
+                let spans = list.map(\.span)
+                let across = bounds(acrossSteps, spans: spans, needs: needs, floor: 1)
+                    ?? bounds(acrossSteps, spans: spans, needs: [], floor: 1)!
+                for (index, member) in list.enumerated() {
+                    guard let window = member.window else { continue }
+                    let a = (along[group], along[group + 1]), b = (across[index], across[index + 1])
+                    result.append((window, rows
+                        ? Cell(minX: b.0, maxX: b.1, minY: a.0, maxY: a.1)
+                        : Cell(minX: a.0, maxX: a.1, minY: b.0, maxY: b.1)))
+                }
+            }
+            return result
+        }
+
+        var groups = min(count, max(1, action.groups ?? (rows ? maxRows : maxColumns)))
+        while groups > 1, layout(groups) == nil { groups -= 1 }
+        return layout(groups) ?? []
+    }
+
+    /// Where members' cells start and end, as fractions, for members that
+    /// span `spans` cells each over `total` steps. Each cell gets the steps
+    /// divided by the cells, rounded down, and the leftover steps go one
+    /// each from the start. A member that `needs` more steps gets them,
+    /// from the others, which keep at least `floor` steps a cell; nil when
+    /// they can't. With fewer steps than cells, the cells split equally.
+    static func bounds(_ total: Int, spans: [Int], needs: [Int], floor: Int) -> [Double]? {
+        let cells = spans.reduce(0, +)
+        guard cells > 0 else { return [0] }
+        func edges(_ sizes: [Int]) -> [Double] {
+            sizes.reduce(into: [0]) { $0.append($0.last! + $1) }.map { Double($0) / Double(total) }
+        }
+        guard total >= cells else {
             var start = 0
-            for member in ordered(taken + (own ? [0] : []), along: false) {
-                let length = own && member == 0 ? shape.span : 1
-                defer { start += length }
-                guard let member else { continue }
-                let along = (Double(group) / Double(groups), Double(group + 1) / Double(groups))
-                let across = (Double(start) / Double(parts), Double(start + length) / Double(parts))
-                result.append((member, rows
-                    ? Cell(minX: across.0, maxX: across.1, minY: along.0, maxY: along.1)
-                    : Cell(minX: along.0, maxX: along.1, minY: across.0, maxY: across.1)))
+            return [0] + spans.map { span in start += span; return Double(start) / Double(cells) }
+        }
+        /// `steps` over `cells` cells, each member the sum of its cells.
+        func share(_ steps: Int, _ spans: [Int]) -> [Int] {
+            let count = spans.reduce(0, +), base = steps / max(1, count), extra = steps % max(1, count)
+            var cell = 0
+            return spans.map { span in
+                defer { cell += span }
+                return (cell..<cell + span).reduce(0) { $0 + base + ($1 < extra ? 1 : 0) }
             }
         }
-        return result
+        var sizes = share(total, spans)
+        var fixed = Set<Int>()
+        while true {
+            let short = sizes.indices.filter { !fixed.contains($0) && $0 < needs.count && sizes[$0] < needs[$0] }
+            if short.isEmpty { return edges(sizes) }
+            fixed.formUnion(short)
+            let others = sizes.indices.filter { !fixed.contains($0) }
+            let taken = fixed.reduce(0) { $0 + min(needs[$1], total) }
+            let room = total - taken
+            if others.isEmpty {
+                guard room >= 0 else { return nil }
+                // Every member is fixed: the steps left over go one each from the start.
+                let extra = share(room, Array(repeating: 1, count: sizes.count))
+                return edges(sizes.indices.map { min(needs[$0], total) + extra[$0] })
+            }
+            let otherSpans = others.map { spans[$0] }
+            guard room >= otherSpans.reduce(0, +) * floor else { return nil }
+            let shared = share(room, otherSpans)
+            for index in fixed { sizes[index] = min(needs[index], total) }
+            for (index, size) in zip(others, shared) { sizes[index] = size }
+        }
     }
 }

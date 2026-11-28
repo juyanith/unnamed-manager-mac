@@ -493,7 +493,7 @@
           "additionalProperties" : false,
           "properties" : {
             "count" : {
-              "description" : "How many windows: the focused one and the ones used before it. \"all\" is every window on the display, up to windows.maxColumns times windows.maxRows. Default 2.",
+              "description" : "How many windows: the focused one and the ones used before it. \"all\" is every window on the display, up to the most columns times the most rows that windows.minCell allows. Default 2.",
               "oneOf" : [
                 {
                   "maximum" : 8,
@@ -508,7 +508,7 @@
               ]
             },
             "groups" : {
-              "description" : "How many columns or rows. Without it, as many as there are windows, up to windows.maxColumns or windows.maxRows.",
+              "description" : "How many columns or rows. Without it, as many as there are windows, up to the most that windows.minCell allows.",
               "maximum" : 8,
               "minimum" : 1,
               "type" : "integer"
@@ -524,6 +524,34 @@
             "type" : {
               "enum" : [
                 "window.arrange"
+              ]
+            }
+          },
+          "required" : [
+            "type"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "type" : {
+              "enum" : [
+                "window.tidy"
+              ]
+            }
+          },
+          "required" : [
+            "type"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "type" : {
+              "enum" : [
+                "window.undo"
               ]
             }
           },
@@ -1184,7 +1212,7 @@
           "additionalProperties" : false,
           "properties" : {
             "count" : {
-              "description" : "How many windows: the focused one and the ones used before it. \"all\" is every window on the display, up to windows.maxColumns times windows.maxRows. Default 2.",
+              "description" : "How many windows: the focused one and the ones used before it. \"all\" is every window on the display, up to the most columns times the most rows that windows.minCell allows. Default 2.",
               "oneOf" : [
                 {
                   "maximum" : 8,
@@ -1199,7 +1227,7 @@
               ]
             },
             "groups" : {
-              "description" : "How many columns or rows. Without it, as many as there are windows, up to windows.maxColumns or windows.maxRows.",
+              "description" : "How many columns or rows. Without it, as many as there are windows, up to the most that windows.minCell allows.",
               "maximum" : 8,
               "minimum" : 1,
               "type" : "integer"
@@ -1215,6 +1243,34 @@
             "type" : {
               "enum" : [
                 "window.arrange"
+              ]
+            }
+          },
+          "required" : [
+            "type"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "type" : {
+              "enum" : [
+                "window.tidy"
+              ]
+            }
+          },
+          "required" : [
+            "type"
+          ],
+          "type" : "object"
+        },
+        {
+          "additionalProperties" : false,
+          "properties" : {
+            "type" : {
+              "enum" : [
+                "window.undo"
               ]
             }
           },
@@ -1562,6 +1618,16 @@
                 "description" : "false: Focus Window never picks this app's windows. Default true.",
                 "type" : "boolean"
               },
+              "minHeight" : {
+                "description" : "The smallest height, in points, Arrange Windows and Tidy Windows give this app's windows, rounded up to whole steps. 0 (default) sets none.",
+                "minimum" : 0,
+                "type" : "number"
+              },
+              "minWidth" : {
+                "description" : "The smallest width, in points, Arrange Windows and Tidy Windows give this app's windows, rounded up to whole steps. 0 (default) sets none.",
+                "minimum" : 0,
+                "type" : "number"
+              },
               "quit" : {
                 "description" : "Mac only. false: Quit on close never quits this app. Default true.",
                 "type" : "boolean"
@@ -1576,22 +1642,98 @@
           "description" : "Rules for each app's windows, keyed by app id. Mac: bundle ids. Windows: an exe (ends in .exe) or an AppUserModelID. An app that isn't listed takes part in every window action.",
           "type" : "object"
         },
+        "displays" : {
+          "additionalProperties" : {
+            "additionalProperties" : false,
+            "properties" : {
+              "minCell" : {
+                "additionalProperties" : false,
+                "description" : "In place of windows.minCell on this display.",
+                "properties" : {
+                  "across" : {
+                    "maximum" : 96,
+                    "minimum" : 1,
+                    "type" : "integer"
+                  },
+                  "down" : {
+                    "maximum" : 96,
+                    "minimum" : 1,
+                    "type" : "integer"
+                  }
+                },
+                "required" : [
+                  "across",
+                  "down"
+                ],
+                "type" : "object"
+              },
+              "steps" : {
+                "additionalProperties" : false,
+                "description" : "How many steps cut this display's usable area, in place of the guess: 12 on the short side, and 12 on the long side for each whole time the short side fits into it.",
+                "properties" : {
+                  "across" : {
+                    "maximum" : 96,
+                    "minimum" : 1,
+                    "type" : "integer"
+                  },
+                  "down" : {
+                    "maximum" : 96,
+                    "minimum" : 1,
+                    "type" : "integer"
+                  }
+                },
+                "required" : [
+                  "across",
+                  "down"
+                ],
+                "type" : "object"
+              }
+            },
+            "type" : "object"
+          },
+          "description" : "Settings for each display, keyed by its size in points after scaling, such as \"3840x1080\".",
+          "propertyNames" : {
+            "pattern" : "^[1-9][0-9]*x[1-9][0-9]*$"
+          },
+          "type" : "object"
+        },
         "gap" : {
           "description" : "Points Place Window and Fill leave around windows and between them. Default 8.",
           "minimum" : 0,
           "type" : "number"
         },
         "maxColumns" : {
-          "description" : "The most columns Arrange Windows picks by itself. Default 2.",
+          "description" : "Retired in spec v24: does nothing, and loads with a warning. windows.minCell takes its place.",
           "maximum" : 8,
           "minimum" : 1,
           "type" : "integer"
         },
         "maxRows" : {
-          "description" : "The most rows Arrange Windows picks by itself. Default 2.",
+          "description" : "Retired in spec v24: does nothing, and loads with a warning. windows.minCell takes its place.",
           "maximum" : 8,
           "minimum" : 1,
           "type" : "integer"
+        },
+        "minCell" : {
+          "additionalProperties" : false,
+          "description" : "The smallest cell Arrange Windows makes, in steps, across and down. It sets the most columns and rows. Default 6 by 6.",
+          "properties" : {
+            "across" : {
+              "maximum" : 96,
+              "minimum" : 1,
+              "type" : "integer"
+            },
+            "down" : {
+              "maximum" : 96,
+              "minimum" : 1,
+              "type" : "integer"
+            }
+          },
+          "required" : [
+            "across",
+            "down"
+          ],
+          "type" : "object"
         },
         "minVisible" : {
           "description" : "Points on a side of the square a window must show for Focus Window and Swap Window to count it, and points it must share with the focused window to be in line. Default 20.",

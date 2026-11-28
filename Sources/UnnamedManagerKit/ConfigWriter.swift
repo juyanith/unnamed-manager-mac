@@ -10,12 +10,28 @@ public enum ConfigWriter {
         sections.append("  \"version\": \(config.version)")
         if let runtime = runtimeFields(config.runtime) { sections.append("  \"runtime\": \(runtime)") }
         if let ui = uiFields(config.ui) { sections.append("  \"ui\": \(ui)") }
-        if config.windows != Config.Windows() {
+        if config.windows != Config.Windows(maxColumns: config.windows.maxColumns, maxRows: config.windows.maxRows) {
             let standard = Config.Windows()
             var fields = ActionFieldWriter()
             if config.windows.gap != standard.gap { fields.number("gap", config.windows.gap) }
-            if config.windows.maxColumns != standard.maxColumns { fields.number("maxColumns", Double(config.windows.maxColumns)) }
-            if config.windows.maxRows != standard.maxRows { fields.number("maxRows", Double(config.windows.maxRows)) }
+            // maxColumns and maxRows are retired (spec v24), so they're dropped.
+            func steps(_ value: WindowSteps) -> ActionFieldWriter {
+                var each = ActionFieldWriter()
+                each.number("across", Double(value.across))
+                each.number("down", Double(value.down))
+                return each
+            }
+            if config.windows.minCell != standard.minCell { fields.object("minCell", steps(config.windows.minCell)) }
+            if !config.windows.displays.isEmpty {
+                var displays = ActionFieldWriter()
+                for (key, display) in config.windows.displays.sorted(by: { $0.key < $1.key }) {
+                    var each = ActionFieldWriter()
+                    if let value = display.steps { each.object("steps", steps(value)) }
+                    if let value = display.minCell { each.object("minCell", steps(value)) }
+                    displays.object(key, each)
+                }
+                fields.object("displays", displays)
+            }
             if config.windows.minVisible != standard.minVisible { fields.number("minVisible", config.windows.minVisible) }
             if config.windows.rowTolerance != standard.rowTolerance { fields.number("rowTolerance", config.windows.rowTolerance) }
             if config.windows.tieTolerance != standard.tieTolerance { fields.number("tieTolerance", config.windows.tieTolerance) }
@@ -32,6 +48,8 @@ public enum ConfigWriter {
                     each.bool("swap", rules.swap)
                     each.bool("arrange", rules.arrange)
                     each.bool("quit", rules.quit)
+                    if rules.minWidth != 0 { each.number("minWidth", rules.minWidth) }
+                    if rules.minHeight != 0 { each.number("minHeight", rules.minHeight) }
                     apps.object(app, each)
                 }
                 fields.object("apps", apps)

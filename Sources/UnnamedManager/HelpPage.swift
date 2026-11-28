@@ -24,6 +24,8 @@ struct HelpContent: Equatable {
         var name: String
         /// Your config has an action with this name, which runs instead.
         var isOverridden: Bool
+        /// A line on how it works, such as Undo Layout's redo.
+        var note: String? = nil
         var id: String { name }
     }
 
@@ -62,7 +64,8 @@ struct HelpContent: Equatable {
         let defined = Set(config?.config.actions.keys.map { $0 } ?? [])
         builtIns = BuiltInAction.groups.map { group in
             var rows = group.entries.map {
-                BuiltIn(title: $0.action.builtInValueName ?? group.name, name: $0.name, isOverridden: defined.contains($0.name))
+                BuiltIn(title: $0.action.builtInValueName ?? group.name, name: $0.name, isOverridden: defined.contains($0.name),
+                        note: $0.action.familyValue is UndoLayoutAction ? "Press again to redo" : nil)
             }
             // Focus Window, Swap Window and the Space actions take any number, which the list can't hold.
             if let first = group.entries.first?.name,
@@ -227,7 +230,11 @@ struct HelpPage: View {
                 .textSelection(.enabled)
         } label: {
             Text(row.title)
-            if row.isOverridden { Text("Overridden by your action") }
+            if row.isOverridden {
+                Text("Overridden by your action")
+            } else if let note = row.note {
+                Text(note)
+            }
         }
     }
 

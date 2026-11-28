@@ -71,10 +71,20 @@ public enum ConfigSchema {
                     "type": "object", "additionalProperties": false,
                     "properties": [
                         "gap": ["type": "number", "minimum": 0, "description": "Points Place Window and Fill leave around windows and between them. Default 8."],
+                        "minCell": steps("The smallest cell Arrange Windows makes, in steps, across and down. It sets the most columns and rows. Default 6 by 6."),
+                        "displays": [
+                            "type": "object",
+                            "description": "Settings for each display, keyed by its size in points after scaling, such as \"3840x1080\".",
+                            "propertyNames": ["pattern": "^[1-9][0-9]*x[1-9][0-9]*$"],
+                            "additionalProperties": ["type": "object", "additionalProperties": false, "properties": [
+                                "steps": steps("How many steps cut this display's usable area, in place of the guess: 12 on the short side, and 12 on the long side for each whole time the short side fits into it."),
+                                "minCell": steps("In place of windows.minCell on this display."),
+                            ]],
+                        ],
                         "maxColumns": ["type": "integer", "minimum": Config.Windows.limitRange.lowerBound, "maximum": Config.Windows.limitRange.upperBound,
-                                       "description": "The most columns Arrange Windows picks by itself. Default 2."],
+                                       "description": "Retired in spec v24: does nothing, and loads with a warning. windows.minCell takes its place."],
                         "maxRows": ["type": "integer", "minimum": Config.Windows.limitRange.lowerBound, "maximum": Config.Windows.limitRange.upperBound,
-                                    "description": "The most rows Arrange Windows picks by itself. Default 2."],
+                                    "description": "Retired in spec v24: does nothing, and loads with a warning. windows.minCell takes its place."],
                         "minVisible": ["type": "number", "minimum": 0, "description": "Points on a side of the square a window must show for Focus Window and Swap Window to count it, and points it must share with the focused window to be in line. Default 20."],
                         "rowTolerance": ["type": "number", "minimum": 0, "description": "Windows whose tops are within this many points share a row in Focus Window's order. Default 20."],
                         "tieTolerance": ["type": "number", "minimum": 0, "description": "Gaps within this many points count as the same when Focus Window picks a window in a direction. Default 2."],
@@ -88,6 +98,8 @@ public enum ConfigSchema {
                                 "swap": ["type": "boolean", "description": "false: Swap Window never moves this app's windows. Default true."],
                                 "arrange": ["type": "boolean", "description": "false: Arrange Windows never counts or moves this app's windows. Default true."],
                                 "quit": ["type": "boolean", "description": "Mac only. false: Quit on close never quits this app. Default true."],
+                                "minWidth": ["type": "number", "minimum": 0, "description": "The smallest width, in points, Arrange Windows and Tidy Windows give this app's windows, rounded up to whole steps. 0 (default) sets none."],
+                                "minHeight": ["type": "number", "minimum": 0, "description": "The smallest height, in points, Arrange Windows and Tidy Windows give this app's windows, rounded up to whole steps. 0 (default) sets none."],
                             ]],
                         ],
                     ],
@@ -128,6 +140,13 @@ public enum ConfigSchema {
         ]
         let data = try! JSONSerialization.data(withJSONObject: schema, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])
         return String(decoding: data, as: UTF8.self) + "\n"
+    }
+
+    /// Steps across and down, both required (spec v24).
+    private static func steps(_ description: String) -> [String: Any] {
+        let count: [String: Any] = ["type": "integer", "minimum": WindowSteps.range.lowerBound, "maximum": WindowSteps.range.upperBound]
+        return ["type": "object", "additionalProperties": false, "required": ["across", "down"],
+                "properties": ["across": count, "down": count], "description": description]
     }
 
     /// An entry's `list` (spec v18), as the spec's schema has it.

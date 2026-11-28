@@ -48,10 +48,15 @@ One name per idea. Use these words in the UI, the docs, the log and VoiceOver la
 | Permissions | The Accessibility and Input Monitoring access in System Settings that the app needs to capture keys. Use Apple's names for each one. | rights, access, privileges |
 | Settings | The Settings window (Settings… ⌘,), one tab each: General (Guide, keys, feedback, Open at Login), Bindings, Actions, Contexts and Windows. Name a part as "the Bindings tab" or "Settings › Windows". | Preferences, options, Bindings window, editor |
 | Help window | The window with your leaders and direct bindings, the keys that work in every sequence, the built-in actions, and links. Opened by Help, Unnamed Manager Help, or a Show Help binding. | Help page, manual, documentation, cheat sheet |
-| Window action | An action that works on the focused window of the app in front: Arrange Windows, Fill, Focus Window, Minimize, Move Window, Place Window, Resize Window, Swap Window. | window command, tiling |
+| Window action | An action that works on the focused window of the app in front: Arrange Windows, Fill, Focus Window, Minimize, Move Window, Place Window, Resize Window, Swap Window, Tidy Windows, Undo Layout. | window command, tiling |
 | Arrange Windows | Lay out the window in front and the ones used before it, on its display, in a grid of columns or rows. | tile, pair, snap |
 | Cell | One part of the grid Arrange Windows makes, for one window. | slot, tile, pane |
 | Group | A column or a row of cells in that grid. | stack, split |
+| Tidy Windows | Snap the windows on the display into the columns and rows their places suggest, on its steps (spec v24). | snap, clean up, align, auto-arrange |
+| Undo Layout | Put back the windows the last Tidy Windows or Arrange Windows moved; press again to redo (spec v24). | revert, restore layout |
+| Step | One of the equal parts a display's usable area is cut into, across and down. Cells and tidied edges land on steps (spec v24). | grid unit, snap point |
+| Smallest Cell | The smallest cell Arrange Windows makes, in steps across and down. It sets the most columns and rows (spec v24). | maximum columns, minimum size |
+| Floating window | A window Tidy Windows leaves exactly where it is: one in front across a cut, or one its area would make much smaller or bigger (spec v24). | ignored window, excluded |
 | Fill | Fill the screen without the menu bar and Dock, less the gap. With Press Again to Restore, pressing it again puts the window back. Called Maximize before spec v7. | maximize, zoom, full screen |
 | Focus Window | Bring the nearest window you can see in a direction to the front, the Next Window or Previous Window, or the Window Used Before. | switch, activate, cycle |
 | Built-in action | An action every config has without defining it, such as `window-place-left-half` or `window-focus-left`. A binding names it as it names any action. | preset action, default action, standard command |

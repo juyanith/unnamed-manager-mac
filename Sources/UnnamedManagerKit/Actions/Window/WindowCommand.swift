@@ -10,6 +10,8 @@ public enum WindowCommand: ActionStep {
     case move(MoveAction)
     case focus(WindowTarget, scope: WindowScope = .all)
     case arrange(ArrangeAction)
+    case tidy
+    case undoLayout
     case swap(WindowTarget, scope: WindowScope = .all)
 
     /// How Focus Window says there's nothing that way. A number says how many windows there are, so it has none here.
@@ -27,6 +29,8 @@ public enum WindowCommand: ActionStep {
         case .move: "move"
         case .focus: "focus from"
         case .arrange: "arrange"
+        case .tidy: "tidy"
+        case .undoLayout: "undo"
         case .swap: "swap"
         }
     }

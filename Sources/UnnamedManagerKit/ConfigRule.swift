@@ -30,6 +30,7 @@ public enum ConfigRule: String, Sendable, CaseIterable {
     case negativeDelay = "negative-delay"
     case negativeGap = "negative-gap"
     case badWindowLimit = "bad-window-limit"
+    case badDisplayKey = "bad-display-key"
     case negativeWindowDistance = "negative-window-distance"
     case badUIValue = "bad-ui-value"
     case reservedChord = "reserved-chord"
@@ -47,6 +48,7 @@ public enum ConfigRule: String, Sendable, CaseIterable {
     case unusedAction = "unused-action"
     case unusedContext = "unused-context"
     case keyNotOnPlatform = "key-not-on-platform"
+    case retiredSetting = "retired-setting"
 }
 
 /// Carried as a DecodingError's underlying error, so a decoding failure

@@ -883,6 +883,7 @@ UX:
 - Words: "Maximum Columns", "Maximum Rows"; footer "The maximums limit the grid Arrange Windows picks when its action leaves Groups on Automatic."
 Status: done
 Verified: the limit, the automatic groups and layout, and the two settings (unit tests, `ArrangeTests`, `invalid/window-limit.json`); both arrangements and the saved setting (self-test, 178 checks); settings in light and dark, grid checks. Not yet tried by hand on real windows.
+From spec v24 the two maximums are retired: Smallest Cell Across and Down set the limits instead, on the display's steps (S-101).
 ### S-077 Swap the window in front with another
 As the user, I press a key and the window I'm in trades places with the one to its left, or the next one, the first one, or window number 2, and I stay in it, so pressing again keeps moving it the same way.
 Screens: actions-window, hud-window, settings
@@ -1144,6 +1145,53 @@ UX:
 - A config with `"follow"` doesn't load: use `"type": "space.follow"` for `"follow": true`, and leave it out for `false`. The format is still young, so the spec drops the field instead of keeping it as an old name.
 Status: done
 Verified: reading, writing, the rules, built-in names (unit tests, `SpaceSendTests`, the spec-v23 fixtures, 332 in all); following by swipes, the built-in name, Help's row, saving (self-test, 298 checks); actions-window-follow-2 and actions-window-send-3 in light and dark, grid checks. Not yet tried by hand: the manual line.
+
+### S-099 Tidy the windows I placed roughly into columns and rows
+As the user, I put windows roughly where I want them and press a key, and they snap into the columns and rows I meant, on the display's steps, with neighbors meeting and no empty strips, while a small window in front stays where it is.
+Screens: actions-window, help-builtin
+Depends: S-075, S-084, spec v24
+Acceptance:
+- [unit] `window.tidy` has no fields; `window-tidy` is a built-in action and `window-tidy-2` isn't; the spec-v24 fixtures pass, and its schema matches the spec's.
+- [unit] `TidyLayout` finds the cuts as the spec says: the allowance, lines halfway between edges, the least crossing, front windows floating out of a cut, margins closing once there's a cut, windows under half or over twice their size floating, and a tidy layout not moving. Real layouts from the preview are kept as tests.
+- [unit] A cut moves away from a window whose app has `minWidth` or `minHeight`, as long as the other side keeps `minCell`.
+- [self] Two rough halves meet at the step nearest the middle, with the gap; an app with `"arrange": false` isn't moved; focus stays; tidying again moves nothing; with no candidate, "No window to tidy."
+- [snap] Help lists Tidy Windows under Built-In Actions.
+UX:
+- Glossary: "Tidy Windows", "Step", "Floating window" (spec v24). Not Snap Windows, Clean Up or Align Windows.
+- The Actions page has no fields for it, only a line saying what it does.
+Status: done
+Verified: the geometry and the rules (unit tests, `TidyLayoutTests`, the spec-v24 fixtures, 349 in all); tidying, left-out apps, repeating, no window (self-test, 308 checks); help-builtin in light and dark, grid checks. The preview on the 43" display (branch `prototype/tidy-preview`) is where the rules came from. Not yet tried by hand from a key: a 32:9 display, the laptop, and apps with a smallest size.
+
+### S-100 Undo the last layout, and redo it
+As the user, right after Tidy Windows or Arrange Windows, I press a key to put the windows back where they were, and again to put the layout back.
+Screens: actions-window, help-builtin
+Depends: S-099, spec v24
+Acceptance:
+- [unit] `window.undo` has no fields; `window-undo` is a built-in action.
+- [self] Undo Layout puts back what Tidy Windows or Arrange Windows moved; pressed again, it puts the layout back; a window moved since stays where it is and the others still go back; with nothing to put back it fails with "Nothing to undo." and the alert sound.
+- [self] Help says "Press again to redo" under Undo Layout.
+UX:
+- One level for each display, kept in memory only. A tidy or arrange that moves nothing keeps the undo there was, so tidying twice doesn't lose it.
+- Glossary: "Undo Layout".
+Status: done
+Verified: undo, redo, windows moved since, nothing to undo, Arrange Windows' undo, and Help's line (self-test, 308 checks); help-builtin in light and dark. Not yet tried by hand.
+
+### S-101 Arrange Windows on steps, with a smallest cell and settings for each display
+As the user, Arrange Windows' cells land on the same steps as Tidy Windows, so tidying right after arranging moves nothing, and a wide display gets more columns than a laptop without my changing a setting.
+Screens: settings
+Depends: S-076, spec v24
+Acceptance:
+- [unit] Steps are guessed from the display's frame (12 on the short side, 12 on the long side for each whole time the short side fits into it), or come from `windows.displays["WxH"].steps`; `minCell` (default 6 by 6), or the display's own, sets the most columns and rows; a cell larger than the steps counts as all of them.
+- [unit] Cells share the steps, the leftover ones going one each from the left or the top; with fewer steps than cells they split equally; `"count": "all"` can arrange more than 8.
+- [unit] An app's `minWidth` and `minHeight` give its window a cell at least that big, rounded up to steps, taking room from the other cells, which keep `minCell`; when they can't, there are fewer groups; wider than the display, the whole width.
+- [unit] `minCell`, `displays`, `minWidth` and `minHeight` read and write, defaults left out; a bad display key is `bad-display-key`, a count outside 1 to 96 is `bad-window-limit`, a negative size is `negative-window-distance`; `maxColumns` and `maxRows` load with the `retired-setting` warning and are dropped when the file is saved.
+- [self] With the smallest cell 4 steps across, three windows are three columns; Smallest Cell is saved in the file.
+- [snap] Settings › Windows has Smallest Cell Across and Smallest Cell Down, in steps, in place of the maximums.
+UX:
+- Words: "Smallest Cell Across", "Smallest Cell Down", "steps". The footer says what a step is and gives the 16:9 example.
+- `windows.displays` and each app's smallest size are in the config file only for now.
+Status: done
+Verified: unit tests (`ArrangeTests`, 349 in all); self-test, 308 checks; settings in light and dark, grid checks. Not yet tried by hand on real windows.
 
 ## M12 Held menus
 

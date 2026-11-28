@@ -7,6 +7,8 @@ final class WindowControl {
     private var filled = FillMemory<WindowRef>()
     /// Which windows had focus, for Window Used Before and Recent Windows.
     var history = FocusHistory<WindowRef>()
+    /// What Undo Layout puts back, by display frame (spec v24).
+    var undo: [String: LayoutUndo] = [:]
 
     /// The window settings: the gap (spec v3, v7) and Arrange Windows' limits (spec v8), read when an action runs.
     let settings: () -> Config.Windows
@@ -26,13 +28,19 @@ final class WindowControl {
         let focused = app.flatMap { system.focusedWindow(of: $0) }
         // In case the focus change wasn't reported, as for a window that got focus before the app started.
         if let focused { history.record(focused) }
-        // Focus Window and Arrange Windows also work with no focused window.
+        // Focus Window, Arrange Windows, Tidy Windows and Undo Layout also work with no focused window.
         switch command {
         case let .focus(target, scope):
             try await focus(target, scope: scope, from: focused)
             return
         case let .arrange(action):
             try arrange(action, focused: focused)
+            return
+        case .tidy:
+            try tidy(focused: focused)
+            return
+        case .undoLayout:
+            try undoLayout(focused: focused)
             return
         default:
             break
@@ -74,7 +82,7 @@ final class WindowControl {
             // Swap Window never moves a left-out app's window, the focused one included (spec v15).
             try checkSwaps(window, app: app)
             try swap(window, at: frame, with: target, scope: scope)
-        case .focus, .arrange:
+        case .focus, .arrange, .tidy, .undoLayout:
             break
         }
     }
