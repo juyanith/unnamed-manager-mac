@@ -1164,17 +1164,18 @@ Verified: the geometry and the rules (unit tests, `TidyLayoutTests`, the spec-v2
 
 ### S-100 Undo the last layout, and redo it
 As the user, right after Tidy Windows or Arrange Windows, I press a key to put the windows back where they were, and again to put the layout back.
-Screens: actions-window, help-builtin
+Screens: actions-window, help-builtin, hud-window
 Depends: S-099, spec v24
 Acceptance:
 - [unit] `window.undo` has no fields; `window-undo` is a built-in action.
 - [self] Undo Layout puts back what Tidy Windows or Arrange Windows moved; pressed again, it puts the layout back; a window moved since stays where it is and the others still go back; with nothing to put back it fails with "Nothing to undo." and the alert sound.
 - [self] Help says "Press again to redo" under Undo Layout.
+- [self] The Guide says "press again to redo" under a binding to Undo Layout, always, and under no other window action.
 UX:
 - One level for each display, kept in memory only. A tidy or arrange that moves nothing keeps the undo there was, so tidying twice doesn't lose it.
 - Glossary: "Undo Layout".
 Status: done
-Verified: undo, redo, windows moved since, nothing to undo, Arrange Windows' undo, and Help's line (self-test, 308 checks); help-builtin in light and dark. Not yet tried by hand.
+Verified: undo, redo, windows moved since, nothing to undo, Arrange Windows' undo, Help's line and the Guide's note (self-test, 312 checks); help-builtin and hud-window in light and dark. Not yet tried by hand.
 
 ### S-101 Arrange Windows on steps, with a smallest cell and settings for each display
 As the user, Arrange Windows' cells land on the same steps as Tidy Windows, so tidying right after arranging moves nothing, and a wide display gets more columns than a laptop without my changing a setting.

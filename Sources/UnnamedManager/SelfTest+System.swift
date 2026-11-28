@@ -99,6 +99,11 @@ extension SelfTest {
               builtIns.map(\.title).joined(separator: ", "))
         check("S-100 Help says Undo Layout redoes when pressed again",
               builtIns.first { $0.title == "Undo Layout" }?.rows.first?.note == "Press again to redo")
+        let windowRows = SeedData.windowsContent.rows
+        check("S-100 the Guide says Undo Layout redoes when pressed again, and no other window action has a note",
+              windowRows.first { $0.title == "Undo Layout" }?.note == GuideContent.redoNote
+                  && windowRows.filter { $0.note != nil }.map(\.title) == ["Undo Layout"],
+              windowRows.map { "\($0.title): \($0.note ?? "-")" }.joined(separator: ", "))
         check("S-081 Help marks a built-in action your config overrides",
               builtIns.flatMap(\.rows).filter(\.isOverridden).map(\.name) == ["window-fill"])
 

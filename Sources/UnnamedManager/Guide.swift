@@ -87,11 +87,23 @@ struct GuideContent: Equatable {
 
     private static func row(_ node: BindingNode, key: KeyName, config: LoadedConfig, frontApp: String?, appName: String) -> Row {
         let available = node.isMenu || config.isAvailable(node, frontApp: frontApp)
-        let note = available ? node.item.flatMap { Self.note($0.marks) } : "not available in \(appName)"
+        let note = available ? node.item.flatMap { Self.note($0.marks) } ?? Self.actionNote(node, config: config, frontApp: frontApp)
+                             : "not available in \(appName)"
         return Row(key: key.name, title: node.title, isMenu: node.isMenu,
                    isAvailable: available, note: note,
                    icon: config.iconSource(node))
     }
+
+    /// What a row's action does beyond its title: Undo Layout redoes when
+    /// pressed again (S-100, spec v24).
+    static func actionNote(_ node: BindingNode, config: LoadedConfig, frontApp: String?) -> String? {
+        guard let id = node.action, let action = config.config.action(named: id),
+              ContextResolver.resolve(action, frontApp: frontApp, contexts: config.config.contexts)?.familyValue is UndoLayoutAction
+        else { return nil }
+        return redoNote
+    }
+
+    static let redoNote = "press again to redo"
 
     /// How a list's item is marked (S-092): "minimized, on another display".
     static func note(_ marks: ListItem.Marks) -> String? {
