@@ -30,6 +30,8 @@ enum SeedData {
         { "keys": "Hyper+Space W Equal", "title": "Wider", "action": "wider" },
         { "keys": "Hyper+Space W Minus", "title": "Half Size", "action": "half-size" },
         { "keys": "Hyper+Space W A", "title": "Arrange Three", "action": "arrange" },
+        { "keys": "Hyper+Space W T", "title": "Tidy Windows", "action": "window-tidy" },
+        { "keys": "Hyper+Space W U", "title": "Undo Layout", "action": "window-undo" },
         { "keys": "Hyper+Space W Right", "title": "Window to the Right", "action": "focus-right" },
         { "keys": "Hyper+Space W Tab", "title": "Next Window", "action": "focus-next" },
         { "keys": "Hyper+Space W B", "title": "Window Used Before", "action": "focus-recent" },
