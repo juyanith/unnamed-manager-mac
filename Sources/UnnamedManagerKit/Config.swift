@@ -42,10 +42,18 @@ public struct Config: Sendable, Equatable {
     public struct Windows: Sendable, Equatable {
         /// Points Place Window, Fill and Arrange Windows leave around windows and between them.
         public var gap: Double
-        /// The most columns and rows Arrange Windows picks by itself (spec v8).
-        public var maxColumns: Int
-        public var maxRows: Int
-        /// The range both limits take.
+        /// The smallest cell Arrange Windows makes, in steps (spec v24). It
+        /// sets the most columns and rows it picks.
+        public var minCell: WindowSteps
+        public static let standardMinCell = WindowSteps(across: 6, down: 6)
+        /// Settings for each display, keyed by its size in points, such as "3840x1080" (spec v24).
+        public var displays: [String: Display]
+        /// Spec v8 to v23: the most columns and rows Arrange Windows picked.
+        /// From spec v24 they load with a warning and do nothing; nil when
+        /// the file leaves them out. The writer drops them.
+        public var maxColumns: Int?
+        public var maxRows: Int?
+        /// The range the retired limits took.
         public static let limitRange = 1...8
         /// What Focus Window and Swap Window see (spec v12): the square a
         /// window must show to count, and the span it must share to be in line;
@@ -60,9 +68,12 @@ public struct Config: Sendable, Equatable {
         /// Rules for each app's windows, by bundle id (spec v15).
         public var apps: [String: AppRules]
 
-        public init(gap: Double = 8, maxColumns: Int = 2, maxRows: Int = 2,
+        public init(gap: Double = 8, minCell: WindowSteps = Self.standardMinCell, displays: [String: Display] = [:],
+                    maxColumns: Int? = nil, maxRows: Int? = nil,
                     minVisible: Double = 20, rowTolerance: Double = 20, tieTolerance: Double = 2, quitOnClose: Bool = false, quitOnCloseDelayMs: Int = 500, apps: [String: AppRules] = [:]) {
             self.gap = gap
+            self.minCell = minCell
+            self.displays = displays
             self.maxColumns = maxColumns
             self.maxRows = maxRows
             self.minVisible = minVisible
@@ -81,16 +92,68 @@ public struct Config: Sendable, Equatable {
             public var swap: Bool
             public var arrange: Bool
             public var quit: Bool
+            /// The smallest width and height, in points, Arrange Windows and
+            /// Tidy Windows give the app's windows (spec v24). 0 sets none.
+            public var minWidth: Double
+            public var minHeight: Double
 
-            public init(focus: Bool = true, swap: Bool = true, arrange: Bool = true, quit: Bool = true) {
+            public init(focus: Bool = true, swap: Bool = true, arrange: Bool = true, quit: Bool = true,
+                        minWidth: Double = 0, minHeight: Double = 0) {
                 self.focus = focus
                 self.swap = swap
                 self.arrange = arrange
                 self.quit = quit
+                self.minWidth = minWidth
+                self.minHeight = minHeight
             }
 
             /// Left out of everything, as a new app in Settings starts.
             public static let leftOutOfAll = Self(focus: false, swap: false, arrange: false, quit: false)
+        }
+
+        /// One display's own settings (spec v24): steps in place of the
+        /// guess, and a smallest cell in place of `minCell`.
+        public struct Display: Sendable, Equatable {
+            public var steps: WindowSteps?
+            public var minCell: WindowSteps?
+
+            public init(steps: WindowSteps? = nil, minCell: WindowSteps? = nil) {
+                self.steps = steps
+                self.minCell = minCell
+            }
+        }
+
+        /// A display's key in `displays`: its width, an x and its height, in points.
+        public static func displayKey(for size: CGSize) -> String {
+            "\(Int(size.width.rounded()))x\(Int(size.height.rounded()))"
+        }
+
+        /// Whether a key in `displays` is a width, an x and a height (spec v24).
+        public static func isDisplayKey(_ key: String) -> Bool {
+            key.wholeMatch(of: /[1-9][0-9]*x[1-9][0-9]*/) != nil
+        }
+
+        /// The steps of a display, by its whole frame's size: its own, or the guess.
+        public func steps(for display: CGSize) -> WindowSteps {
+            (displays[Self.displayKey(for: display)]?.steps ?? WindowSteps.guess(for: display)).clamped
+        }
+
+        /// The smallest cell on a display, no larger than its steps.
+        public func minCell(for display: CGSize) -> WindowSteps {
+            let steps = steps(for: display), cell = (displays[Self.displayKey(for: display)]?.minCell ?? minCell).clamped
+            return WindowSteps(across: min(cell.across, steps.across), down: min(cell.down, steps.down))
+        }
+
+        /// The most columns and rows Arrange Windows picks on a display (spec v24).
+        public func limits(for display: CGSize) -> (columns: Int, rows: Int) {
+            let steps = steps(for: display), cell = minCell(for: display)
+            return (max(1, steps.across / cell.across), max(1, steps.down / cell.down))
+        }
+
+        /// An app's smallest size, in points; zero where it sets none.
+        public func minimum(for app: String?) -> CGSize {
+            guard let rules = app.flatMap({ apps[$0] }) else { return .zero }
+            return CGSize(width: max(0, rules.minWidth), height: max(0, rules.minHeight))
         }
 
         /// The apps whose rule leaves them out of an action, such as `\.arrange`.
@@ -319,11 +382,14 @@ extension Config.Runtime: Decodable {
 extension Config.Windows: Decodable {
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: AnyKey.self)
-        try c.rejectUnknown(allowed: ["gap", "maxColumns", "maxRows", "minVisible", "rowTolerance", "tieTolerance", "quitOnClose", "quitOnCloseDelayMs", "apps"], at: "windows")
+        try c.rejectUnknown(allowed: ["gap", "minCell", "displays", "maxColumns", "maxRows", "minVisible", "rowTolerance", "tieTolerance",
+                                      "quitOnClose", "quitOnCloseDelayMs", "apps"], at: "windows")
         let d = Self()
         gap = try c.value("gap", default: d.gap)
-        maxColumns = try c.value("maxColumns", default: d.maxColumns)
-        maxRows = try c.value("maxRows", default: d.maxRows)
+        minCell = try c.value("minCell", default: d.minCell)
+        displays = try c.value("displays", default: d.displays)
+        maxColumns = try c.decodeIfPresent(Int.self, forKey: AnyKey("maxColumns"))
+        maxRows = try c.decodeIfPresent(Int.self, forKey: AnyKey("maxRows"))
         minVisible = try c.value("minVisible", default: d.minVisible)
         rowTolerance = try c.value("rowTolerance", default: d.rowTolerance)
         tieTolerance = try c.value("tieTolerance", default: d.tieTolerance)
@@ -336,12 +402,23 @@ extension Config.Windows: Decodable {
 extension Config.Windows.AppRules: Decodable {
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: AnyKey.self)
-        try c.rejectUnknown(allowed: ["focus", "swap", "arrange", "quit"], at: "windows.apps")
+        try c.rejectUnknown(allowed: ["focus", "swap", "arrange", "quit", "minWidth", "minHeight"], at: "windows.apps")
         let d = Self()
         focus = try c.value("focus", default: d.focus)
         swap = try c.value("swap", default: d.swap)
         arrange = try c.value("arrange", default: d.arrange)
         quit = try c.value("quit", default: d.quit)
+        minWidth = try c.value("minWidth", default: d.minWidth)
+        minHeight = try c.value("minHeight", default: d.minHeight)
+    }
+}
+
+extension Config.Windows.Display: Decodable {
+    public init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: AnyKey.self)
+        try c.rejectUnknown(allowed: ["steps", "minCell"], at: "windows.displays")
+        steps = try c.decodeIfPresent(WindowSteps.self, forKey: AnyKey("steps"))
+        minCell = try c.decodeIfPresent(WindowSteps.self, forKey: AnyKey("minCell"))
     }
 }
 

@@ -120,6 +120,7 @@ extension SelfTest {
         await seenChecks()
         await recentChecks()
         await arrangeChecks()
+        await tidyChecks()
 
         fake.canControlWindows = false
         do throws(PlanError) {
@@ -135,7 +136,7 @@ extension SelfTest {
     /// saved as the spec writes it, then undone.
     static func windowEditingChecks(_ model: AppModel) async {
         let names = Config.Action.types(allowsContextAware: true).map { Config.Action.empty(of: $0).displayName }
-        let window = ["Arrange Windows", "Fill", "Focus Window", "Minimize", "Move Window", "Place Window", "Resize Window", "Swap Window", "Switch Space"]
+        let window = ["Arrange Windows", "Fill", "Focus Window", "Minimize", "Move Window", "Place Window", "Resize Window", "Swap Window", "Switch Space", "Tidy Windows", "Undo Layout"]
         check("S-070 the Type picker lists the window actions with the others, alphabetically",
               Set(window).isSubset(of: names) && names == names.sorted { $0.localizedStandardCompare($1) == .orderedAscending }, "\(names)")
         check("S-074 the Type picker offers Fill once, and not under its old name",
@@ -177,9 +178,10 @@ extension SelfTest {
         let wrong = zip(written, cases).filter { !$0.0.contains($0.1.1) }.map(\.0)
         check("S-070 each window form saves the fields the spec defines", wrong.isEmpty, "\(wrong)")
         undo.beginUndoGrouping()
-        editor.edit("Change Maximum Columns", undo: undo) { $0.config.windows.maxColumns = 3 }
+        editor.edit("Change Smallest Cell Across", undo: undo) { $0.config.windows.minCell.across = 4 }
         undo.endUndoGrouping()
-        check("S-076 Maximum Columns is saved in the file's windows settings", file().contains(#""maxColumns": 3"#))
+        check("S-076 Smallest Cell is saved in the file's windows settings",
+              file().contains(#""minCell": { "across": 4, "down": 6 }"#), file())
         undo.beginUndoGrouping()
         editor.edit("Change Smallest Visible Part", undo: undo) { $0.config.windows.minVisible = 40 }
         undo.endUndoGrouping()

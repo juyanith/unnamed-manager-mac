@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "windows": { "maxColumns": 3 },
+  "windows": { "minCell": { "across": 4, "down": 6 } },
   "entries": [
     { "keys": "Meh+W", "title": "Windows" },
     { "keys": "Meh+W A", "title": "Two side by side", "action": "pair" },

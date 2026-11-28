@@ -13,6 +13,24 @@ extension MinimizeAction: EditableAction {
     }
 }
 
+extension TidyAction: EditableAction {
+    @MainActor static func form(_ value: Binding<TidyAction>) -> some View {
+        Section {
+            Text("Snaps the windows on the display into the columns and rows their places suggest, on its steps. Put windows roughly where you want them first. A small window in front, or one that doesn't fit, stays where it is.")
+                .foregroundStyle(.secondary)
+        }
+    }
+}
+
+extension UndoLayoutAction: EditableAction {
+    @MainActor static func form(_ value: Binding<UndoLayoutAction>) -> some View {
+        Section {
+            Text("Puts back the windows the last Tidy Windows or Arrange Windows moved on the display. Press again to redo. A window you moved since stays where it is.")
+                .foregroundStyle(.secondary)
+        }
+    }
+}
+
 extension FillAction: EditableAction {
     @MainActor static func form(_ value: Binding<FillAction>) -> some View {
         Section {

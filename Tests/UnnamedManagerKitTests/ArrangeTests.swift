@@ -10,9 +10,11 @@ struct ArrangeTests {
     static let small = CGRect(x: 100, y: 100, width: 800, height: 600)
 
     /// The frame each window gets, without the gap, by its index; nil for a window left alone.
-    func arranged(_ action: ArrangeAction, maxColumns: Int = 2, maxRows: Int = 2,
-                  usable: CGRect = ArrangeTests.wide, _ windows: [CGRect]) -> [CGRect?] {
-        let plan = ArrangeGrid.plan(action, maxColumns: maxColumns, maxRows: maxRows, usable: usable, windows: windows)
+    /// `minCell` is 6 by 6 steps by default, which on these 12 by 12 step displays allows 2 by 2.
+    func arranged(_ action: ArrangeAction, minCell: WindowSteps = Config.Windows.standardMinCell, steps: WindowSteps? = nil,
+                  usable: CGRect = ArrangeTests.wide, minimums: [CGSize] = [], _ windows: [CGRect]) -> [CGRect?] {
+        let plan = ArrangeGrid.plan(action, steps: steps ?? WindowSteps.guess(for: usable.size), minCell: minCell, usable: usable,
+                                    windows: windows, minimums: minimums)
         return windows.indices.map { index in plan.first { $0.window == index }?.cell.rect(in: usable) }
     }
 
@@ -61,7 +63,7 @@ struct ArrangeTests {
     func five(focusedAt place: Int) -> [CGRect?] {
         var windows = (0..<5).map { CGRect(x: 100 + 200 * CGFloat($0), y: 100 + 50 * CGFloat($0), width: 400, height: 300) }
         windows.insert(windows.remove(at: place), at: 0)
-        var frames = arranged(ArrangeAction(count: .windows(5)), maxColumns: 3, windows)
+        var frames = arranged(ArrangeAction(count: .windows(5)), minCell: .init(across: 4, down: 6), windows)
         frames.insert(frames.remove(at: 0), at: place)
         return frames
     }
@@ -128,10 +130,10 @@ struct ArrangeTests {
         #expect(arranged(ArrangeAction(count: .all), [Self.small]) == [Self.wide])
         #expect(arranged(ArrangeAction(count: .all), Array(windows.prefix(3)))
                 == [Self.left, CGRect(x: 720, y: 25, width: 720, height: 438), CGRect(x: 720, y: 463, width: 720, height: 437)])
-        // Wider settings: three equal columns, and never more than 8 windows.
-        #expect(arranged(ArrangeAction(count: .all), maxColumns: 4, Array(windows.prefix(3))).compactMap { $0?.width } == [480, 480, 480])
-        #expect(arranged(ArrangeAction(count: .all), maxColumns: 8, maxRows: 8, Array(repeating: Self.small, count: 10))
-            .compactMap { $0 }.count == 8)
+        // A smaller cell: three equal columns, and past 8 windows (spec v24).
+        #expect(arranged(ArrangeAction(count: .all), minCell: .init(across: 3, down: 6), Array(windows.prefix(3))).compactMap { $0?.width } == [480, 480, 480])
+        #expect(arranged(ArrangeAction(count: .all), minCell: .init(across: 3, down: 3), Array(repeating: Self.small, count: 20))
+            .compactMap { $0 }.count == 16)
     }
 
     @Test("An automatic layout is rows on a tall display, and the focused window fills the row it's in")
@@ -159,7 +161,9 @@ struct ArrangeTests {
                         let cells = arranged(action, usable: usable, windows).compactMap { $0 }
                         let areas = cells.map { $0.width * $0.height }
                         #expect(cells.count == count && areas.reduce(0, +) == CGFloat(width * 901))
-                        #expect(areas[0] >= areas.max()! - CGFloat(max(width, 901)), "\(count) in \(groups), \(layout)")
+                        // On steps, the leftover steps go from the left or top, so the focused window may get one step less.
+                        let step = CGFloat(width * 901 / 12 * 2) + 1
+                        #expect(areas[0] >= areas.max()! - step, "\(count) in \(groups), \(layout)")
                         for cell in cells { #expect(cell.intersection(usable) == cell) }
                         #expect(arranged(action, usable: usable, cells) == cells, "\(count) in \(groups), \(layout), focus \(focused)")
                         // With one window gone, the others stay too.
@@ -188,11 +192,75 @@ struct ArrangeTests {
                 == .custom(AnyActionStep(WindowCommand.arrange(ArrangeAction(count: .windows(3))))))
     }
 
-    @Test("The two limits are read, checked and written only when they aren't the defaults")
-    func limits() throws {
+    @Test("The retired limits load with a warning and are dropped when the file is saved (spec v24)")
+    func retired() throws {
         let json = #"{ "version": 1, "windows": { "maxColumns": 3 }, "entries": [{ "keys": "Meh+A", "title": "A", "action": "a" }], "actions": { "a": { "type": "window.arrange" } } }"#
         let document = try ConfigDocument(data: Data(json.utf8))
         #expect(document.config.windows == Config.Windows(maxColumns: 3))
-        #expect(String(decoding: document.data(), as: UTF8.self).contains(#""windows": { "maxColumns": 3 }"#))
+        let loaded = try ConfigLoader.load(Data(json.utf8)).get()
+        #expect(loaded.warnings.map(\.rule) == [.retiredSetting] && loaded.warnings.first?.subject == "maxColumns")
+        #expect(!String(decoding: document.data(), as: UTF8.self).contains("windows"))
+    }
+
+    @Test("minCell, displays and each app's smallest size read and write, defaults left out (spec v24)")
+    func settings() throws {
+        let windows = #""windows": { "minCell": { "across": 4, "down": 6 }, "displays": { "3840x1080": { "steps": { "across": 36, "down": 12 } } }, "apps": { "com.example.Editor": { "focus": true, "swap": true, "arrange": true, "quit": true, "minWidth": 1600 } } }"#
+        let json = [#"{ "version": 1, "#, windows, #", "entries": [{ "keys": "Meh+A", "title": "A", "action": "window-tidy" }] }"#].joined()
+        let document = try ConfigDocument(data: Data(json.utf8))
+        #expect(document.config.windows.minCell == .init(across: 4, down: 6))
+        #expect(document.config.windows.apps["com.example.Editor"]?.minWidth == 1600)
+        #expect(String(decoding: document.data(), as: UTF8.self).contains(windows))
+    }
+
+    @Test("Steps come from the display's settings or the guess, and minCell sets the limits (spec v24)")
+    func limits() {
+        var settings = Config.Windows(displays: ["3840x1080": .init(minCell: .init(across: 4, down: 6))])
+        let wide = CGSize(width: 3840, height: 1080), laptop = CGSize(width: 1512, height: 982)
+        #expect(settings.steps(for: wide) == .init(across: 36, down: 12))
+        #expect(settings.limits(for: wide) == (9, 2))
+        #expect(settings.limits(for: laptop) == (2, 2))
+        #expect(settings.limits(for: CGSize(width: 3440, height: 1440)) == (4, 2))
+        settings.displays["1512x982"] = .init(steps: .init(across: 24, down: 12))
+        #expect(settings.limits(for: laptop) == (4, 2))
+        // A smallest cell larger than the steps counts as all of them.
+        settings.minCell = .init(across: 96, down: 96)
+        #expect(settings.limits(for: CGSize(width: 1920, height: 1080)) == (1, 1))
+    }
+
+    @Test("Cells land on steps, the leftover steps one each from the left (spec v24)")
+    func onSteps() {
+        // 1001 points in 12 steps: 7 columns get 2, 2, 2, 2, 2, 1, 1 steps.
+        let usable = CGRect(x: 0, y: 0, width: 1001, height: 900)
+        let frames = arranged(ArrangeAction(count: .windows(7), groups: 7), minCell: .init(across: 1, down: 1), usable: usable,
+                              (0..<7).map { CGRect(x: 100 * CGFloat($0), y: 0, width: 200, height: 200) }).compactMap { $0 }
+        let edges = frames.map { Int($0.minX) }.sorted()
+        #expect(edges == [0, 2, 4, 6, 8, 10, 11].map { Int((Double($0) / 12 * 1001).rounded()) }, "\(frames)")
+        // Fewer steps than columns: equal columns.
+        let few = arranged(ArrangeAction(count: .windows(3), groups: 3), steps: .init(across: 2, down: 1), usable: usable,
+                           Array(repeating: Self.small, count: 3)).compactMap { $0?.width }
+        #expect(few.allSatisfy { abs($0 - 1001.0 / 3) < 1 })
+    }
+
+    @Test("An app's smallest width takes room from the other columns, which keep minCell (spec v24)")
+    func minimums() {
+        let usable = CGRect(x: 0, y: 0, width: 3840, height: 1080)
+        let windows = (0..<3).map { CGRect(x: 1000 * CGFloat($0), y: 0, width: 800, height: 800) }
+        let cell = WindowSteps(across: 4, down: 6)
+        // Plain: three columns of 12 steps each.
+        #expect(arranged(ArrangeAction(count: .windows(3), groups: 3), minCell: cell, usable: usable, windows).map { $0?.width }
+                == [1280, 1280, 1280])
+        // The focused window needs 1600 points, 15 steps: the others share 21, 11 and 10.
+        let wider = arranged(ArrangeAction(count: .windows(3), groups: 3), minCell: cell, usable: usable,
+                             minimums: [CGSize(width: 1600, height: 0)], windows)
+        #expect(wider[0]?.width == 1600 && wider[0]?.minX == 0)
+        #expect(wider[1]?.minX == 1600 && wider[2]?.maxX == 3840)
+        // 3000 points leaves less than minCell for the others: fewer columns.
+        let fewer = arranged(ArrangeAction(count: .windows(3), groups: 3), minCell: cell, usable: usable,
+                             minimums: [CGSize(width: 3000, height: 0)], windows)
+        #expect(fewer[0]!.width >= 3000 && Set(fewer.compactMap { $0?.minX }).count == 2)
+        // Wider than the display: the whole width.
+        let whole = arranged(ArrangeAction(), minCell: cell, usable: usable, minimums: [CGSize(width: 5000, height: 0)],
+                             Array(windows.prefix(2)))
+        #expect(whole[0]?.width == 3840)
     }
 }

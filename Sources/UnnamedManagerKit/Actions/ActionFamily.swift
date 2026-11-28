@@ -114,7 +114,7 @@ public struct ActionRegistry: @unchecked Sendable {
     public static let standard = ActionRegistry(families: [
         UseApplicationAction.self, OpenAction.self, RunCommandAction.self, SendShortcutAction.self, BasicAction.self,
         FillAction.self, MinimizeAction.self, PlaceAction.self, MoveAction.self, ResizeAction.self, FocusAction.self, ArrangeAction.self,
-        SwapAction.self, SpaceSwitchAction.self, SpaceSendAction.self,
+        TidyAction.self, UndoLayoutAction.self, SwapAction.self, SpaceSwitchAction.self, SpaceSendAction.self,
     ])
 
     public func adding(_ family: any ActionValue.Type) -> ActionRegistry {

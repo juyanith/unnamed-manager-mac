@@ -98,6 +98,7 @@ Use a built-in name as the binding's `action` value without defining it in `acti
 | Place in corners or center | `window-place-top-left`, `window-place-top-right`, `window-place-bottom-left`, `window-place-bottom-right`, `window-place-center` |
 | Resize | `window-resize-grow`, `window-resize-shrink` |
 | Arrange | `window-arrange`, `window-arrange-2` through `window-arrange-8`, `window-arrange-all` |
+| Tidy, or undo the last layout | `window-tidy`, `window-undo` |
 | Focus a window | `window-focus-` plus `left`, `right`, `up`, `down`, `next`, `previous`, `first`, `last`, `recent`, or a window number |
 | Swap windows | `window-swap-` plus `left`, `right`, `up`, `down`, `next`, `previous`, `first`, `last`, `recent`, or a window number |
 | Switch Space | `space-switch-left`, `space-switch-right`, `space-switch-<number>` |

@@ -27,16 +27,12 @@ struct SettingsForm: View {
                         PointsField(value: windowDistance(\.gap, "Change Gap"), range: 0...64, step: 2,
                                     accessibilityLabel: "Gap between windows, points")
                     }
-                    Picker("Maximum Columns", selection: windowLimit(\.maxColumns, "Change Maximum Columns")) {
-                        ForEach(Array(Config.Windows.limitRange), id: \.self) { Text("\($0)").tag($0) }
-                    }
-                    Picker("Maximum Rows", selection: windowLimit(\.maxRows, "Change Maximum Rows")) {
-                        ForEach(Array(Config.Windows.limitRange), id: \.self) { Text("\($0)").tag($0) }
-                    }
+                    stepsField("Smallest Cell Across", windowLimit(\.minCell.across, "Change Smallest Cell Across"))
+                    stepsField("Smallest Cell Down", windowLimit(\.minCell.down, "Change Smallest Cell Down"))
                 } header: {
                     Text("Windows")
                 } footer: {
-                    Text("Place Window, Fill and Arrange Windows leave the gap between a window and the screen's edges, and between windows side by side. 0 puts them edge to edge. The maximums limit the grid Arrange Windows picks when its action leaves Groups on Automatic.")
+                    Text("Place Window, Fill, Arrange Windows and Tidy Windows leave the gap between a window and the screen's edges, and between windows side by side. 0 puts them edge to edge. Arrange Windows and Tidy Windows put edges on steps: 12 on a display's short side, and 12 on its long side for each time the short side fits into it. The smallest cell sets the most columns and rows Arrange Windows picks: with 6 by 6, a 16:9 display gets at most 2 by 2.")
                 }
 
                 Section {
@@ -295,6 +291,24 @@ struct SettingsForm: View {
     }
 
     /// One of Arrange Windows' limits (S-076).
+    /// A count of steps, from 1 to 96 (spec v24), laid out as PointsField.
+    private func stepsField(_ title: String, _ value: Binding<Int>) -> some View {
+        let range = WindowSteps.range
+        let clamped = Binding(get: { value.wrappedValue }, set: { value.wrappedValue = min(max($0, range.lowerBound), range.upperBound) })
+        return LabeledContent(title) {
+            HStack(spacing: Space.sm) {
+                TextField("Steps", value: clamped, format: .number)
+                    .labelsHidden()
+                    .multilineTextAlignment(.trailing)
+                    .frame(width: Layout.keyColumnWidth / 2)
+                    .accessibilityLabel("\(title), steps")
+                Stepper("Steps", value: clamped, in: range)
+                    .labelsHidden()
+                Text("steps").foregroundStyle(.secondary)
+            }
+        }
+    }
+
     private func windowLimit(_ key: WritableKeyPath<Config.Windows, Int>, _ name: String) -> Binding<Int> {
         Binding(get: { editor.draft.config.windows[keyPath: key] }, set: { value in
             guard editor.draft.config.windows[keyPath: key] != value else { return }

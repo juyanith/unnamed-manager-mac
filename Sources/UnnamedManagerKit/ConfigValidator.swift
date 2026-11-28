@@ -170,12 +170,30 @@ public enum ConfigValidator {
         if config.windows.quitOnCloseDelayMs < 0 { error(.negativeDelay, "quitOnCloseDelayMs can't be negative.") }
         if config.windows.gap < 0 { error(.negativeGap, "The gap between windows can't be negative.") }
         let limits = Config.Windows.limitRange
-        for (name, value) in [("maxColumns", config.windows.maxColumns), ("maxRows", config.windows.maxRows)] where !limits.contains(value) {
-            error(.badWindowLimit, "\(name) must be from \(limits.lowerBound) to \(limits.upperBound).")
+        for (name, value) in [("maxColumns", config.windows.maxColumns), ("maxRows", config.windows.maxRows)] {
+            if let value, !limits.contains(value) {
+                error(.badWindowLimit, "\(name) must be from \(limits.lowerBound) to \(limits.upperBound).")
+            }
+        }
+        // Steps and smallest cells (spec v24).
+        var counts = [("windows.minCell", config.windows.minCell)]
+        for (key, display) in config.windows.displays.sorted(by: { $0.key < $1.key }) {
+            if !Config.Windows.isDisplayKey(key) {
+                error(.badDisplayKey, "The display “\(key)” in windows.displays isn't a width, an x and a height in points, such as \"3840x1080\".", key)
+            }
+            if let steps = display.steps { counts.append(("steps for display \(key)", steps)) }
+            if let cell = display.minCell { counts.append(("minCell for display \(key)", cell)) }
+        }
+        let range = WindowSteps.range
+        for (name, value) in counts where !range.contains(value.across) || !range.contains(value.down) {
+            error(.badWindowLimit, "The across and down of \(name) must be from \(range.lowerBound) to \(range.upperBound).")
         }
         let distances = [("minVisible", config.windows.minVisible), ("rowTolerance", config.windows.rowTolerance), ("tieTolerance", config.windows.tieTolerance)]
         for (name, value) in distances where value < 0 {
             error(.negativeWindowDistance, "\(name) can't be negative.")
+        }
+        for (app, rules) in config.windows.apps.sorted(by: { $0.key < $1.key }) where rules.minWidth < 0 || rules.minHeight < 0 {
+            error(.negativeWindowDistance, "The smallest size for \(app) in windows.apps can't be negative.", app)
         }
 
         // Entries: parse, find duplicates.
@@ -276,6 +294,10 @@ public enum ConfigValidator {
         guard errors.isEmpty, let cancelKey else { return .failure(ConfigErrors(issues: errors)) }
 
         var warnings: [ConfigIssue] = []
+        for (name, value) in [("maxColumns", config.windows.maxColumns), ("maxRows", config.windows.maxRows)] where value != nil {
+            warnings.append(ConfigIssue(.warning, "windows.\(name) does nothing from spec v24: windows.minCell sets the most columns and rows. It's dropped when the file is saved.",
+                                        subject: name, rule: .retiredSetting))
+        }
         let usedActions = Set(config.entries.compactMap(\.action))
         for id in config.actions.keys.sorted() where !usedActions.contains(id) {
             warnings.append(ConfigIssue(.warning, "Action “\(id)” isn't used by any binding.", subject: id, rule: .unusedAction))

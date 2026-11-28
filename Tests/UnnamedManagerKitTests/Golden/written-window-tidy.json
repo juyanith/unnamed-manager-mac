@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "windows": { "displays": { "1512x982": { "minCell": { "across": 4, "down": 4 } }, "3840x1080": { "steps": { "across": 36, "down": 12 }, "minCell": { "across": 4, "down": 6 } } }, "apps": { "com.apple.calculator": { "focus": true, "swap": false, "arrange": false, "quit": true }, "com.blackmagic-design.DaVinciResolve": { "focus": true, "swap": true, "arrange": true, "quit": true, "minWidth": 1600, "minHeight": 900 } } },
+  "entries": [
+    { "keys": "Meh+W", "title": "Windows" },
+    { "keys": "Meh+W T", "title": "Tidy", "action": "window-tidy" },
+    { "keys": "Meh+W U", "title": "Undo Layout", "action": "window-undo" },
+    { "keys": "Meh+W Y", "title": "Tidy, defined", "action": "tidy" },
+    { "keys": "Meh+W Z", "title": "Undo, defined", "action": "undo" },
+    { "keys": "Meh+W A", "title": "Arrange every window", "action": "window-arrange-all" }
+  ],
+  "actions": {
+    "tidy": { "type": "window.tidy" },
+    "undo": { "type": "window.undo" }
+  }
+}
